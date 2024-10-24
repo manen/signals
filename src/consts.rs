@@ -1,4 +1,5 @@
 use raylib::color::Color;
+use raylib::ffi::{KeyboardKey, MouseButton};
 
 const fn color(r: u8, g: u8, b: u8, a: u8) -> Color {
 	Color { r, g, b, a }
@@ -7,3 +8,6 @@ const fn color(r: u8, g: u8, b: u8, a: u8) -> Color {
 pub const BACKGROUND: Color = Color::BLACK;
 pub const WIRE_ON: Color = color(230, 200, 200, 255);
 pub const WIRE_OFF: Color = color(80, 80, 80, 255);
+
+pub const TOOL_SWITCH: KeyboardKey = KeyboardKey::KEY_T;
+pub const TOOL_USE: MouseButton = MouseButton::MOUSE_BUTTON_LEFT;

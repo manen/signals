@@ -1,6 +1,6 @@
-use raylib::{color::Color, drawing::RaylibDrawHandle, prelude::RaylibDraw};
+use raylib::{drawing::RaylibDrawHandle, prelude::RaylibDraw};
 
-use crate::colors;
+use crate::consts;
 
 pub const CHUNK_SIZE: usize = 16;
 pub const BLOCK_SIZE: i32 = 32;
@@ -29,8 +29,16 @@ impl Chunk {
 	pub fn at(&self, x: usize, y: usize) -> Option<Block> {
 		if x > 15 || y > 15 {
 			dbg!("cannot index into", x, y);
+			return None;
 		}
 		Some(self.0[x][y])
+	}
+	pub fn map_at(&mut self, x: usize, y: usize, f: impl FnOnce(Block) -> Block) {
+		if x > 15 || y > 15 {
+			dbg!("cannot map index into", x, y);
+			return;
+		}
+		self.0[x][y] = f(self.0[x][y]);
 	}
 	pub fn draw_at(&self, d: &mut RaylibDrawHandle, x: i32, y: i32) {
 		for px in 0..CHUNK_SIZE {
@@ -61,9 +69,9 @@ impl Block {
 				let y_off = if horizontal { off } else { 0 };
 
 				let color = if *state {
-					colors::WIRE_ON
+					consts::WIRE_ON
 				} else {
-					colors::WIRE_OFF
+					consts::WIRE_OFF
 				};
 
 				d.draw_rectangle(
@@ -87,7 +95,7 @@ pub enum Direction {
 }
 impl Direction {
 	/// clockwise
-	fn rotate(self) -> Self {
+	pub fn rotate(self) -> Self {
 		match self {
 			Direction::Right => Direction::Bottom,
 			Direction::Bottom => Direction::Left,
