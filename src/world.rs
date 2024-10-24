@@ -1,4 +1,4 @@
-use raylib::{drawing::RaylibDrawHandle, prelude::RaylibDraw};
+use raylib::{color::Color, drawing::RaylibDrawHandle, prelude::RaylibDraw};
 
 use crate::consts;
 
@@ -81,6 +81,14 @@ impl Block {
 					BLOCK_SIZE - y_off * 2,
 					color,
 				);
+
+				let c = match dir {
+					Direction::Right => "r",
+					Direction::Bottom => "b",
+					Direction::Left => "l",
+					Direction::Top => "t",
+				};
+				d.draw_text(c, base_x + x_off, base_y + y_off, 8, Color::WHITE);
 			}
 		}
 	}

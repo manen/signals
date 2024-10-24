@@ -18,20 +18,17 @@ fn main() {
 				Some(tool) => Some(tool.rotate()),
 			};
 		}
-		if let Some(tool) = tool {
+		if let Some(tool) = &mut tool {
+			let x = (rl.get_mouse_x().max(0) / world::BLOCK_SIZE) as usize;
+			let y = (rl.get_mouse_y().max(0) / world::BLOCK_SIZE) as usize;
 			if rl.is_mouse_button_down(consts::TOOL_USE) {
-				tool.down(
-					(rl.get_mouse_x() / world::BLOCK_SIZE) as _,
-					(rl.get_mouse_y() / world::BLOCK_SIZE) as _,
-					&mut chunk,
-				);
+				tool.down(x, y, &mut chunk);
 			}
 			if rl.is_mouse_button_pressed(consts::TOOL_USE) {
-				tool.pressed(
-					(rl.get_mouse_x() / world::BLOCK_SIZE) as _,
-					(rl.get_mouse_y() / world::BLOCK_SIZE) as _,
-					&mut chunk,
-				);
+				tool.pressed(x, y, &mut chunk);
+			}
+			if rl.is_mouse_button_released(consts::TOOL_USE) {
+				tool.released(x, y, &mut chunk);
 			}
 		}
 
