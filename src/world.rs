@@ -26,12 +26,39 @@ impl Chunk {
 		chunk
 	}
 
-	pub fn at(&self, x: usize, y: usize) -> Option<Block> {
+	pub fn tick(&mut self) {
+		let old_self = *self;
+
+		for px in 0..CHUNK_SIZE {
+			for py in 0..CHUNK_SIZE {
+				let a = old_self.at(px, py).unwrap();
+
+				if a.activated() {
+					let (ox, oy) = a.target_offset().unwrap();
+					dbg!((px as i32 + ox).max(0), (py as i32 + oy).max(0));
+					self.mut_at(
+						(px as i32 + ox).max(0).min(15) as usize,
+						(py as i32 + oy).max(0).min(15) as usize,
+					)
+					.map(|x| x.power());
+				}
+			}
+		}
+	}
+
+	pub fn at(&self, x: usize, y: usize) -> Option<&Block> {
 		if x > 15 || y > 15 {
 			dbg!("cannot index into", x, y);
 			return None;
 		}
-		Some(self.0[x][y])
+		Some(&self.0[x][y])
+	}
+	pub fn mut_at(&mut self, x: usize, y: usize) -> Option<&mut Block> {
+		if x > 15 || y > 15 {
+			dbg!("cannot index into", x, y);
+			return None;
+		}
+		Some(&mut self.0[x][y])
 	}
 	pub fn map_at(&mut self, x: usize, y: usize, f: impl FnOnce(Block) -> Block) {
 		if x > 15 || y > 15 {
@@ -56,6 +83,30 @@ pub enum Block {
 	Wire(Direction, bool),
 }
 impl Block {
+	pub fn activated(&self) -> bool {
+		match self {
+			Block::Wire(_, a) => *a,
+			_ => false,
+		}
+	}
+	pub fn target_offset(&self) -> Option<(i32, i32)> {
+		match self {
+			Self::Wire(dir, _) => Some(match dir {
+				Direction::Right => (1, 0),
+				Direction::Bottom => (0, 1),
+				Direction::Left => (-1, 0),
+				Direction::Top => (0, -1),
+			}),
+			_ => None,
+		}
+	}
+	pub fn power(&mut self) {
+		match self {
+			Self::Wire(_, s) => *s = true,
+			_ => {}
+		};
+	}
+
 	pub fn draw_at(&self, d: &mut RaylibDrawHandle, base_x: i32, base_y: i32) {
 		match self {
 			Block::Nothing => {}

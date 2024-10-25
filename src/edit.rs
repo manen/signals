@@ -9,19 +9,10 @@ pub enum Tool {
 impl Tool {
 	pub fn rotate(self) -> Self {
 		match self {
-			Self::Place(Block::Nothing) => Self::Place(Block::Wire(Direction::Right, false)),
-			Self::Place(Block::Wire(Direction::Right, s)) => {
-				Self::Place(Block::Wire(Direction::Bottom, s))
-			}
-			Self::Place(Block::Wire(Direction::Bottom, s)) => {
-				Self::Place(Block::Wire(Direction::Left, s))
-			}
-			Self::Place(Block::Wire(Direction::Left, s)) => {
-				Self::Place(Block::Wire(Direction::Top, s))
-			}
-			Self::Place(Block::Wire(Direction::Top, s)) => Self::Rotate,
+			Self::Place(Block::Nothing) => Self::Rotate,
 			Self::Rotate => Self::PlaceWire { start: None },
 			Self::PlaceWire { .. } => Self::Place(Block::Nothing),
+			_ => Self::PlaceWire { start: None },
 		}
 	}
 
