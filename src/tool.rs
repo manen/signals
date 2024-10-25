@@ -72,7 +72,7 @@ impl Tool {
 									} else {
 										Direction::Left
 									},
-									false,
+									100,
 								)
 							} else {
 								Block::Wire(
@@ -81,7 +81,7 @@ impl Tool {
 									} else {
 										Direction::Top
 									},
-									false,
+									100,
 								)
 							}
 						})

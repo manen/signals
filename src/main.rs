@@ -1,3 +1,4 @@
+mod block;
 mod consts;
 mod tool;
 mod world;
@@ -14,6 +15,7 @@ fn main() {
 	let world_offset = (0, 20);
 
 	let mut delta = 0.0;
+	let mut moves = Vec::new();
 
 	while !rl.window_should_close() {
 		if rl.is_key_pressed(consts::TOOL_SWITCH) {
@@ -40,7 +42,7 @@ fn main() {
 		delta += rl.get_frame_time();
 		if delta > 0.2 {
 			delta -= 0.2;
-			chunk.tick();
+			moves = chunk.tick(moves);
 		}
 
 		let mut d = rl.begin_drawing(&thread);
@@ -49,5 +51,6 @@ fn main() {
 		chunk.draw_at(&mut d, world_offset.0, world_offset.1);
 
 		d.draw_text(&format!("{tool:?}"), 0, 0, 20, Color::WHITE);
+		// d.draw_text(&format!("{moves:?}"), 0, 20, 20, Color::WHITE);
 	}
 }
