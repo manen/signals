@@ -5,6 +5,7 @@ pub enum Tool {
 	PlaceWire { start: Option<(usize, usize)> },
 	Place(Block),
 	Rotate,
+	Interact,
 }
 impl Default for Tool {
 	fn default() -> Self {
@@ -15,30 +16,34 @@ impl Tool {
 	pub fn rotate(self) -> Self {
 		match self {
 			Self::PlaceWire { .. } => Self::Place(Block::Nothing),
-			Self::Place(Block::Nothing) => Self::Place(Block::Switch(true)),
+			Self::Place(Block::Nothing) => Self::Place(Block::Switch(false)),
 			Self::Place(Block::Switch(_)) => Self::Rotate,
-			Self::Rotate => Self::PlaceWire { start: None },
+			Self::Rotate => Self::Interact,
+			Self::Interact => Self::PlaceWire { start: None },
 			_ => Self::PlaceWire { start: None },
 		}
 	}
 
-	pub fn down(&mut self, x: usize, y: usize, chunk: &mut Chunk) {
+	pub fn down(&mut self, x: usize, y: usize, chunk: &mut Chunk) -> Option<()> {
 		match self {
 			Self::Place(block) => chunk.map_at(x, y, |_| *block),
 			_ => {}
 		}
+		Some(())
 	}
-	pub fn pressed(&mut self, x: usize, y: usize, chunk: &mut Chunk) {
+	pub fn pressed(&mut self, x: usize, y: usize, chunk: &mut Chunk) -> Option<()> {
 		match self {
 			Self::Rotate => chunk.map_at(x, y, |i| match i {
 				Block::Wire(dir, s) => Block::Wire(dir.rotate(), s),
 				_ => i,
 			}),
 			Self::PlaceWire { start } if *start == None => *start = Some((x, y)),
+			Self::Interact => chunk.mut_at(x, y)?.interact(),
 			_ => {}
-		}
+		};
+		Some(())
 	}
-	pub fn released(&mut self, x: usize, y: usize, chunk: &mut Chunk) {
+	pub fn released(&mut self, x: usize, y: usize, chunk: &mut Chunk) -> Option<()> {
 		match self {
 			Self::PlaceWire { start } => {
 				if let Some(start) = start {
@@ -86,5 +91,6 @@ impl Tool {
 			}
 			_ => {}
 		}
+		Some(())
 	}
 }

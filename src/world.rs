@@ -8,6 +8,7 @@ pub const BLOCK_SIZE: i32 = 32;
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Chunk([[Block; CHUNK_SIZE]; CHUNK_SIZE]);
 impl Chunk {
+	#[allow(dead_code)]
 	pub fn checkerboard() -> Self {
 		let mut chunk = Self::default();
 
@@ -102,6 +103,12 @@ impl Block {
 			Self::Wire(_, s) => *s = true,
 			_ => {}
 		};
+	}
+	pub fn interact(&mut self) {
+		match self {
+			Self::Switch(s) => *s = !*s,
+			_ => {}
+		}
 	}
 
 	pub fn draw_at(&self, d: &mut RaylibDrawHandle, base_x: i32, base_y: i32) {
