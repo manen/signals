@@ -17,7 +17,8 @@ impl Tool {
 		match self {
 			Self::PlaceWire { .. } => Self::Place(Block::Nothing),
 			Self::Place(Block::Nothing) => Self::Place(Block::Switch(false)),
-			Self::Place(Block::Switch(_)) => Self::Rotate,
+			Self::Place(Block::Switch(_)) => Self::Place(Block::Not(false)),
+			Self::Place(Block::Not(_)) => Self::Rotate,
 			Self::Rotate => Self::Interact,
 			Self::Interact => Self::PlaceWire { start: None },
 			_ => Self::PlaceWire { start: None },

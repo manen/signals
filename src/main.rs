@@ -15,7 +15,7 @@ fn main() {
 	let world_offset = (0, 20);
 
 	let mut delta = 0.0;
-	let mut moves = Vec::new();
+	let mut moves = world::Moves::new();
 
 	while !rl.window_should_close() {
 		if rl.is_key_pressed(consts::TOOL_SWITCH) {

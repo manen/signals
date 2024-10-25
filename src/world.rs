@@ -8,6 +8,9 @@ pub const BLOCK_SIZE: i32 = 32;
 #[derive(Debug, PartialEq)]
 pub struct Signal;
 
+/// ((x, y), direction_from, signal)
+pub type Moves = Vec<((usize, usize), Option<Direction>, Signal)>;
+
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Chunk([[Block; CHUNK_SIZE]; CHUNK_SIZE]);
 impl Chunk {
@@ -30,13 +33,16 @@ impl Chunk {
 		chunk
 	}
 
-	pub fn tick(&mut self, moves: Vec<(usize, usize, Signal)>) -> Vec<(usize, usize, Signal)> {
-		let mut old_self = *self;
-		let mut new_moves = Vec::<(usize, usize, Signal)>::new();
+	pub fn tick(&mut self, moves: Moves) -> Moves {
+		let mut new_moves = Moves::new();
 		macro_rules! gen_push_move {
 			($px:expr, $py:expr) => {
 				|x, y, signal| {
-					let mov = (($px as i32 + x) as usize, ($py as i32 + y) as usize, signal);
+					let mov = (
+						(($px as i32 + x) as usize, ($py as i32 + y) as usize),
+						Direction::from_rel((x, y)).map(|dir| dir.reverse()),
+						signal,
+					);
 					if !new_moves.contains(&mov) {
 						new_moves.push(mov)
 					}
@@ -53,17 +59,17 @@ impl Chunk {
 			};
 		}
 
-		for (x, y, signal) in moves {
-			let a = continue_on_none!(old_self.at(x, y));
+		for ((x, y), from, signal) in moves {
+			let a = continue_on_none!(self.at(x, y));
 
 			*continue_on_none!(self.mut_at(x, y)) =
-				if let Some(b) = a.pass(signal, gen_push_move!(x, y)) {
+				if let Some(b) = a.pass(signal, from, gen_push_move!(x, y)) {
 					b
 				} else {
 					*a
 				};
 		}
-		old_self = *self;
+		let old_self = *self;
 		for px in 0..CHUNK_SIZE {
 			for py in 0..CHUNK_SIZE {
 				let a = continue_on_none!(old_self.at(px, py));
