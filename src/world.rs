@@ -34,12 +34,10 @@ impl Chunk {
 				let a = old_self.at(px, py).unwrap();
 
 				if a.activated() {
-					let (ox, oy) = a.target_offset().unwrap();
-					self.mut_at(
-						(px as i32 + ox).max(0).min(15) as usize,
-						(py as i32 + oy).max(0).min(15) as usize,
-					)
-					.map(|x| x.power());
+					for (ox, oy) in a.target_offsets() {
+						self.mut_at((px as i32 + ox) as usize, (py as i32 + oy) as usize)
+							.map(|x| x.power());
+					}
 				}
 			}
 		}
@@ -77,23 +75,26 @@ pub enum Block {
 	#[default]
 	Nothing,
 	Wire(Direction, bool),
+	Switch(bool),
 }
 impl Block {
 	pub fn activated(&self) -> bool {
 		match self {
 			Block::Wire(_, a) => *a,
+			Block::Switch(a) => *a,
 			_ => false,
 		}
 	}
-	pub fn target_offset(&self) -> Option<(i32, i32)> {
+	pub fn target_offsets(&self) -> &[(i32, i32)] {
 		match self {
-			Self::Wire(dir, _) => Some(match dir {
-				Direction::Right => (1, 0),
-				Direction::Bottom => (0, 1),
-				Direction::Left => (-1, 0),
-				Direction::Top => (0, -1),
-			}),
-			_ => None,
+			Self::Wire(dir, _) => match dir {
+				Direction::Right => &[(1, 0)],
+				Direction::Bottom => &[(0, 1)],
+				Direction::Left => &[(-1, 0)],
+				Direction::Top => &[(0, -1)],
+			},
+			Self::Switch(_) => &[(1, 0), (0, 1), (-1, 0), (0, -1)],
+			_ => &[],
 		}
 	}
 	pub fn power(&mut self) {
@@ -136,6 +137,19 @@ impl Block {
 					Direction::Top => "t",
 				};
 				d.draw_text(c, base_x + x_off, base_y + y_off, 8, Color::WHITE);
+			}
+			Block::Switch(state) => {
+				d.draw_rectangle(
+					base_x,
+					base_y,
+					BLOCK_SIZE,
+					BLOCK_SIZE,
+					if *state {
+						consts::SWITCH_ON
+					} else {
+						consts::SWITCH_OFF
+					},
+				);
 			}
 		}
 	}

@@ -15,7 +15,8 @@ impl Tool {
 	pub fn rotate(self) -> Self {
 		match self {
 			Self::PlaceWire { .. } => Self::Place(Block::Nothing),
-			Self::Place(Block::Nothing) => Self::Rotate,
+			Self::Place(Block::Nothing) => Self::Place(Block::Switch(true)),
+			Self::Place(Block::Switch(_)) => Self::Rotate,
 			Self::Rotate => Self::PlaceWire { start: None },
 			_ => Self::PlaceWire { start: None },
 		}

@@ -34,6 +34,7 @@ fn main() {
 			if rl.is_mouse_button_released(consts::TOOL_USE) {
 				tool.released(x, y, &mut chunk);
 			}
+		} else {
 		}
 
 		delta += rl.get_frame_time();
