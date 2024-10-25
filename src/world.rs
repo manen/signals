@@ -35,7 +35,6 @@ impl Chunk {
 
 				if a.activated() {
 					let (ox, oy) = a.target_offset().unwrap();
-					dbg!((px as i32 + ox).max(0), (py as i32 + oy).max(0));
 					self.mut_at(
 						(px as i32 + ox).max(0).min(15) as usize,
 						(py as i32 + oy).max(0).min(15) as usize,
@@ -48,21 +47,18 @@ impl Chunk {
 
 	pub fn at(&self, x: usize, y: usize) -> Option<&Block> {
 		if x > 15 || y > 15 {
-			dbg!("cannot index into", x, y);
 			return None;
 		}
 		Some(&self.0[x][y])
 	}
 	pub fn mut_at(&mut self, x: usize, y: usize) -> Option<&mut Block> {
 		if x > 15 || y > 15 {
-			dbg!("cannot index into", x, y);
 			return None;
 		}
 		Some(&mut self.0[x][y])
 	}
 	pub fn map_at(&mut self, x: usize, y: usize, f: impl FnOnce(Block) -> Block) {
 		if x > 15 || y > 15 {
-			dbg!("cannot map index into", x, y);
 			return;
 		}
 		self.0[x][y] = f(self.0[x][y]);
