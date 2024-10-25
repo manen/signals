@@ -9,7 +9,7 @@ fn main() {
 	rl.set_window_position((1920.0 * 1.3) as i32, (1920.0 * 0.6) as i32);
 
 	let mut chunk = world::Chunk::default();
-	let mut tool = None;
+	let mut tool = Option::<edit::Tool>::None;
 
 	let world_offset = (0, 20);
 
@@ -18,8 +18,8 @@ fn main() {
 	while !rl.window_should_close() {
 		if rl.is_key_pressed(consts::TOOL_SWITCH) {
 			tool = match tool {
-				None => Some(edit::Tool::Place(world::Block::Nothing)),
 				Some(tool) => Some(tool.rotate()),
+				_ => Some(edit::Tool::default()),
 			};
 		}
 		if let Some(tool) = &mut tool {

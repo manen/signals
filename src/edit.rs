@@ -2,16 +2,21 @@ use crate::world::{Block, Chunk, Direction};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Tool {
+	PlaceWire { start: Option<(usize, usize)> },
 	Place(Block),
 	Rotate,
-	PlaceWire { start: Option<(usize, usize)> },
+}
+impl Default for Tool {
+	fn default() -> Self {
+		Self::PlaceWire { start: None }
+	}
 }
 impl Tool {
 	pub fn rotate(self) -> Self {
 		match self {
+			Self::PlaceWire { .. } => Self::Place(Block::Nothing),
 			Self::Place(Block::Nothing) => Self::Rotate,
 			Self::Rotate => Self::PlaceWire { start: None },
-			Self::PlaceWire { .. } => Self::Place(Block::Nothing),
 			_ => Self::PlaceWire { start: None },
 		}
 	}
