@@ -25,12 +25,9 @@ pub struct World {
 impl Default for World {
 	fn default() -> Self {
 		World {
-			chunks: [
-				((0, 0), Chunk::checkerboard()),
-				((1, 0), Chunk::checkerboard()),
-			]
-			.into_iter()
-			.collect(),
+			chunks: [((0, 0), Chunk::default()), ((1, 0), Chunk::default())]
+				.into_iter()
+				.collect(),
 		}
 	}
 }
@@ -40,8 +37,8 @@ impl World {
 		macro_rules! gen_push_move {
 			($px:expr, $py:expr) => {
 				|x, y, signal| {
-					let chunk_base_x = $px * CHUNK_SIZE as i32;
-					let chunk_base_y = $py * CHUNK_SIZE as i32;
+					let chunk_base_x = $px;
+					let chunk_base_y = $py;
 					let mov = Move::new(
 						(chunk_base_x + x, chunk_base_y + y),
 						Direction::from_rel((x, y)).map(|dir| dir.reverse()),
@@ -60,6 +57,7 @@ impl World {
 
 			*crate::continue_on_none!(self.mut_at(x, y)) =
 				if let Some(b) = a.pass(mov.signal, mov.from, gen_push_move!(x, y)) {
+					println!("{b:?}");
 					b
 				} else {
 					*a
@@ -107,7 +105,6 @@ impl World {
 pub fn world_coords_into_chunk_coords(x: i32, y: i32) -> ((i32, i32), (i32, i32)) {
 	let chunk_coords = (x / CHUNK_SIZE as i32, y / CHUNK_SIZE as i32);
 	let block_coords = (x % CHUNK_SIZE as i32, y % CHUNK_SIZE as i32);
-	println!("{chunk_coords:?} {block_coords:?}");
 	(chunk_coords, block_coords)
 }
 pub fn chunk_coords_into_world_coords(

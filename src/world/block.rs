@@ -87,15 +87,15 @@ impl Block {
 					color,
 				);
 
-				// use raylib::color::Color;
-				// let c_dir = match dir {
-				// 	Direction::Right => "r",
-				// 	Direction::Bottom => "b",
-				// 	Direction::Left => "l",
-				// 	Direction::Top => "t",
-				// };
-				// let c = format!("{c_dir} {ticks}");
-				// d.draw_text(&c, base_x + x_off, base_y + y_off, 8, Color::WHITE);
+				use raylib::color::Color;
+				let c_dir = match dir {
+					Direction::Right => "r",
+					Direction::Bottom => "b",
+					Direction::Left => "l",
+					Direction::Top => "t",
+				};
+				let c = format!("{c_dir} {ticks}");
+				d.draw_text(&c, base_x + x_off, base_y + y_off, 8, Color::WHITE);
 			}
 			Block::Switch(state) => {
 				d.draw_rectangle(

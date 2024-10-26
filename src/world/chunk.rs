@@ -32,7 +32,7 @@ impl Chunk {
 			for y in 0..CHUNK_SIZE as i32 {
 				let a = crate::continue_on_none!(old_self.at(x, y));
 
-				if let Some(b) = a.tick(|lx, ly, signal| push_move(lx, ly, signal)) {
+				if let Some(b) = a.tick(|lx, ly, signal| push_move(x + lx, y + ly, signal)) {
 					*crate::continue_on_none!(self.mut_at(x, y)) = b;
 				}
 			}
@@ -65,14 +65,14 @@ impl Chunk {
 				let (base_x, base_y) = (x + px as i32 * BLOCK_SIZE, y + py as i32 * BLOCK_SIZE);
 				self.0[px][py].draw_at(d, base_x, base_y);
 
-				// use raylib::prelude::RaylibDraw;
-				// d.draw_text(
-				// 	&format!("{px} {py}"),
-				// 	base_x,
-				// 	base_y,
-				// 	6,
-				// 	raylib::color::Color::WHITE,
-				// );
+				use raylib::prelude::RaylibDraw;
+				d.draw_text(
+					&format!("{px} {py}"),
+					base_x,
+					base_y,
+					6,
+					raylib::color::Color::WHITE,
+				);
 			}
 		}
 	}
