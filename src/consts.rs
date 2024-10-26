@@ -5,7 +5,10 @@ const fn color(r: u8, g: u8, b: u8, a: u8) -> Color {
 	Color { r, g, b, a }
 }
 
-pub const TICK_TIME: f32 = 0.5;
+pub const DEBUG_WIRES: bool = false;
+pub const DEBUG_CHUNKS: bool = false;
+
+pub const TICK_TIME: f32 = 0.03;
 
 pub const BACKGROUND: Color = Color::BLACK;
 pub const WIRE_ON: Color = color(230, 200, 200, 255);

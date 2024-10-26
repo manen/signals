@@ -26,19 +26,18 @@ impl World {
 	pub fn tick(&mut self, moves: Vec<Move>) -> Vec<Move> {
 		let mut new_moves = Vec::with_capacity(moves.len());
 		macro_rules! gen_push_move {
-			($px:expr, $py:expr) => {
-				|x, y, signal| {
+			(dir $px:expr, $py:expr) => {
+				|x, y, dir, signal| {
 					let chunk_base_x = $px;
 					let chunk_base_y = $py;
-					let mov = Move::new(
-						(chunk_base_x + x, chunk_base_y + y),
-						Direction::from_rel((x, y)).map(|dir| dir.reverse()),
-						signal,
-					);
+					let mov = Move::new((chunk_base_x + x, chunk_base_y + y), dir, signal);
 					if !new_moves.contains(&mov) {
 						new_moves.push(mov)
 					}
 				}
+			};
+			($px:expr, $py:expr) => {
+				|x, y, signal| gen_push_move!(dir $px, $py)(x, y, Direction::from_rel((x, y)).map(|dir| dir.reverse()), signal)
 			};
 		}
 
@@ -48,14 +47,16 @@ impl World {
 
 			*crate::continue_on_none!(self.mut_at(x, y)) =
 				if let Some(b) = a.pass(mov.signal, mov.from, gen_push_move!(x, y)) {
-					println!("{b:?}");
 					b
 				} else {
 					*a
 				};
 		}
 		for ((x, y), chunk) in &mut self.chunks {
-			chunk.tick(gen_push_move!(*x, *y));
+			chunk.tick(gen_push_move!(
+				dir * x * CHUNK_SIZE as i32,
+				*y * CHUNK_SIZE as i32
+			));
 		}
 
 		new_moves
