@@ -106,9 +106,9 @@ pub fn world_coords_into_chunk_coords(x: i32, y: i32) -> ((i32, i32), (i32, i32)
 	let block_coords = (x % CHUNK_SIZE as i32, y % CHUNK_SIZE as i32);
 	(chunk_coords, block_coords)
 }
-pub fn chunk_coords_into_world_coords(
-	(chunk_x, chunk_y): (i32, i32),
-	(block_x, block_y): (i32, i32),
-) -> (i32, i32) {
-	(chunk_x + block_x, chunk_y + block_y)
-}
+// pub fn chunk_coords_into_world_coords(
+// 	(chunk_x, chunk_y): (i32, i32),
+// 	(block_x, block_y): (i32, i32),
+// ) -> (i32, i32) {
+// 	(chunk_x + block_x, chunk_y + block_y)
+// }

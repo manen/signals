@@ -1,4 +1,4 @@
-use crate::world::{Block, Chunk, Direction, World};
+use crate::world::{Block, Direction, World};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Tool {
