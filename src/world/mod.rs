@@ -8,3 +8,13 @@ macro_rules! module {
 module!(world);
 module!(chunk);
 module!(block);
+
+#[macro_export]
+macro_rules! continue_on_none {
+	($expr:expr) => {
+		match $expr {
+			None => continue,
+			Some(a) => a,
+		}
+	};
+}

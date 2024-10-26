@@ -27,7 +27,7 @@ impl Tool {
 
 	pub fn down(&mut self, x: i32, y: i32, chunk: &mut Chunk) -> Option<()> {
 		match self {
-			Self::Place(block) => chunk.map_at(x, y, |_| *block),
+			Self::Place(block) => *chunk.mut_at(x, y) = *block,
 			_ => {}
 		}
 		Some(())
@@ -65,7 +65,7 @@ impl Tool {
 						let x = if horizontal { i } else { start.0 };
 						let y = if horizontal { start.1 } else { i };
 
-						chunk.map_at(x, y, |_| {
+						*chunk.mut_at(x, y) = {
 							if horizontal {
 								Block::Wire(
 									if !reverse {
@@ -85,7 +85,7 @@ impl Tool {
 									100,
 								)
 							}
-						})
+						};
 					}
 				};
 				*start = None;
