@@ -90,14 +90,8 @@ impl World {
 			.map(|chunk| chunk.map_at(block_x, block_y, f));
 	}
 
-	pub fn draw_at(&self, d: &mut RaylibDrawHandle, base_x: i32, base_y: i32) {
-		for (coords, chunk) in &self.chunks {
-			chunk.draw_at(
-				d,
-				base_x + coords.0 * CHUNK_SIZE as i32 * BLOCK_SIZE as i32,
-				base_y + coords.1 * CHUNK_SIZE as i32 * BLOCK_SIZE as i32,
-			);
-		}
+	pub fn chunks(&self) -> std::collections::hash_map::Iter<'_, (i32, i32), chunk::Chunk> {
+		self.chunks.iter()
 	}
 }
 

@@ -66,23 +66,4 @@ impl Chunk {
 
 		self.0[x][y] = f(self.0[x][y]);
 	}
-	pub fn draw_at(&self, d: &mut RaylibDrawHandle, x: i32, y: i32) {
-		for px in 0..CHUNK_SIZE {
-			for py in 0..CHUNK_SIZE {
-				let (base_x, base_y) = (x + px as i32 * BLOCK_SIZE, y + py as i32 * BLOCK_SIZE);
-				self.0[px][py].draw_at(d, base_x, base_y);
-
-				if consts::DEBUG_CHUNKS {
-					use raylib::prelude::RaylibDraw;
-					d.draw_text(
-						&format!("{px} {py}"),
-						base_x,
-						base_y,
-						6,
-						raylib::color::Color::WHITE,
-					);
-				}
-			}
-		}
-	}
 }

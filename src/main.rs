@@ -1,4 +1,5 @@
 mod consts;
+mod gfx;
 mod tool;
 mod world;
 
@@ -51,7 +52,7 @@ fn main() {
 		let mut d = rl.begin_drawing(&thread);
 		d.clear_background(consts::BACKGROUND);
 
-		world.draw_at(&mut d, world_offset.0, world_offset.1);
+		gfx::render_world(&world, &mut d, world_offset.0, world_offset.1);
 
 		d.draw_text(&format!("{tool:?}"), 0, 0, 20, Color::WHITE);
 		d.draw_text(&format!("{moves:?}"), 0, 20, 20, Color::WHITE);

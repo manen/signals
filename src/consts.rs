@@ -7,6 +7,7 @@ const fn color(r: u8, g: u8, b: u8, a: u8) -> Color {
 
 pub const DEBUG_WIRES: bool = false;
 pub const DEBUG_CHUNKS: bool = false;
+pub const DEBUG_NOT: bool = false;
 
 pub const TICK_TIME: f32 = 0.03;
 
