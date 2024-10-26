@@ -1,4 +1,4 @@
-use crate::world::{Block, Chunk, Direction};
+use crate::world::{Block, Chunk, Direction, World};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Tool {
@@ -25,26 +25,26 @@ impl Tool {
 		}
 	}
 
-	pub fn down(&mut self, x: i32, y: i32, chunk: &mut Chunk) -> Option<()> {
+	pub fn down(&mut self, x: i32, y: i32, world: &mut World) -> Option<()> {
 		match self {
-			Self::Place(block) => *chunk.mut_at(x, y) = *block,
+			Self::Place(block) => *world.mut_at(x, y)? = *block,
 			_ => {}
 		}
 		Some(())
 	}
-	pub fn pressed(&mut self, x: i32, y: i32, chunk: &mut Chunk) -> Option<()> {
+	pub fn pressed(&mut self, x: i32, y: i32, world: &mut World) -> Option<()> {
 		match self {
-			Self::Rotate => chunk.map_at(x, y, |i| match i {
+			Self::Rotate => world.map_at(x, y, |i| match i {
 				Block::Wire(dir, s) => Block::Wire(dir.rotate(), s),
 				_ => i,
 			}),
 			Self::PlaceWire { start } if *start == None => *start = Some((x, y)),
-			Self::Interact => chunk.mut_at(x, y)?.interact(),
+			Self::Interact => world.mut_at(x, y)?.interact(),
 			_ => {}
 		};
 		Some(())
 	}
-	pub fn released(&mut self, x: i32, y: i32, chunk: &mut Chunk) -> Option<()> {
+	pub fn released(&mut self, x: i32, y: i32, world: &mut World) -> Option<()> {
 		match self {
 			Self::PlaceWire { start } => {
 				if let Some(start) = start {
@@ -65,7 +65,7 @@ impl Tool {
 						let x = if horizontal { i } else { start.0 };
 						let y = if horizontal { start.1 } else { i };
 
-						*chunk.mut_at(x, y) = {
+						*world.mut_at(x, y)? = {
 							if horizontal {
 								Block::Wire(
 									if !reverse {
