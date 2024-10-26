@@ -18,18 +18,9 @@ impl Move {
 	}
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct World {
 	chunks: HashMap<(i32, i32), Chunk>,
-}
-impl Default for World {
-	fn default() -> Self {
-		World {
-			chunks: [((0, 0), Chunk::default()), ((1, 0), Chunk::default())]
-				.into_iter()
-				.collect(),
-		}
-	}
 }
 impl World {
 	pub fn tick(&mut self, moves: Vec<Move>) -> Vec<Move> {
@@ -70,6 +61,11 @@ impl World {
 		new_moves
 	}
 
+	fn ensure(&mut self, chunk_coords: (i32, i32)) {
+		if !self.chunks.contains_key(&chunk_coords) {
+			self.chunks.insert(chunk_coords, Chunk::default());
+		}
+	}
 	pub fn at(&self, x: i32, y: i32) -> Option<&Block> {
 		let (chunk_coords, (block_x, block_y)) = world_coords_into_chunk_coords(x, y);
 		self.chunks
@@ -79,6 +75,7 @@ impl World {
 	}
 	pub fn mut_at(&mut self, x: i32, y: i32) -> Option<&mut Block> {
 		let (chunk_coords, (block_x, block_y)) = world_coords_into_chunk_coords(x, y);
+		self.ensure(chunk_coords);
 		self.chunks
 			.get_mut(&chunk_coords)
 			.map(|chunk| chunk.mut_at(block_x, block_y))
@@ -86,6 +83,7 @@ impl World {
 	}
 	pub fn map_at(&mut self, x: i32, y: i32, f: impl FnOnce(Block) -> Block) {
 		let (chunk_coords, (block_x, block_y)) = world_coords_into_chunk_coords(x, y);
+		self.ensure(chunk_coords);
 		self.chunks
 			.get_mut(&chunk_coords)
 			.map(|chunk| chunk.map_at(block_x, block_y, f));
