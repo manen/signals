@@ -5,5 +5,6 @@ macro_rules! module {
 	};
 }
 
+module!(world);
 module!(chunk);
 module!(block);

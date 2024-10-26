@@ -24,8 +24,8 @@ fn main() {
 			};
 		}
 		if let Some(tool) = &mut tool {
-			let x = ((rl.get_mouse_x().max(0) - world_offset.0) / world::BLOCK_SIZE) as usize;
-			let y = ((rl.get_mouse_y().max(0) - world_offset.1) / world::BLOCK_SIZE) as usize;
+			let x = (rl.get_mouse_x().max(0) - world_offset.0) / world::BLOCK_SIZE;
+			let y = (rl.get_mouse_y().max(0) - world_offset.1) / world::BLOCK_SIZE;
 			if rl.is_mouse_button_down(consts::TOOL_USE) {
 				tool.down(x, y, &mut chunk);
 			}

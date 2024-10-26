@@ -2,7 +2,7 @@ use crate::world::{Block, Chunk, Direction};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Tool {
-	PlaceWire { start: Option<(usize, usize)> },
+	PlaceWire { start: Option<(i32, i32)> },
 	Place(Block),
 	Rotate,
 	Interact,
@@ -25,14 +25,14 @@ impl Tool {
 		}
 	}
 
-	pub fn down(&mut self, x: usize, y: usize, chunk: &mut Chunk) -> Option<()> {
+	pub fn down(&mut self, x: i32, y: i32, chunk: &mut Chunk) -> Option<()> {
 		match self {
 			Self::Place(block) => chunk.map_at(x, y, |_| *block),
 			_ => {}
 		}
 		Some(())
 	}
-	pub fn pressed(&mut self, x: usize, y: usize, chunk: &mut Chunk) -> Option<()> {
+	pub fn pressed(&mut self, x: i32, y: i32, chunk: &mut Chunk) -> Option<()> {
 		match self {
 			Self::Rotate => chunk.map_at(x, y, |i| match i {
 				Block::Wire(dir, s) => Block::Wire(dir.rotate(), s),
@@ -44,7 +44,7 @@ impl Tool {
 		};
 		Some(())
 	}
-	pub fn released(&mut self, x: usize, y: usize, chunk: &mut Chunk) -> Option<()> {
+	pub fn released(&mut self, x: i32, y: i32, chunk: &mut Chunk) -> Option<()> {
 		match self {
 			Self::PlaceWire { start } => {
 				if let Some(start) = start {
