@@ -1,4 +1,3 @@
-mod block;
 mod consts;
 mod tool;
 mod world;
@@ -40,8 +39,8 @@ fn main() {
 		}
 
 		delta += rl.get_frame_time();
-		if delta > 0.2 {
-			delta -= 0.2;
+		for _ in 0..(delta / 0.05) as i32 {
+			delta -= 0.05;
 			moves = chunk.tick(moves);
 		}
 

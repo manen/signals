@@ -1,6 +1,6 @@
-use raylib::drawing::RaylibDrawHandle;
+use crate::world::*;
 
-pub use crate::block::*;
+use raylib::drawing::RaylibDrawHandle;
 
 pub const CHUNK_SIZE: usize = 16;
 pub const BLOCK_SIZE: i32 = 32;
