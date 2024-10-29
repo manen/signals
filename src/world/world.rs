@@ -45,12 +45,12 @@ impl World {
 			let (x, y) = mov.to;
 			let a = crate::continue_on_none!(self.at(x, y));
 
-			*crate::continue_on_none!(self.mut_at(x, y)) =
-				if let Some(b) = a.pass(mov.signal, mov.from, gen_push_move!(x, y)) {
-					b
-				} else {
-					*a
-				};
+			*self.mut_at(x, y) = if let Some(b) = a.pass(mov.signal, mov.from, gen_push_move!(x, y))
+			{
+				b
+			} else {
+				*a
+			};
 		}
 		for ((x, y), chunk) in &mut self.chunks {
 			chunk.tick(gen_push_move!(
@@ -74,13 +74,13 @@ impl World {
 			.map(|chunk| chunk.at(block_x, block_y))
 			.flatten()
 	}
-	pub fn mut_at(&mut self, x: i32, y: i32) -> Option<&mut Block> {
+	pub fn mut_at(&mut self, x: i32, y: i32) -> &mut Block {
 		let (chunk_coords, (block_x, block_y)) = world_coords_into_chunk_coords(x, y);
 		self.ensure(chunk_coords);
 		self.chunks
 			.get_mut(&chunk_coords)
-			.map(|chunk| chunk.mut_at(block_x, block_y))
-			.flatten()
+			.unwrap_or_else(|| panic!("looks like World::ensure failed (world coords: {x} {y}, calculated chunk coords: {chunk_coords:?}, block coords: {block_x} {block_y})"))
+			.mut_at(block_x, block_y).unwrap_or_else(|| panic!("chunk doesn't have coordinates block: {block_x} {block_y} @ world: {x} {y}"))
 	}
 	pub fn map_at(&mut self, x: i32, y: i32, f: impl FnOnce(Block) -> Block) {
 		let (chunk_coords, (block_x, block_y)) = world_coords_into_chunk_coords(x, y);
@@ -96,9 +96,62 @@ impl World {
 }
 
 pub fn world_coords_into_chunk_coords(x: i32, y: i32) -> ((i32, i32), (i32, i32)) {
-	let chunk_coords = (x / CHUNK_SIZE as i32, y / CHUNK_SIZE as i32);
-	let block_coords = (x % CHUNK_SIZE as i32, y % CHUNK_SIZE as i32);
-	(chunk_coords, block_coords)
+	// this function is pure hell
+	// i spent so much fucking time figuring this out i'm sure there's a one size fits all solution
+	// for this but i didn't come up with it. here's the code(it works!) that calculates coords based on which
+	// quarter of the world you're in
+
+	if x >= 0 && y >= 0 {
+		let chunk = (x / CHUNK_SIZE as i32, y / CHUNK_SIZE as i32);
+		let block = (x % CHUNK_SIZE as i32, y % CHUNK_SIZE as i32);
+		return (chunk, block);
+	}
+	if x < 0 && y >= 0 {
+		let chunk = (x / CHUNK_SIZE as i32 - 1, y / CHUNK_SIZE as i32);
+		let block = (
+			(CHUNK_SIZE as i32 + (x % CHUNK_SIZE as i32)),
+			// .min(CHUNK_SIZE as i32 - 1)
+			// .max(0),
+			y % CHUNK_SIZE as i32,
+		);
+
+		if block.0 == CHUNK_SIZE as i32 {
+			return ((chunk.0 + 1, chunk.1), (0, block.1));
+		}
+		return (chunk, block);
+	}
+	if x >= 0 && y < 0 {
+		let chunk = (x / CHUNK_SIZE as i32, y / CHUNK_SIZE as i32 - 1);
+		let block = (
+			x % CHUNK_SIZE as i32,
+			(CHUNK_SIZE as i32 + (y % CHUNK_SIZE as i32)),
+		);
+
+		if block.1 == CHUNK_SIZE as i32 {
+			return ((chunk.0, chunk.1 + 1), (block.0, 0));
+		}
+		return (chunk, block);
+	}
+	if x < 0 && y < 0 {
+		let chunk = (x / CHUNK_SIZE as i32 - 1, y / CHUNK_SIZE as i32 - 1);
+		let block = (
+			(CHUNK_SIZE as i32 + (x % CHUNK_SIZE as i32)),
+			(CHUNK_SIZE as i32 + (y % CHUNK_SIZE as i32)),
+		);
+
+		if block.0 == CHUNK_SIZE as i32 && block.1 != CHUNK_SIZE as i32 {
+			return ((chunk.0 + 1, chunk.1), (0, block.1));
+		}
+		if block.1 == CHUNK_SIZE as i32 && block.0 != CHUNK_SIZE as i32 {
+			return ((chunk.0, chunk.1 + 1), (block.0, 0));
+		}
+		if block.0 == CHUNK_SIZE as i32 && block.1 == CHUNK_SIZE as i32 {
+			return ((chunk.0 + 1, chunk.1 + 1), (0, 0));
+		}
+		return (chunk, block);
+	}
+
+	todo!()
 }
 // pub fn chunk_coords_into_world_coords(
 // 	(chunk_x, chunk_y): (i32, i32),
@@ -106,3 +159,12 @@ pub fn world_coords_into_chunk_coords(x: i32, y: i32) -> ((i32, i32), (i32, i32)
 // ) -> (i32, i32) {
 // 	(chunk_x + block_x, chunk_y + block_y)
 // }
+
+fn ensure_block_coords(a: i32) -> i32 {
+	if a < 0 {
+		let b = CHUNK_SIZE as i32 + a;
+		return b;
+	} else {
+		a
+	}
+}

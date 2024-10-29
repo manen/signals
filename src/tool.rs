@@ -25,31 +25,29 @@ impl Tool {
 		}
 	}
 
-	pub fn down(&mut self, x: i32, y: i32, world: &mut World) -> Option<()> {
+	pub fn down(&mut self, x: i32, y: i32, world: &mut World) {
 		match self {
-			Self::Place(block) => *world.mut_at(x, y)? = *block,
+			Self::Place(block) => *world.mut_at(x, y) = *block,
 			_ => {}
 		}
-		Some(())
 	}
-	pub fn pressed(&mut self, x: i32, y: i32, world: &mut World) -> Option<()> {
+	pub fn pressed(&mut self, x: i32, y: i32, world: &mut World) {
 		match self {
 			Self::Rotate => world.map_at(x, y, |i| match i {
 				Block::Wire(dir, s) => Block::Wire(dir.rotate(), s),
 				_ => i,
 			}),
 			Self::PlaceWire { start } if *start == None => *start = Some((x, y)),
-			Self::Interact => world.mut_at(x, y)?.interact(),
+			Self::Interact => world.mut_at(x, y).interact(),
 			_ => {}
 		};
-		Some(())
 	}
-	pub fn released(&mut self, x: i32, y: i32, world: &mut World) -> Option<()> {
+	pub fn released(&mut self, x: i32, y: i32, world: &mut World) {
 		match self {
 			Self::PlaceWire { start } => {
 				if let Some(start) = start {
-					let x_diff = x as isize - start.0 as isize;
-					let y_diff = y as isize - start.1 as isize;
+					let x_diff = x - start.0;
+					let y_diff = y - start.1;
 
 					let (horizontal, oldfrom, oldto) = if x_diff.abs() >= y_diff.abs() {
 						(true, start.0, x)
@@ -65,7 +63,7 @@ impl Tool {
 						let x = if horizontal { i } else { start.0 };
 						let y = if horizontal { start.1 } else { i };
 
-						*world.mut_at(x, y)? = {
+						*world.mut_at(x, y) = {
 							if horizontal {
 								Block::Wire(
 									if !reverse {
@@ -92,6 +90,5 @@ impl Tool {
 			}
 			_ => {}
 		}
-		Some(())
 	}
 }

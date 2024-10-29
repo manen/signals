@@ -21,4 +21,10 @@ pub const NOT_ON: Color = color(82, 81, 80, 255);
 pub const NOT_OFF: Color = color(255, 255, 255, 255);
 
 pub const TOOL_SWITCH: KeyboardKey = KeyboardKey::KEY_T;
+pub const MOVE_UP: KeyboardKey = KeyboardKey::KEY_W;
+pub const MOVE_DOWN: KeyboardKey = KeyboardKey::KEY_S;
+pub const MOVE_LEFT: KeyboardKey = KeyboardKey::KEY_A;
+pub const MOVE_RIGHT: KeyboardKey = KeyboardKey::KEY_D;
 pub const TOOL_USE: MouseButton = MouseButton::MOUSE_BUTTON_LEFT;
+
+pub const MOVE_AMOUNT: f32 = 5000.0;
