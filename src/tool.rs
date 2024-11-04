@@ -34,7 +34,7 @@ impl Tool {
 	pub fn pressed(&mut self, x: i32, y: i32, world: &mut World) {
 		match self {
 			Self::Rotate => world.map_at(x, y, |i| match i {
-				Block::Wire(dir, s) => Block::Wire(dir.rotate(), s),
+				Block::Wire(dir) => Block::Wire(dir.rotate()),
 				_ => i,
 			}),
 			Self::PlaceWire { start } if *start == None => *start = Some((x, y)),
@@ -65,23 +65,17 @@ impl Tool {
 
 						*world.mut_at(x, y) = {
 							if horizontal {
-								Block::Wire(
-									if !reverse {
-										Direction::Right
-									} else {
-										Direction::Left
-									},
-									100,
-								)
+								Block::Wire(if !reverse {
+									Direction::Right
+								} else {
+									Direction::Left
+								})
 							} else {
-								Block::Wire(
-									if !reverse {
-										Direction::Bottom
-									} else {
-										Direction::Top
-									},
-									100,
-								)
+								Block::Wire(if !reverse {
+									Direction::Bottom
+								} else {
+									Direction::Top
+								})
 							}
 						};
 					}

@@ -6,8 +6,44 @@ pub const CHUNK_SIZE: usize = 16;
 pub const BLOCK_SIZE: i32 = 32;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
-pub struct Chunk([[Block; CHUNK_SIZE]; CHUNK_SIZE]);
-impl Chunk {
+pub struct Chunk<T = Block>([[T; CHUNK_SIZE]; CHUNK_SIZE]);
+impl<T> Chunk<T> {
+	pub const fn new(array: [[T; CHUNK_SIZE]; CHUNK_SIZE]) -> Self {
+		Self(array)
+	}
+
+	pub fn at(&self, x: i32, y: i32) -> Option<&T> {
+		if x > 15 || y > 15 || x < 0 || y < 0 {
+			return None;
+		}
+		Some(&self.0[x as usize][y as usize])
+	}
+	pub fn mut_at(&mut self, x: i32, y: i32) -> Option<&mut T> {
+		if x > 15 || y > 15 || x < 0 || y < 0 {
+			return None;
+		}
+		Some(&mut self.0[x as usize][y as usize])
+	}
+	pub fn map_at_b(&mut self, x: i32, y: i32, f: impl FnOnce(&T) -> T) {
+		if x > 15 || y > 15 || x < 0 || y < 0 {
+			return;
+		}
+		let (x, y) = (x as usize, y as usize);
+
+		self.0[x][y] = f(&self.0[x][y]);
+	}
+}
+impl<T: Copy> Chunk<T> {
+	pub fn map_at(&mut self, x: i32, y: i32, f: impl FnOnce(T) -> T) {
+		if x > 15 || y > 15 || x < 0 || y < 0 {
+			return;
+		}
+		let (x, y) = (x as usize, y as usize);
+
+		self.0[x][y] = f(self.0[x][y])
+	}
+}
+impl Chunk<Block> {
 	#[allow(dead_code)]
 	pub fn checkerboard() -> Self {
 		let mut chunk = Self::default();
@@ -18,7 +54,7 @@ impl Chunk {
 			for py in 0..CHUNK_SIZE {
 				dir = dir.rotate();
 				s = !s;
-				chunk.0[px][py] = Block::Wire(dir, s as u8);
+				chunk.0[px][py] = Block::Wire(dir);
 			}
 			dir = dir.rotate();
 			s = !s;
@@ -44,26 +80,5 @@ impl Chunk {
 				}
 			}
 		}
-	}
-
-	pub fn at(&self, x: i32, y: i32) -> Option<&Block> {
-		if x > 15 || y > 15 || x < 0 || y < 0 {
-			return None;
-		}
-		Some(&self.0[x as usize][y as usize])
-	}
-	pub fn mut_at(&mut self, x: i32, y: i32) -> Option<&mut Block> {
-		if x > 15 || y > 15 || x < 0 || y < 0 {
-			return None;
-		}
-		Some(&mut self.0[x as usize][y as usize])
-	}
-	pub fn map_at(&mut self, x: i32, y: i32, f: impl FnOnce(Block) -> Block) {
-		if x > 15 || y > 15 || x < 0 || y < 0 {
-			return;
-		}
-		let (x, y) = (x as usize, y as usize);
-
-		self.0[x][y] = f(self.0[x][y]);
 	}
 }

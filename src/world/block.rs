@@ -7,7 +7,7 @@ use raylib::{drawing::RaylibDrawHandle, prelude::RaylibDraw};
 pub enum Block {
 	#[default]
 	Nothing,
-	Wire(Direction, u8),
+	Wire(Direction),
 	Switch(bool),
 	// true if powered
 	Not(bool),
@@ -21,12 +21,12 @@ impl Block {
 		mut push_move: impl FnMut(i32, i32, Signal),
 	) -> Option<Self> {
 		match self {
-			Self::Wire(dir, _) => {
+			Self::Wire(dir) => {
 				if from.map(|from| from == *dir).unwrap_or(false) {
 				} else {
 					let (rx, ry) = dir.rel();
 					push_move(rx, ry, signal);
-					return Some(Self::Wire(*dir, 0));
+					return Some(Self::Wire(*dir));
 				}
 			}
 			Self::Not(_) => return Some(Self::Not(true)),
@@ -45,9 +45,6 @@ impl Block {
 		};
 		match self {
 			Self::Switch(true) => all_directions(),
-			Self::Wire(dir, ticks) => {
-				Some(Self::Wire(*dir, if *ticks > 200 { 100 } else { ticks + 1 }))
-			}
 			Self::Not(true) => Some(Self::Not(false)),
 			Self::Not(false) => all_directions(),
 			_ => None,

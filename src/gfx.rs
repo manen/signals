@@ -5,6 +5,18 @@ use crate::{
 	world::{self},
 };
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
+/// this is the enum that is used to determine what type of a block should be rendered at a position
+pub enum DrawType {
+	#[default]
+	Off,
+	On,
+}
+pub type Drawmap = world::Chunk<DrawType>;
+
+pub const DRAWMAP_DEFAULT: Drawmap =
+	Drawmap::new([[DrawType::Off; world::CHUNK_SIZE]; world::CHUNK_SIZE]);
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct PosInfo {
 	pub base: (i32, i32),
@@ -37,6 +49,7 @@ pub fn render_world(world: &world::World, d: &mut RaylibDrawHandle, pos_info: Po
 	for (coords, chunk) in world.chunks() {
 		render_chunk(
 			&chunk,
+			world.drawmap_at(*coords),
 			d,
 			pos_info.transform(
 				coords.0 * world::CHUNK_SIZE as i32 * world::BLOCK_SIZE as i32,
@@ -46,12 +59,26 @@ pub fn render_world(world: &world::World, d: &mut RaylibDrawHandle, pos_info: Po
 	}
 }
 
-pub fn render_chunk(chunk: &world::Chunk, d: &mut RaylibDrawHandle, pos_info: PosInfo) {
+pub fn render_chunk(
+	chunk: &world::Chunk,
+	drawmap: &Drawmap,
+	d: &mut RaylibDrawHandle,
+	pos_info: PosInfo,
+) {
 	for px in 0..world::CHUNK_SIZE as i32 {
 		for py in 0..world::CHUNK_SIZE as i32 {
 			let pos_info = pos_info.transform(px * world::BLOCK_SIZE, py * world::BLOCK_SIZE);
 			let (base_x, base_y) = pos_info.base;
-			chunk.at(px, py).map(|b| render_block(b, d, pos_info));
+			chunk.at(px, py).map(|b| {
+				render_block(
+					b,
+					&drawmap
+						.at(px, py)
+						.expect("drawmap chunks are smaller than regular chunks(how)"),
+					d,
+					pos_info,
+				)
+			});
 
 			if consts::DEBUG_CHUNKS {
 				use raylib::prelude::RaylibDraw;
@@ -67,10 +94,15 @@ pub fn render_chunk(chunk: &world::Chunk, d: &mut RaylibDrawHandle, pos_info: Po
 	}
 }
 
-pub fn render_block(block: &world::Block, d: &mut RaylibDrawHandle, pos_info: PosInfo) {
+pub fn render_block(
+	block: &world::Block,
+	dt: &DrawType,
+	d: &mut RaylibDrawHandle,
+	pos_info: PosInfo,
+) {
 	match block {
 		world::Block::Nothing => {}
-		world::Block::Wire(dir, ticks) => {
+		world::Block::Wire(dir) => {
 			let horizontal = match dir {
 				world::Direction::Bottom | world::Direction::Top => false,
 				_ => true,
@@ -79,7 +111,7 @@ pub fn render_block(block: &world::Block, d: &mut RaylibDrawHandle, pos_info: Po
 			let x_off = if !horizontal { off } else { 0 };
 			let y_off = if horizontal { off } else { 0 };
 
-			let color = if *ticks < 3 {
+			let color = if let DrawType::On = dt {
 				consts::WIRE_ON
 			} else {
 				consts::WIRE_OFF
@@ -102,7 +134,7 @@ pub fn render_block(block: &world::Block, d: &mut RaylibDrawHandle, pos_info: Po
 					world::Direction::Left => "l",
 					world::Direction::Top => "t",
 				};
-				let c = format!("{c_dir} {ticks}");
+				let c = format!("{c_dir}");
 				d.draw_text(
 					&c,
 					pos_info.base.0,
@@ -134,7 +166,7 @@ pub fn render_block(block: &world::Block, d: &mut RaylibDrawHandle, pos_info: Po
 				consts::NOT_BASE,
 			);
 
-			let excl_color = if *state {
+			let excl_color = if let DrawType::On = dt {
 				consts::NOT_ON
 			} else {
 				consts::NOT_OFF

@@ -1,8 +1,8 @@
 use raylib::prelude::RaylibDrawHandle;
 
-use crate::world::*;
+use crate::{gfx, world::*};
 
-use std::collections::HashMap;
+use std::{borrow::Cow, collections::HashMap};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Signal;
@@ -21,6 +21,7 @@ impl Move {
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct World {
 	chunks: HashMap<(i32, i32), Chunk>,
+	drawmaps: HashMap<(i32, i32), Chunk<gfx::DrawType>>,
 }
 impl World {
 	pub fn tick(&mut self, moves: Vec<Move>) -> Vec<Move> {
@@ -41,15 +42,29 @@ impl World {
 			};
 		}
 
+		self.drawmap_reset();
 		for mov in moves {
 			let (x, y) = mov.to;
-			let a = crate::continue_on_none!(self.at(x, y));
+			let a = *crate::continue_on_none!(self.at(x, y));
+
+			// if a is a wire receiving a signal from the direction it's passing signals
+			if if let Block::Wire(dir) = a {
+				if mov.from.map(|from| from == dir).unwrap_or(false) {
+					false
+				} else {
+					true
+				}
+			} else {
+				true
+			} {
+				self.drawtype_set_at(mov.to.0, mov.to.1, gfx::DrawType::On);
+			}
 
 			*self.mut_at(x, y) = if let Some(b) = a.pass(mov.signal, mov.from, gen_push_move!(x, y))
 			{
 				b
 			} else {
-				*a
+				a
 			};
 		}
 		for ((x, y), chunk) in &mut self.chunks {
@@ -89,9 +104,40 @@ impl World {
 			.get_mut(&chunk_coords)
 			.map(|chunk| chunk.map_at(block_x, block_y, f));
 	}
-
 	pub fn chunks(&self) -> std::collections::hash_map::Iter<'_, (i32, i32), chunk::Chunk> {
 		self.chunks.iter()
+	}
+
+	fn drawmap_reset(&mut self) {
+		for (_, drawmap) in &mut self.drawmaps {
+			*drawmap = gfx::DRAWMAP_DEFAULT
+		}
+	}
+	pub fn drawtype_at(&self, x: i32, y: i32) -> Option<&gfx::DrawType> {
+		let (chunk_coords, (block_x, block_y)) = world_coords_into_chunk_coords(x, y);
+		self.drawmaps
+			.get(&chunk_coords)
+			.map(|chunk| chunk.at(block_x, block_y))
+			.flatten()
+	}
+	pub fn drawtype_set_at(&mut self, x: i32, y: i32, dt: gfx::DrawType) {
+		let (chunk_coords, (block_x, block_y)) = world_coords_into_chunk_coords(x, y);
+		if let Some(drawmap) = self.drawmaps.get_mut(&chunk_coords) {
+			drawmap.map_at(block_x, block_y, |_| dt);
+		} else {
+			let mut def = gfx::DRAWMAP_DEFAULT;
+			*(def
+				.mut_at(block_x, block_y)
+				.expect("world_coords_into_chunk_coords broke")) = dt;
+			self.drawmaps.insert(chunk_coords, def);
+		}
+	}
+	pub fn drawmap_at(&self, chunk_coords: (i32, i32)) -> &gfx::Drawmap {
+		if let Some(original) = self.drawmaps.get(&chunk_coords) {
+			original
+		} else {
+			&gfx::DRAWMAP_DEFAULT
+		}
 	}
 }
 
