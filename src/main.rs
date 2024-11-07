@@ -101,6 +101,13 @@ fn main() {
 
 		gfx::render_world(&world, &mut d, pos_info);
 
+		let screen = gfx::ui::Details::screen(d.get_render_width(), unsafe {
+			raylib::ffi::GetRenderHeight()
+		});
+		for det in screen.split_h(3) {
+			d.draw_rectangle_lines(det.x, det.y, det.aw, det.ah, Color::WHITE);
+		}
+
 		d.draw_text(&format!("{tool:?}"), 0, 0, 20, Color::WHITE);
 		d.draw_text(
 			&format!(

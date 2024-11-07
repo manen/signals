@@ -1,3 +1,5 @@
+pub mod ui;
+
 use raylib::prelude::{RaylibDraw, RaylibDrawHandle};
 
 use crate::{
