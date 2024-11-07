@@ -1,29 +1,36 @@
 use crate::world::{Block, Direction, World};
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub const TOOLS: &[(&str, Tool)] = &[
+	("place wire", Tool::PlaceWire { start: None }),
+	("place switch", Tool::Place(Block::Switch(false))),
+	("place not", Tool::Place(Block::Not(false))),
+	("remove", Tool::Place(Block::Nothing)),
+	("rotate", Tool::Rotate),
+	("interact", Tool::Interact),
+];
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 pub enum Tool {
-	PlaceWire { start: Option<(i32, i32)> },
+	PlaceWire {
+		start: Option<(i32, i32)>,
+	},
 	Place(Block),
 	Rotate,
+	#[default]
 	Interact,
 }
-impl Default for Tool {
-	fn default() -> Self {
-		Self::PlaceWire { start: None }
-	}
-}
 impl Tool {
-	pub fn rotate(self) -> Self {
-		match self {
-			Self::PlaceWire { .. } => Self::Place(Block::Nothing),
-			Self::Place(Block::Nothing) => Self::Place(Block::Switch(false)),
-			Self::Place(Block::Switch(_)) => Self::Place(Block::Not(false)),
-			Self::Place(Block::Not(_)) => Self::Rotate,
-			Self::Rotate => Self::Interact,
-			Self::Interact => Self::PlaceWire { start: None },
-			_ => Self::PlaceWire { start: None },
-		}
-	}
+	// pub fn rotate(self) -> Self {
+	// 	match self {
+	// 		Self::PlaceWire { .. } => Self::Place(Block::Nothing),
+	// 		Self::Place(Block::Nothing) => Self::Place(Block::Switch(false)),
+	// 		Self::Place(Block::Switch(_)) => Self::Place(Block::Not(false)),
+	// 		Self::Place(Block::Not(_)) => Self::Rotate,
+	// 		Self::Rotate => Self::Interact,
+	// 		Self::Interact => Self::PlaceWire { start: None },
+	// 		_ => Self::PlaceWire { start: None },
+	// 	}
+	// }
 
 	pub fn down(&mut self, x: i32, y: i32, world: &mut World) {
 		match self {

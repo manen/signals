@@ -15,7 +15,9 @@ fn main() {
 	rl.set_window_position((1920.0 * 1.3) as i32, (1920.0 * 0.6) as i32);
 
 	let mut world = world::World::default();
-	let mut tool: Option<tool::Tool> = None;
+
+	let mut tool: tool::Tool = Default::default();
+	let tool_select = gfx::ui::SelectBar::new(tool::TOOLS);
 
 	// world.mut_at(-2, 2);
 
@@ -25,18 +27,13 @@ fn main() {
 	let mut g_pos = PosInfo::default();
 
 	while !rl.window_should_close() {
-		let screen_middle = (
-			rl.get_render_width() / 2,
-			unsafe { raylib::ffi::GetRenderHeight() } / 2,
-		);
-		let pos_info = g_pos.add(screen_middle.0, screen_middle.1);
+		let screen = gfx::ui::Details::screen(rl.get_render_width(), unsafe {
+			raylib::ffi::GetRenderHeight()
+		});
+		let tool_select_det = screen.from_top(30);
 
-		if rl.is_key_pressed(consts::TOOL_SWITCH) {
-			tool = match tool {
-				Some(tool) => Some(tool.rotate()),
-				_ => Some(tool::Tool::default()),
-			};
-		}
+		let screen_middle = (screen.aw / 2, screen.ah / 2);
+		let pos_info = g_pos.add(screen_middle.0, screen_middle.1);
 
 		let round = |a: f32| {
 			if a < 0.0 {
@@ -46,31 +43,28 @@ fn main() {
 			}
 		};
 
-		let point_x = round(
-			(rl.get_mouse_x() as f32 - pos_info.base.0 as f32)
-				/ world::BLOCK_SIZE as f32
-				/ pos_info.scale,
-		);
-		let point_y = round(
-			(rl.get_mouse_y() as f32 - pos_info.base.1 as f32)
-				/ world::BLOCK_SIZE as f32
-				/ pos_info.scale,
-		);
+		{
+			if !tool_select.tick(&mut rl, tool_select_det, &mut tool) {
+				let point_x = round(
+					(rl.get_mouse_x() as f32 - pos_info.base.0 as f32)
+						/ world::BLOCK_SIZE as f32
+						/ pos_info.scale,
+				);
+				let point_y = round(
+					(rl.get_mouse_y() as f32 - pos_info.base.1 as f32)
+						/ world::BLOCK_SIZE as f32
+						/ pos_info.scale,
+				);
 
-		// let point_x = if point_x < 0 { point_x } else { point_x };
-		// let point_y = if point_y < 0 { point_y } else { point_y };
-
-		// whole lotta bugs in negativeland
-
-		if let Some(tool) = &mut tool {
-			if rl.is_mouse_button_down(consts::TOOL_USE) {
-				tool.down(point_x, point_y, &mut world);
-			}
-			if rl.is_mouse_button_pressed(consts::TOOL_USE) {
-				tool.pressed(point_x, point_y, &mut world);
-			}
-			if rl.is_mouse_button_released(consts::TOOL_USE) {
-				tool.released(point_x, point_y, &mut world);
+				if rl.is_mouse_button_down(consts::TOOL_USE) {
+					tool.down(point_x, point_y, &mut world);
+				}
+				if rl.is_mouse_button_pressed(consts::TOOL_USE) {
+					tool.pressed(point_x, point_y, &mut world);
+				}
+				if rl.is_mouse_button_released(consts::TOOL_USE) {
+					tool.released(point_x, point_y, &mut world);
+				}
 			}
 		}
 
@@ -101,25 +95,6 @@ fn main() {
 
 		gfx::render_world(&world, &mut d, pos_info);
 
-		let screen = gfx::ui::Details::screen(d.get_render_width(), unsafe {
-			raylib::ffi::GetRenderHeight()
-		});
-		for det in screen.split_h(3) {
-			d.draw_rectangle_lines(det.x, det.y, det.aw, det.ah, Color::WHITE);
-		}
-
-		d.draw_text(&format!("{tool:?}"), 0, 0, 20, Color::WHITE);
-		d.draw_text(
-			&format!(
-				"{point_x} {point_y} @ [{}, {}]",
-				// world::world_coords_into_chunk_coords(point_x, point_y),
-				d.get_mouse_x(),
-				d.get_mouse_y()
-			),
-			0,
-			20,
-			20,
-			Color::WHITE,
-		);
+		tool_select.render(&mut d, tool_select_det, Some(&tool));
 	}
 }

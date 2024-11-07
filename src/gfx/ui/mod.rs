@@ -1,3 +1,6 @@
+mod select_bar;
+pub use select_bar::SelectBar;
+
 #[derive(Copy, Clone, Debug)]
 pub struct Details {
 	pub x: i32,
@@ -13,6 +16,39 @@ impl Details {
 	}
 	pub fn screen(w: i32, h: i32) -> Self {
 		Self::new(0, 0, w, h)
+	}
+
+	pub fn from_top(&self, h: i32) -> Self {
+		Self {
+			x: self.x,
+			y: self.y,
+			aw: self.aw,
+			ah: h,
+		}
+	}
+	pub fn from_bottom(&self, h: i32) -> Self {
+		Self {
+			x: self.x,
+			y: self.y + self.ah - h,
+			aw: self.aw,
+			ah: h,
+		}
+	}
+	pub fn from_left(&self, w: i32) -> Self {
+		Self {
+			x: self.x,
+			y: self.y,
+			aw: w,
+			ah: self.ah,
+		}
+	}
+	pub fn from_right(&self, w: i32) -> Self {
+		Self {
+			x: self.x + self.aw - w,
+			y: self.y,
+			aw: w,
+			ah: self.ah,
+		}
 	}
 
 	pub fn split_v(&self, pieces: i32) -> impl Iterator<Item = Self> {

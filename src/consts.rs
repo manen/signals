@@ -9,6 +9,9 @@ pub const DEBUG_WIRES: bool = false;
 pub const DEBUG_CHUNKS: bool = false;
 pub const DEBUG_NOT: bool = false;
 
+pub const SELECT_BAR_SELECTED: Color = color(240, 240, 240, 255);
+pub const SELECT_BAR_UNSELECTED: Color = color(160, 160, 160, 255);
+
 pub const TICK_TIME: f32 = 0.03;
 
 pub const BACKGROUND: Color = Color::BLACK;
