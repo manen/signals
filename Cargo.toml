@@ -1,7 +1,3 @@
-[package]
-name = "signals"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-raylib = "5.0.2"
+[workspace]
+resolver = "2"
+members = ["./signals"]
