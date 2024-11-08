@@ -1,8 +1,6 @@
-use raylib::prelude::RaylibDrawHandle;
-
 use crate::{gfx, world::*};
 
-use std::{borrow::Cow, collections::HashMap};
+use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Signal;
@@ -113,13 +111,6 @@ impl World {
 			*drawmap = gfx::DRAWMAP_DEFAULT
 		}
 	}
-	pub fn drawtype_at(&self, x: i32, y: i32) -> Option<&gfx::DrawType> {
-		let (chunk_coords, (block_x, block_y)) = world_coords_into_chunk_coords(x, y);
-		self.drawmaps
-			.get(&chunk_coords)
-			.map(|chunk| chunk.at(block_x, block_y))
-			.flatten()
-	}
 	pub fn drawtype_set_at(&mut self, x: i32, y: i32, dt: gfx::DrawType) {
 		let (chunk_coords, (block_x, block_y)) = world_coords_into_chunk_coords(x, y);
 		if let Some(drawmap) = self.drawmaps.get_mut(&chunk_coords) {
@@ -198,19 +189,4 @@ pub fn world_coords_into_chunk_coords(x: i32, y: i32) -> ((i32, i32), (i32, i32)
 	}
 
 	todo!()
-}
-// pub fn chunk_coords_into_world_coords(
-// 	(chunk_x, chunk_y): (i32, i32),
-// 	(block_x, block_y): (i32, i32),
-// ) -> (i32, i32) {
-// 	(chunk_x + block_x, chunk_y + block_y)
-// }
-
-fn ensure_block_coords(a: i32) -> i32 {
-	if a < 0 {
-		let b = CHUNK_SIZE as i32 + a;
-		return b;
-	} else {
-		a
-	}
 }

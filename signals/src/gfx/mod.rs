@@ -156,7 +156,7 @@ pub fn render_block(
 				},
 			);
 		}
-		world::Block::Not(state) => {
+		world::Block::Not(_) => {
 			d.draw_rectangle(
 				pos_info.base.0,
 				pos_info.base.1,

@@ -3,7 +3,7 @@ mod tool;
 mod world;
 
 use gfx::PosInfo;
-use raylib::{color::Color, prelude::RaylibDraw};
+use raylib::prelude::RaylibDraw;
 
 fn main() {
 	let (mut rl, thread) = raylib::init()

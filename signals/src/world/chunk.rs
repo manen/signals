@@ -1,7 +1,5 @@
 use crate::world::*;
 
-use raylib::drawing::RaylibDrawHandle;
-
 pub const CHUNK_SIZE: usize = 16;
 pub const BLOCK_SIZE: i32 = 32;
 
@@ -24,6 +22,7 @@ impl<T> Chunk<T> {
 		}
 		Some(&mut self.0[x as usize][y as usize])
 	}
+	#[allow(dead_code)] // for consistency
 	pub fn map_at_b(&mut self, x: i32, y: i32, f: impl FnOnce(&T) -> T) {
 		if x > 15 || y > 15 || x < 0 || y < 0 {
 			return;
