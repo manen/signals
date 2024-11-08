@@ -461,6 +461,7 @@ version = "0.1.0"
 dependencies = [
  "consts",
  "raylib",
+ "sui",
 ]
 
 [[package]]
@@ -493,6 +494,14 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "sui"
+version = "0.1.0"
+dependencies = [
+ "consts",
+ "raylib",
 ]
 
 [[package]]

@@ -16,7 +16,7 @@ fn main() {
 	let mut world = world::World::default();
 
 	let mut tool: tool::Tool = Default::default();
-	let tool_select = gfx::ui::SelectBar::new(tool::TOOLS);
+	let tool_select = sui::SelectBar::new(tool::TOOLS);
 
 	// world.mut_at(-2, 2);
 
@@ -26,7 +26,7 @@ fn main() {
 	let mut g_pos = PosInfo::default();
 
 	while !rl.window_should_close() {
-		let screen = gfx::ui::Details::screen(rl.get_render_width(), unsafe {
+		let screen = sui::Details::window(rl.get_render_width(), unsafe {
 			raylib::ffi::GetRenderHeight()
 		});
 		let tool_select_det = screen.from_top(30);
