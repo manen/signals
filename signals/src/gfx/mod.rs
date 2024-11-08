@@ -2,10 +2,7 @@ pub mod ui;
 
 use raylib::prelude::{RaylibDraw, RaylibDrawHandle};
 
-use crate::{
-	consts,
-	world::{self},
-};
+use crate::world::{self};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 /// this is the enum that is used to determine what type of a block should be rendered at a position

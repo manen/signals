@@ -1,6 +1,5 @@
 use crate::world::*;
 
-use crate::consts;
 use raylib::{drawing::RaylibDrawHandle, prelude::RaylibDraw};
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]

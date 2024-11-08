@@ -1,4 +1,3 @@
-mod consts;
 mod gfx;
 mod tool;
 mod world;

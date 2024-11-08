@@ -3,7 +3,7 @@ use raylib::{
 	RaylibHandle,
 };
 
-use crate::{consts, gfx::ui};
+use crate::gfx::ui;
 
 pub struct SelectBar<'a, T: Clone + PartialEq> {
 	list: &'a [(&'a str, T)],

@@ -1,4 +1,4 @@
-use crate::{consts, world::*};
+use crate::world::*;
 
 use raylib::drawing::RaylibDrawHandle;
 
