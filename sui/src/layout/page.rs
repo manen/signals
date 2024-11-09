@@ -9,14 +9,22 @@ use raylib::prelude::RaylibDrawHandle;
 #[derive(Clone, Debug, Default)]
 pub struct Page<'a> {
 	elements: Vec<Comp<'a>>,
+	horizontal: bool,
 }
 impl<'a> Page<'a> {
 	pub fn empty() -> Self {
 		Self::default()
 	}
-	pub fn new<I: Into<Vec<Comp<'a>>>>(elements: I) -> Self {
+	pub fn horizontal() -> Self {
+		Self {
+			horizontal: true,
+			..Default::default()
+		}
+	}
+	pub fn new<I: Into<Vec<Comp<'a>>>>(elements: I, horizontal: bool) -> Self {
 		Self {
 			elements: elements.into(),
+			horizontal,
 		}
 	}
 
@@ -24,7 +32,7 @@ impl<'a> Page<'a> {
 		self.elements.push(c.into().into_comp());
 	}
 
-	pub fn render(&self, d: &mut RaylibDrawHandle, x: i32, mut y: i32, scale: i32) {
+	pub fn render(&self, d: &mut RaylibDrawHandle, mut x: i32, mut y: i32, scale: i32) {
 		for e in self.elements.iter() {
 			let (rw, rh) = e.d().size();
 			e.d().render(
@@ -37,7 +45,11 @@ impl<'a> Page<'a> {
 				},
 				scale,
 			);
-			y += rh;
+			if !self.horizontal {
+				y += rh;
+			} else {
+				x += rw;
+			}
 		}
 	}
 }
@@ -45,7 +57,11 @@ impl<'a> Layable for Page<'a> {
 	fn size(&self) -> (i32, i32) {
 		self.elements.iter().fold((0, 0), |a, layable| {
 			let size = layable.d().size();
-			(a.0 + size.0, a.1.max(size.1))
+			if !self.horizontal {
+				(a.0 + size.0, a.1.max(size.1))
+			} else {
+				(a.0.max(size.0), a.1 + size.1)
+			}
 		})
 	}
 	/// this implementation doesn't care about available width and height
