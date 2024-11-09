@@ -25,6 +25,13 @@ fn main() {
 
 	let mut g_pos = PosInfo::default();
 
+	let text_1: sui::Text = ("szia", 14).into();
+	let text_2: sui::Text = ("SZIA", 24).into();
+	let text_3: sui::Text = ("szia", 14).into();
+
+	let page_elements: [&dyn sui::Layable; 3] = [&text_1, &text_2, &text_3];
+	let page = sui::Page::new(&page_elements);
+
 	while !rl.window_should_close() {
 		let screen = sui::Details::window(rl.get_render_width(), unsafe {
 			raylib::ffi::GetRenderHeight()
@@ -95,5 +102,6 @@ fn main() {
 		gfx::render_world(&world, &mut d, pos_info);
 
 		tool_select.render(&mut d, tool_select_det, Some(&tool));
+		page.render(&mut d, 100, 200, 1);
 	}
 }

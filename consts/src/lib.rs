@@ -1,7 +1,7 @@
 use raylib::color::Color;
 use raylib::ffi::{KeyboardKey, MouseButton};
 
-const fn color(r: u8, g: u8, b: u8, a: u8) -> Color {
+pub const fn color(r: u8, g: u8, b: u8, a: u8) -> Color {
 	Color { r, g, b, a }
 }
 
