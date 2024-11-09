@@ -25,12 +25,10 @@ fn main() {
 
 	let mut g_pos = PosInfo::default();
 
-	let text_1: sui::Text = ("szia", 14).into();
-	let text_2: sui::Text = ("SZIA", 24).into();
-	let text_3: sui::Text = ("szia", 14).into();
-
-	let page_elements: [&dyn sui::Layable; 3] = [&text_1, &text_2, &text_3];
-	let page = sui::Page::new(&page_elements);
+	let mut page = sui::layout::Page::empty();
+	page.push::<sui::Text>(("szia", 14));
+	page.push::<sui::Text>(("SZIA", 34));
+	page.push::<sui::Text>(("SZIA", 12));
 
 	while !rl.window_should_close() {
 		let screen = sui::Details::window(rl.get_render_width(), unsafe {

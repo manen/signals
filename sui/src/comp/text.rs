@@ -14,8 +14,10 @@ pub const DEFAULT_COLOR: Color = Color::WHITE;
 
 /// Font is currently a placeholder for if fonts were ever to be implemented,
 /// currently font has one variant and it'll render using the default font
+#[derive(Debug, Clone)]
 pub struct Font;
 
+#[derive(Debug, Clone)]
 pub struct Text<'a>(Cow<'a, str>, i32, Font, Color);
 
 impl<'a> Text<'a> {
