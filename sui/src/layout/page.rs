@@ -1,14 +1,9 @@
+use super::Layable;
 use crate::{
 	comp::{Comp, Compatible},
 	Details,
 };
 use raylib::prelude::RaylibDrawHandle;
-
-pub trait Layable {
-	fn size(&self) -> (i32, i32);
-
-	fn render(&self, d: &mut RaylibDrawHandle, det: Details, scale: i32);
-}
 
 /// simple page layout, one element after another
 #[derive(Clone, Debug, Default)]
@@ -58,6 +53,3 @@ impl<'a> Layable for Page<'a> {
 		Page::render(&self, d, det.x, det.y, scale);
 	}
 }
-
-// make a text component that returns a correct size
-// from there make a button or something
