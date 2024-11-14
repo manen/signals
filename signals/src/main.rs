@@ -91,7 +91,17 @@ fn main() {
 		delta += rl.get_frame_time();
 		for _ in 0..(delta / consts::TICK_TIME) as i32 {
 			delta -= consts::TICK_TIME;
-			moves = world.tick(moves);
+			moves = world
+				.tick(moves)
+				.into_iter()
+				.map(|mov| match mov {
+					world::Move::Output { id, signal } => {
+						// so sometimes it works sometimes it gets stuck in an infinite loop yk whatever it feels like
+						world::Move::Input { id, signal }
+					}
+					mov => mov,
+				})
+				.collect();
 		}
 
 		let mut d = rl.begin_drawing(&thread);

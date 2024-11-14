@@ -4,6 +4,8 @@ pub const TOOLS: &[(&str, Tool)] = &[
 	("place wire", Tool::PlaceWire { start: None }),
 	("place switch", Tool::Place(Block::Switch(false))),
 	("place not", Tool::Place(Block::Not(false))),
+	("place input", Tool::PlaceInput),
+	("place output", Tool::PlaceOutput),
 	("remove", Tool::Place(Block::Nothing)),
 	("rotate", Tool::Rotate),
 	("interact", Tool::Interact),
@@ -16,6 +18,8 @@ pub enum Tool {
 	},
 	Place(Block),
 	Rotate,
+	PlaceInput,
+	PlaceOutput,
 	#[default]
 	Interact,
 }
@@ -34,7 +38,23 @@ impl Tool {
 
 	pub fn down(&mut self, x: i32, y: i32, world: &mut World) {
 		match self {
-			Self::Place(block) => *world.mut_at(x, y) = *block,
+			Self::Place(block) => {
+				let ptr = world.mut_at(x, y);
+				*ptr = *block;
+				world.io_blocks_fix();
+			}
+			Self::PlaceInput => {
+				*world.mut_at(x, y) = Block::Input(world.io_blocks_inputs_len());
+				world.io_blocks_fix();
+				// TODO if io_blocks_inputs_len() worked properly we wouldn't need to fix io blocks
+				// immediately afterwards
+			}
+			Self::PlaceOutput => {
+				*world.mut_at(x, y) = Block::Output(world.io_blocks_outputs_len());
+				world.io_blocks_fix();
+				// TODO if io_blocks_outputs_len() worked properly we wouldn't need to fix io blocks
+				// immediately afterwards
+			}
 			_ => {}
 		}
 	}

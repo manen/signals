@@ -168,12 +168,14 @@ pub fn render_block(
 			} else {
 				consts::NOT_OFF
 			};
-			let excl_width = pos_info.scale(6);
-			let excl_height = pos_info.scale(24);
-			let excl_point = pos_info.scale(4);
+			let excl_width = 6;
+			let excl_height = 24;
+			let excl_point = 4;
 
-			let excl_start_x = pos_info.base.0 + world::BLOCK_SIZE / 2 - excl_width / 2;
-			let excl_start_y = pos_info.base.1 + (world::BLOCK_SIZE - excl_height) / 2;
+			let excl_start_x =
+				pos_info.base.0 + pos_info.scale(world::BLOCK_SIZE / 2 - excl_width / 2);
+			let excl_start_y =
+				pos_info.base.1 + pos_info.scale(world::BLOCK_SIZE - excl_height / 2);
 
 			d.draw_rectangle(
 				excl_start_x,
@@ -199,6 +201,22 @@ pub fn render_block(
 					excl_color,
 				);
 			}
+		}
+		rest => {
+			d.draw_rectangle(
+				pos_info.base.0,
+				pos_info.base.1,
+				pos_info.scale(world::BLOCK_SIZE),
+				pos_info.scale(world::BLOCK_SIZE),
+				consts::SELECT_BAR_UNSELECTED,
+			);
+			d.draw_text(
+				&format!("{rest:?}"),
+				pos_info.base.0,
+				pos_info.base.1,
+				12,
+				consts::SELECT_BAR_SELECTED,
+			)
 		}
 	}
 }

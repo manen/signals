@@ -8,6 +8,8 @@ pub enum Block {
 	Switch(bool),
 	// true if powered
 	Not(bool),
+	Input(usize),
+	Output(usize),
 }
 impl Block {
 	/// syntax: push_move(relative_x, relative_y, signal)
@@ -15,29 +17,35 @@ impl Block {
 		&self,
 		signal: Signal,
 		from: Option<Direction>,
-		mut push_move: impl FnMut(i32, i32, Signal),
+		mut push_move: impl FnMut(PushMoveTo, Signal),
 	) -> Option<Self> {
 		match self {
 			Self::Wire(dir) => {
 				if from.map(|from| from == *dir).unwrap_or(false) {
 				} else {
 					let (rx, ry) = dir.rel();
-					push_move(rx, ry, signal);
-					return Some(Self::Wire(*dir));
+					push_move(PushMoveTo::Rel(rx, ry), signal);
 				}
 			}
 			Self::Not(_) => return Some(Self::Not(true)),
 			Self::Switch(_) => {}
+			Self::Input(_) => {
+				push_move(PushMoveTo::Rel(1, 0), Signal);
+				push_move(PushMoveTo::Rel(0, 1), Signal);
+				push_move(PushMoveTo::Rel(-1, 0), Signal);
+				push_move(PushMoveTo::Rel(0, -1), Signal);
+			}
+			Self::Output(id) => push_move(PushMoveTo::OutputID(*id), signal),
 			Self::Nothing => {}
 		}
 		None
 	}
-	pub fn tick(&self, mut push_move: impl FnMut(i32, i32, Signal)) -> Option<Self> {
+	pub fn tick(&self, mut push_move: impl FnMut(PushMoveTo, Signal)) -> Option<Self> {
 		let mut all_directions = || {
-			push_move(1, 0, Signal);
-			push_move(0, 1, Signal);
-			push_move(-1, 0, Signal);
-			push_move(0, -1, Signal);
+			push_move(PushMoveTo::Rel(1, 0), Signal);
+			push_move(PushMoveTo::Rel(0, 1), Signal);
+			push_move(PushMoveTo::Rel(-1, 0), Signal);
+			push_move(PushMoveTo::Rel(0, -1), Signal);
 			None
 		};
 		match self {
