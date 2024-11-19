@@ -1,7 +1,15 @@
 use raylib::{
+	ffi::MouseButton,
 	prelude::{RaylibDraw, RaylibDrawHandle},
 	RaylibHandle,
 };
+
+use raylib::color::Color;
+pub const fn color(r: u8, g: u8, b: u8, a: u8) -> Color {
+	Color { r, g, b, a }
+}
+pub const SELECT_BAR_SELECTED: Color = color(240, 240, 240, 255);
+pub const SELECT_BAR_UNSELECTED: Color = color(160, 160, 160, 255);
 
 use crate::Details;
 
@@ -22,11 +30,11 @@ impl<'a, T: Clone + PartialEq> SelectBar<'a, T> {
 			&& mouse.1 >= edet.y && mouse.1 <= edet.y + edet.ah
 			// y
 			{
-				if rl.is_mouse_button_pressed(consts::TOOL_USE) {
+				if rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
 					*select = self.list[i].1.clone();
 					return true;
 				}
-				if rl.is_mouse_button_down(consts::TOOL_USE) {
+				if rl.is_mouse_button_down(MouseButton::MOUSE_BUTTON_LEFT) {
 					return true;
 				}
 			}
@@ -42,9 +50,9 @@ impl<'a, T: Clone + PartialEq> SelectBar<'a, T> {
 				edet.y,
 				16,
 				if is_selected {
-					consts::SELECT_BAR_SELECTED
+					SELECT_BAR_SELECTED
 				} else {
-					consts::SELECT_BAR_UNSELECTED
+					SELECT_BAR_UNSELECTED
 				},
 			);
 		}

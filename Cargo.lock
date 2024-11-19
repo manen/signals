@@ -109,13 +109,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "consts"
-version = "0.1.0"
-dependencies = [
- "raylib",
-]
-
-[[package]]
 name = "crossbeam-queue"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -459,7 +452,6 @@ checksum = "a5ea33232fdcf1bf691ca33450e5a94dde13e1a8cbb8caabc5e4f9d761e10b1a"
 name = "signals"
 version = "0.1.0"
 dependencies = [
- "consts",
  "raylib",
  "sui",
 ]
@@ -500,7 +492,6 @@ dependencies = [
 name = "sui"
 version = "0.1.0"
 dependencies = [
- "consts",
  "raylib",
 ]
 

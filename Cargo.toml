@@ -1,9 +1,8 @@
 [workspace]
 resolver = "2"
-members = ["signals", "consts", "sui"]
+members = ["signals", "sui"]
 
 [workspace.dependencies]
 raylib = "5.0.2"
 sui.path = "./sui"
 signals.path = "./signals"
-consts.path = "./consts"

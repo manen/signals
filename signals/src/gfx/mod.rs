@@ -1,6 +1,23 @@
 use raylib::prelude::{RaylibDraw, RaylibDrawHandle};
 
 use crate::world::{self};
+use raylib::color::Color;
+
+pub const fn color(r: u8, g: u8, b: u8, a: u8) -> Color {
+	Color { r, g, b, a }
+}
+pub const BACKGROUND: Color = Color::BLACK;
+pub const WIRE_ON: Color = color(230, 200, 200, 255);
+pub const WIRE_OFF: Color = color(80, 80, 80, 255);
+pub const SWITCH_ON: Color = color(200, 200, 200, 255);
+pub const SWITCH_OFF: Color = color(100, 100, 100, 255);
+pub const NOT_BASE: Color = color(39, 143, 86, 255);
+pub const NOT_ON: Color = color(82, 81, 80, 255);
+pub const NOT_OFF: Color = color(255, 255, 255, 255);
+
+pub const DEBUG_WIRES: bool = false;
+pub const DEBUG_CHUNKS: bool = false;
+pub const DEBUG_NOT: bool = false;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 /// this is the enum that is used to determine what type of a block should be rendered at a position
@@ -77,7 +94,7 @@ pub fn render_chunk(
 				)
 			});
 
-			if consts::DEBUG_CHUNKS {
+			if DEBUG_CHUNKS {
 				use raylib::prelude::RaylibDraw;
 				d.draw_text(
 					&format!("{px} {py}"),
@@ -109,9 +126,9 @@ pub fn render_block(
 			let y_off = if horizontal { off } else { 0 };
 
 			let color = if let DrawType::On = dt {
-				consts::WIRE_ON
+				WIRE_ON
 			} else {
-				consts::WIRE_OFF
+				WIRE_OFF
 			};
 
 			let pos_info = pos_info.transform(x_off, y_off);
@@ -123,7 +140,7 @@ pub fn render_block(
 				color,
 			);
 
-			if consts::DEBUG_WIRES {
+			if DEBUG_WIRES {
 				use raylib::color::Color;
 				let c_dir = match dir {
 					world::Direction::Right => "r",
@@ -147,11 +164,7 @@ pub fn render_block(
 				pos_info.base.1,
 				pos_info.scale(world::BLOCK_SIZE),
 				pos_info.scale(world::BLOCK_SIZE),
-				if *state {
-					consts::SWITCH_ON
-				} else {
-					consts::SWITCH_OFF
-				},
+				if *state { SWITCH_ON } else { SWITCH_OFF },
 			);
 		}
 		world::Block::Not(_) => {
@@ -160,13 +173,13 @@ pub fn render_block(
 				pos_info.base.1,
 				pos_info.scale(world::BLOCK_SIZE),
 				pos_info.scale(world::BLOCK_SIZE),
-				consts::NOT_BASE,
+				NOT_BASE,
 			);
 
 			let excl_color = if let DrawType::On = dt {
-				consts::NOT_ON
+				NOT_ON
 			} else {
-				consts::NOT_OFF
+				NOT_OFF
 			};
 			let excl_width = 6;
 			let excl_height = 24;
@@ -192,7 +205,7 @@ pub fn render_block(
 				excl_color,
 			);
 
-			if consts::DEBUG_NOT {
+			if DEBUG_NOT {
 				d.draw_text(
 					&format!("{block:?}"),
 					pos_info.base.0,
@@ -208,14 +221,14 @@ pub fn render_block(
 				pos_info.base.1,
 				pos_info.scale(world::BLOCK_SIZE),
 				pos_info.scale(world::BLOCK_SIZE),
-				consts::SELECT_BAR_UNSELECTED,
+				SWITCH_OFF,
 			);
 			d.draw_text(
 				&format!("{rest:?}"),
 				pos_info.base.0,
 				pos_info.base.1,
 				12,
-				consts::SELECT_BAR_SELECTED,
+				SWITCH_ON,
 			)
 		}
 	}

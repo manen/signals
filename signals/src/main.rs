@@ -3,7 +3,18 @@ mod tool;
 mod world;
 
 use gfx::PosInfo;
-use raylib::prelude::RaylibDraw;
+use raylib::{
+	ffi::{KeyboardKey, MouseButton},
+	prelude::RaylibDraw,
+};
+
+pub const TICK_TIME: f32 = 0.03;
+pub const MOVE_UP: KeyboardKey = KeyboardKey::KEY_W;
+pub const MOVE_DOWN: KeyboardKey = KeyboardKey::KEY_S;
+pub const MOVE_LEFT: KeyboardKey = KeyboardKey::KEY_A;
+pub const MOVE_RIGHT: KeyboardKey = KeyboardKey::KEY_D;
+pub const TOOL_USE: MouseButton = MouseButton::MOUSE_BUTTON_LEFT;
+pub const MOVE_AMOUNT: f32 = 5000.0;
 
 fn main() {
 	let (mut rl, thread) = raylib::init()
@@ -60,13 +71,13 @@ fn main() {
 						/ pos_info.scale,
 				);
 
-				if rl.is_mouse_button_down(consts::TOOL_USE) {
+				if rl.is_mouse_button_down(TOOL_USE) {
 					tool.down(point_x, point_y, &mut world);
 				}
-				if rl.is_mouse_button_pressed(consts::TOOL_USE) {
+				if rl.is_mouse_button_pressed(TOOL_USE) {
 					tool.pressed(point_x, point_y, &mut world);
 				}
-				if rl.is_mouse_button_released(consts::TOOL_USE) {
+				if rl.is_mouse_button_released(TOOL_USE) {
 					tool.released(point_x, point_y, &mut world);
 				}
 			}
@@ -74,23 +85,23 @@ fn main() {
 
 		g_pos.scale *= 1.0 + (rl.get_mouse_wheel_move() * 0.1);
 
-		let move_amount = (consts::MOVE_AMOUNT * rl.get_frame_time()) as i32;
-		if rl.is_key_down(consts::MOVE_UP) {
+		let move_amount = (MOVE_AMOUNT * rl.get_frame_time()) as i32;
+		if rl.is_key_down(MOVE_UP) {
 			g_pos.base.1 += move_amount;
 		}
-		if rl.is_key_down(consts::MOVE_DOWN) {
+		if rl.is_key_down(MOVE_DOWN) {
 			g_pos.base.1 -= move_amount;
 		}
-		if rl.is_key_down(consts::MOVE_LEFT) {
+		if rl.is_key_down(MOVE_LEFT) {
 			g_pos.base.0 += move_amount;
 		}
-		if rl.is_key_down(consts::MOVE_RIGHT) {
+		if rl.is_key_down(MOVE_RIGHT) {
 			g_pos.base.0 -= move_amount;
 		}
 
 		delta += rl.get_frame_time();
-		for _ in 0..(delta / consts::TICK_TIME) as i32 {
-			delta -= consts::TICK_TIME;
+		for _ in 0..(delta / TICK_TIME) as i32 {
+			delta -= TICK_TIME;
 			moves = world
 				.tick(moves)
 				.into_iter()
@@ -105,7 +116,7 @@ fn main() {
 		}
 
 		let mut d = rl.begin_drawing(&thread);
-		d.clear_background(consts::BACKGROUND);
+		d.clear_background(gfx::BACKGROUND);
 
 		gfx::render_world(&world, &mut d, pos_info);
 
