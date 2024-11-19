@@ -121,6 +121,7 @@ fn main() {
 		gfx::render_world(&world, &mut d, pos_info);
 
 		tool_select.render(&mut d, tool_select_det, Some(&tool));
-		page.render(&mut d, 100, 200, 1);
+		let scale = (d.get_time() % 2.0) as f32;
+		page.render(&mut d, 100, 200, scale);
 	}
 }

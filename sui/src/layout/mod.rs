@@ -7,5 +7,5 @@ pub use page::Page;
 pub trait Layable {
 	fn size(&self) -> (i32, i32);
 
-	fn render(&self, d: &mut RaylibDrawHandle, det: Details, scale: i32);
+	fn render(&self, d: &mut RaylibDrawHandle, det: Details, scale: f32);
 }

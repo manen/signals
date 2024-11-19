@@ -32,7 +32,7 @@ impl<'a> Page<'a> {
 		self.elements.push(c.into().into_comp());
 	}
 
-	pub fn render(&self, d: &mut RaylibDrawHandle, mut x: i32, mut y: i32, scale: i32) {
+	pub fn render(&self, d: &mut RaylibDrawHandle, mut x: i32, mut y: i32, scale: f32) {
 		for e in self.elements.iter() {
 			let (rw, rh) = e.d().size();
 			e.d().render(
@@ -46,9 +46,9 @@ impl<'a> Page<'a> {
 				scale,
 			);
 			if !self.horizontal {
-				y += rh;
+				y += (rh as f32 * scale).floor() as i32;
 			} else {
-				x += rw;
+				x += (rw as f32 * scale).floor() as i32;
 			}
 		}
 	}
@@ -65,7 +65,7 @@ impl<'a> Layable for Page<'a> {
 		})
 	}
 	/// this implementation doesn't care about available width and height
-	fn render(&self, d: &mut RaylibDrawHandle, det: Details, scale: i32) {
+	fn render(&self, d: &mut RaylibDrawHandle, det: Details, scale: f32) {
 		Page::render(&self, d, det.x, det.y, scale);
 	}
 }

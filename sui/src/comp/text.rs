@@ -43,7 +43,7 @@ impl<'a> Layable for Text<'a> {
 
 		(dimensions.x.ceil() as i32, dimensions.y.ceil() as i32)
 	}
-	fn render(&self, d: &mut RaylibDrawHandle, det: crate::Details, scale: i32) {
+	fn render(&self, d: &mut RaylibDrawHandle, det: crate::Details, scale: f32) {
 		if BOUNDS_DEBUG {
 			let s = self.size();
 			d.draw_rectangle_lines(det.x, det.y, s.0, s.1, Color::WHITE);
@@ -53,7 +53,7 @@ impl<'a> Layable for Text<'a> {
 			d.get_font_default(),
 			&self.0,
 			Vector2::new(det.x as f32, det.y as f32),
-			self.1 as f32,
+			self.1 as f32 * scale,
 			SPACING,
 			self.3,
 		);
