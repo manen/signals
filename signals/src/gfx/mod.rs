@@ -59,8 +59,8 @@ impl PosInfo {
 	}
 }
 
-pub fn render_world(world: &world::World, d: &mut RaylibDrawHandle, pos_info: PosInfo) {
-	for (coords, chunk) in world.chunks() {
+pub fn render_world(world: &world::RenderedWorld, d: &mut RaylibDrawHandle, pos_info: PosInfo) {
+	for (coords, chunk) in world.as_ref().chunks() {
 		render_chunk(
 			&chunk,
 			world.drawmap_at(*coords),

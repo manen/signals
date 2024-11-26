@@ -24,7 +24,7 @@ fn main() {
 		.build();
 	rl.set_window_position((1920.0 * 1.3) as i32, (1920.0 * 0.6) as i32);
 
-	let mut world = world::World::default();
+	let mut world = world::RenderedWorld::default();
 
 	let mut tool: tool::Tool = Default::default();
 	let tool_select = sui::SelectBar::new(tool::TOOLS);
@@ -72,13 +72,13 @@ fn main() {
 				);
 
 				if rl.is_mouse_button_down(TOOL_USE) {
-					tool.down(point_x, point_y, &mut world);
+					tool.down(point_x, point_y, world.as_mut());
 				}
 				if rl.is_mouse_button_pressed(TOOL_USE) {
-					tool.pressed(point_x, point_y, &mut world);
+					tool.pressed(point_x, point_y, world.as_mut());
 				}
 				if rl.is_mouse_button_released(TOOL_USE) {
-					tool.released(point_x, point_y, &mut world);
+					tool.released(point_x, point_y, world.as_mut());
 				}
 			}
 		}

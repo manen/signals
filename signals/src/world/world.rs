@@ -39,10 +39,13 @@ pub enum PushMoveTo {
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct World {
 	chunks: HashMap<(i32, i32), Chunk>,
-	drawmaps: HashMap<(i32, i32), Chunk<gfx::DrawType>>,
 }
 impl World {
-	pub fn tick(&mut self, moves: Vec<Move>) -> Vec<Move> {
+	pub fn tick<D: FnMut(i32, i32, gfx::DrawType)>(
+		&mut self,
+		moves: Vec<Move>,
+		mut set_drawtype: D,
+	) -> Vec<Move> {
 		let mut new_moves = Vec::with_capacity(moves.len());
 		macro_rules! gen_push_move {
 			($x:expr, $y:expr) => {
@@ -60,7 +63,6 @@ impl World {
 			};
 		}
 
-		self.drawmap_reset();
 		for mov in moves {
 			match mov {
 				Move::Inside { to, from, signal } => {
@@ -77,7 +79,7 @@ impl World {
 					} else {
 						true
 					} {
-						self.drawtype_set_at(to.0, to.1, gfx::DrawType::On);
+						set_drawtype(to.0, to.1, gfx::DrawType::On);
 					}
 
 					*self.mut_at(x, y) = if let Some(b) = a.pass(signal, from, gen_push_move!(x, y))
@@ -272,31 +274,6 @@ impl World {
 	}
 	pub fn chunks(&self) -> std::collections::hash_map::Iter<'_, (i32, i32), chunk::Chunk> {
 		self.chunks.iter()
-	}
-
-	fn drawmap_reset(&mut self) {
-		for (_, drawmap) in &mut self.drawmaps {
-			*drawmap = gfx::DRAWMAP_DEFAULT
-		}
-	}
-	pub fn drawtype_set_at(&mut self, x: i32, y: i32, dt: gfx::DrawType) {
-		let (chunk_coords, (block_x, block_y)) = world_coords_into_chunk_coords(x, y);
-		if let Some(drawmap) = self.drawmaps.get_mut(&chunk_coords) {
-			drawmap.map_at(block_x, block_y, |_| dt);
-		} else {
-			let mut def = gfx::DRAWMAP_DEFAULT;
-			*(def
-				.mut_at(block_x, block_y)
-				.expect("world_coords_into_chunk_coords broke")) = dt;
-			self.drawmaps.insert(chunk_coords, def);
-		}
-	}
-	pub fn drawmap_at(&self, chunk_coords: (i32, i32)) -> &gfx::Drawmap {
-		if let Some(original) = self.drawmaps.get(&chunk_coords) {
-			original
-		} else {
-			&gfx::DRAWMAP_DEFAULT
-		}
 	}
 }
 
