@@ -28,8 +28,8 @@ impl<'a> Page<'a> {
 		}
 	}
 
-	pub fn push<C: Compatible<'a>>(&mut self, c: impl Into<C>) {
-		self.components.push(c.into().into_comp());
+	pub fn push<C: Compatible<'a>>(&mut self, c: C) {
+		self.components.push(c.into_comp());
 	}
 
 	pub fn render(&self, d: &mut RaylibDrawHandle, mut x: i32, mut y: i32, scale: f32) {
