@@ -68,4 +68,31 @@ impl<'a> Layable for Page<'a> {
 	fn render(&self, d: &mut RaylibDrawHandle, det: Details, scale: f32) {
 		Page::render(&self, d, det.x, det.y, scale);
 	}
+
+	fn pass_event(&self, event: super::Event) -> Option<super::Event> {
+		match event {
+			super::Event::MouseEvent { x: ptr_x, y: ptr_y } => {
+				let (mut x, mut y) = (0, 0);
+				for c in self.components.iter() {
+					let (cw, ch) = c.size();
+					if ptr_x >= x && ptr_x <= x + cw // x
+					 && ptr_y >= y && ptr_y <= y + ch
+					{
+						return c.pass_event(super::Event::MouseEvent {
+							x: ptr_x - x,
+							y: ptr_y - y,
+						});
+					} else {
+						if !self.horizontal {
+							y += ch;
+						} else {
+							x += cw;
+						}
+					}
+				}
+				None // mouseevent didn't intersect any of the components
+			}
+			_ => None,
+		}
+	}
 }

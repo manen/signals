@@ -59,8 +59,12 @@ fn main() {
 	let page = sui::page(vec![
 		sui::text("szia", 14),
 		sui::text("SZIA", 34),
-		sui::text("SZIA", 12),
-		sui::text("szia", 45),
+		sui::comp::Compatible::into_comp(sui::comp::Clickable::new(
+			sui::text("SZIA", 12),
+			"clicked",
+			0,
+		)),
+		sui::text("SZIA", 45),
 	]);
 
 	while !rl.window_should_close() {
@@ -137,13 +141,18 @@ fn main() {
 				.collect();
 		}
 
+		let scale = (rl.get_time() % 2.0) as f32;
+		let event_out = sui::handle_input(&page, &mut rl, 0, 100, scale);
+		if let Some(event_out) = event_out {
+			println!("{} {event_out:?}", rl.get_time());
+		}
+
 		let mut d = rl.begin_drawing(&thread);
 		d.clear_background(gfx::BACKGROUND);
 
 		gfx::render_world(&world, &mut d, pos_info);
 
 		tool_select.render(&mut d, tool_select_det, Some(&tool));
-		let scale = (d.get_time() % 2.0) as f32;
-		sui::render_root(&page, &mut d, 100, 200, scale);
+		sui::render_root(&page, &mut d, 0, 100, scale);
 	}
 }
