@@ -51,10 +51,17 @@ fn main() {
 
 	let mut g_pos = PosInfo::default();
 
-	let mut page = sui::layout::Page::empty();
-	page.push::<sui::Text>(("szia", 14));
-	page.push::<sui::Text>(("SZIA", 34));
-	page.push::<sui::Text>(("SZIA", 12));
+	// let mut page = sui::layout::Page::empty();
+	// page.push::<sui::Text>(("szia", 14));
+	// page.push::<sui::Text>(("SZIA", 34));
+	// page.push::<sui::Text>(("SZIA", 12));
+
+	let page = sui::page(vec![
+		sui::text("szia", 14),
+		sui::text("SZIA", 34),
+		sui::text("SZIA", 12),
+		sui::text("szia", 45),
+	]);
 
 	while !rl.window_should_close() {
 		let screen = sui::Details::window(rl.get_render_width(), unsafe {
@@ -137,6 +144,6 @@ fn main() {
 
 		tool_select.render(&mut d, tool_select_det, Some(&tool));
 		let scale = (d.get_time() % 2.0) as f32;
-		page.render(&mut d, 100, 200, scale);
+		sui::render_root(&page, &mut d, 100, 200, scale);
 	}
 }

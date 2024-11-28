@@ -8,7 +8,7 @@ use raylib::prelude::RaylibDrawHandle;
 /// simple page layout, one element after another
 #[derive(Clone, Debug, Default)]
 pub struct Page<'a> {
-	elements: Vec<Comp<'a>>,
+	components: Vec<Comp<'a>>,
 	horizontal: bool,
 }
 impl<'a> Page<'a> {
@@ -21,19 +21,19 @@ impl<'a> Page<'a> {
 			..Default::default()
 		}
 	}
-	pub fn new<I: Into<Vec<Comp<'a>>>>(elements: I, horizontal: bool) -> Self {
+	pub fn new<I: Into<Vec<Comp<'a>>>>(components: I, horizontal: bool) -> Self {
 		Self {
-			elements: elements.into(),
+			components: components.into(),
 			horizontal,
 		}
 	}
 
 	pub fn push<C: Compatible<'a>>(&mut self, c: impl Into<C>) {
-		self.elements.push(c.into().into_comp());
+		self.components.push(c.into().into_comp());
 	}
 
 	pub fn render(&self, d: &mut RaylibDrawHandle, mut x: i32, mut y: i32, scale: f32) {
-		for e in self.elements.iter() {
+		for e in self.components.iter() {
 			let (rw, rh) = e.d().size();
 			e.d().render(
 				d,
@@ -55,7 +55,7 @@ impl<'a> Page<'a> {
 }
 impl<'a> Layable for Page<'a> {
 	fn size(&self) -> (i32, i32) {
-		self.elements.iter().fold((0, 0), |a, layable| {
+		self.components.iter().fold((0, 0), |a, layable| {
 			let size = layable.d().size();
 			if !self.horizontal {
 				(a.0 + size.0, a.1.max(size.1))

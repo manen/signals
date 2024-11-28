@@ -6,3 +6,6 @@ pub use det::Details;
 
 pub mod layout;
 pub use layout::Layable;
+
+pub mod ui;
+pub use ui::*;

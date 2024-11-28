@@ -27,6 +27,21 @@ impl<'a> Comp<'a> {
 	}
 }
 
+impl<'a> Layable for Comp<'a> {
+	fn size(&self) -> (i32, i32) {
+		match self {
+			Self::Page(a) => a.size(),
+			Self::Text(a) => a.size(),
+		}
+	}
+	fn render(&self, d: &mut raylib::prelude::RaylibDrawHandle, det: crate::Details, scale: f32) {
+		match self {
+			Self::Page(a) => Layable::render(a, d, det, scale),
+			Self::Text(a) => a.render(d, det, scale),
+		}
+	}
+}
+
 pub trait Compatible<'a>: Sized {
 	fn from_comp(comp: Comp<'a>) -> Option<Self>;
 	fn into_comp(self) -> Comp<'a>;
