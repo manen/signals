@@ -17,12 +17,27 @@ pub const TOOL_USE: MouseButton = MouseButton::MOUSE_BUTTON_LEFT;
 pub const MOVE_AMOUNT: f32 = 5000.0;
 
 fn main() {
+	let (start_width, start_height) = (640, 480);
+
 	let (mut rl, thread) = raylib::init()
-		.size(640, 480)
+		.size(start_width, start_height)
 		.title("signals")
 		.resizable()
 		.build();
-	rl.set_window_position((1920.0 * 1.3) as i32, (1920.0 * 0.6) as i32);
+
+	{
+		// center window on screen
+		let monitor = unsafe { raylib::ffi::GetCurrentMonitor() };
+		let raylib::ffi::Vector2 { x: m_x, y: m_y } =
+			unsafe { raylib::ffi::GetMonitorPosition(monitor) };
+		let m_width = unsafe { raylib::ffi::GetMonitorWidth(monitor) };
+		let m_height = unsafe { raylib::ffi::GetMonitorHeight(monitor) };
+
+		rl.set_window_position(
+			m_x as i32 + m_width / 2 - start_width / 2,
+			m_y as i32 + m_height / 2 - start_height / 2,
+		);
+	}
 
 	let mut world = world::RenderedWorld::default();
 
