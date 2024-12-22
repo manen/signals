@@ -137,7 +137,7 @@ impl World {
 	}
 
 	/// returns worlds coords
-	fn find_input(&self, id: usize) -> Option<(i32, i32)> {
+	pub fn find_input(&self, id: usize) -> Option<(i32, i32)> {
 		for (coords, c) in self.chunks() {
 			for x in 0..CHUNK_SIZE as i32 {
 				for y in 0..CHUNK_SIZE as i32 {
