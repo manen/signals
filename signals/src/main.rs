@@ -103,11 +103,12 @@ fn main() {
 
 	let mut tool: tool::Tool = Default::default();
 	let tool_select = sui::SelectBar::new(tool::TOOLS);
+	let foreign_select = sui::SelectBar::new(tool::FOREIGNS);
 
 	// world.mut_at(-2, 2);
 
 	let mut delta = 0.0;
-	let mut moves = Vec::new();
+	// let mut moves = Vec::new();
 
 	let mut g_pos = PosInfo::default();
 
@@ -134,12 +135,12 @@ fn main() {
 			}
 		}
 
-		let world = &mut game.main;
-
 		let screen = sui::Details::window(rl.get_render_width(), unsafe {
 			raylib::ffi::GetRenderHeight()
 		});
-		let tool_select_det = screen.from_top(30);
+		let mut select_det = screen.from_top(60).split_h(2);
+		let (tool_select_det, foreign_select_det) =
+			(select_det.next().unwrap(), select_det.next().unwrap());
 
 		let screen_middle = (screen.aw / 2, screen.ah / 2);
 		let pos_info = g_pos.add(screen_middle.0, screen_middle.1);
@@ -153,7 +154,10 @@ fn main() {
 		};
 
 		{
-			if !tool_select.tick(&mut rl, tool_select_det, &mut tool) {
+			let foreign_select_trig = foreign_select.tick(&mut rl, foreign_select_det, &mut tool);
+			let tool_select_trig = tool_select.tick(&mut rl, tool_select_det, &mut tool);
+
+			if !tool_select_trig && !foreign_select_trig {
 				let point_x = round(
 					(rl.get_mouse_x() as f32 - pos_info.base.0 as f32)
 						/ world::BLOCK_SIZE as f32
@@ -166,13 +170,13 @@ fn main() {
 				);
 
 				if rl.is_mouse_button_down(TOOL_USE) {
-					tool.down(point_x, point_y, world.as_mut());
+					tool.down(point_x, point_y, &mut game);
 				}
 				if rl.is_mouse_button_pressed(TOOL_USE) {
-					tool.pressed(point_x, point_y, world.as_mut());
+					tool.pressed(point_x, point_y, game.main.as_mut());
 				}
 				if rl.is_mouse_button_released(TOOL_USE) {
-					tool.released(point_x, point_y, world.as_mut());
+					tool.released(point_x, point_y, game.main.as_mut());
 				}
 			}
 		}
@@ -196,17 +200,18 @@ fn main() {
 		delta += rl.get_frame_time();
 		for _ in 0..(delta / TICK_TIME) as i32 {
 			delta -= TICK_TIME;
-			moves = world
-				.tick(moves)
-				.into_iter()
-				.map(|mov| match mov {
-					world::Move::Output { id, signal } => {
-						// so sometimes it works sometimes it gets stuck in an infinite loop yk whatever it feels like
-						world::Move::Input { id, signal }
-					}
-					mov => mov,
-				})
-				.collect();
+			// moves = world
+			// 	.tick(moves)
+			// 	.into_iter()
+			// 	.map(|mov| match mov {
+			// 		world::Move::Output { id, signal } => {
+			// 			// so sometimes it works sometimes it gets stuck in an infinite loop yk whatever it feels like
+			// 			world::Move::Input { id, signal }
+			// 		}
+			// 		mov => mov,
+			// 	})
+			// 	.collect();
+			game.tick();
 		}
 
 		let scale = (rl.get_time() % 2.0) as f32;
@@ -218,9 +223,17 @@ fn main() {
 		let mut d = rl.begin_drawing(&thread);
 		d.clear_background(gfx::BACKGROUND);
 
-		gfx::render_world(&world, &mut d, pos_info);
+		gfx::render_world(&game.main, &mut d, pos_info);
 
 		tool_select.render(&mut d, tool_select_det, Some(&tool));
+		foreign_select.render(&mut d, foreign_select_det, Some(&tool));
+		d.draw_rectangle_lines(
+			foreign_select_det.x,
+			foreign_select_det.y,
+			foreign_select_det.aw,
+			foreign_select_det.ah,
+			gfx::NOT_BASE,
+		);
 		sui::render_root(&page, &mut d, 0, 100, scale);
 	}
 }

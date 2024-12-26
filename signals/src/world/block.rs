@@ -10,6 +10,7 @@ pub enum Block {
 	Not(bool),
 	Input(usize),
 	Output(usize),
+	Foreign(usize, usize), // (inst_id, input_and_output_id)
 }
 impl Block {
 	/// syntax: push_move(relative_x, relative_y, signal)
@@ -19,6 +20,12 @@ impl Block {
 		from: Option<Direction>,
 		mut push_move: impl FnMut(PushMoveTo, Signal),
 	) -> Option<Self> {
+		let mut all_directions = || {
+			push_move(PushMoveTo::Rel(1, 0), Default::default());
+			push_move(PushMoveTo::Rel(0, 1), Default::default());
+			push_move(PushMoveTo::Rel(-1, 0), Default::default());
+			push_move(PushMoveTo::Rel(0, -1), Default::default());
+		};
 		match self {
 			Self::Wire(dir) => {
 				if from.map(|from| from == *dir).unwrap_or(false) {
@@ -30,22 +37,33 @@ impl Block {
 			Self::Not(_) => return Some(Self::Not(true)),
 			Self::Switch(_) => {}
 			Self::Input(_) => {
-				push_move(PushMoveTo::Rel(1, 0), Signal);
-				push_move(PushMoveTo::Rel(0, 1), Signal);
-				push_move(PushMoveTo::Rel(-1, 0), Signal);
-				push_move(PushMoveTo::Rel(0, -1), Signal);
+				all_directions();
 			}
 			Self::Output(id) => push_move(PushMoveTo::OutputID(*id), signal),
+			Self::Foreign(inst_id, id) => match signal {
+				Signal::Default => {
+					push_move(
+						PushMoveTo::Foreign {
+							inst_id: *inst_id,
+							id: *id,
+						},
+						signal,
+					);
+				}
+				Signal::ForeignExternalPoweron => {
+					all_directions();
+				}
+			},
 			Self::Nothing => {}
 		}
 		None
 	}
 	pub fn tick(&self, mut push_move: impl FnMut(PushMoveTo, Signal)) -> Option<Self> {
 		let mut all_directions = || {
-			push_move(PushMoveTo::Rel(1, 0), Signal);
-			push_move(PushMoveTo::Rel(0, 1), Signal);
-			push_move(PushMoveTo::Rel(-1, 0), Signal);
-			push_move(PushMoveTo::Rel(0, -1), Signal);
+			push_move(PushMoveTo::Rel(1, 0), Default::default());
+			push_move(PushMoveTo::Rel(0, 1), Default::default());
+			push_move(PushMoveTo::Rel(-1, 0), Default::default());
+			push_move(PushMoveTo::Rel(0, -1), Default::default());
 			None
 		};
 		match self {

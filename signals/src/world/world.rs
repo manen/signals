@@ -2,9 +2,13 @@ use crate::{gfx, world::*};
 
 use std::collections::HashMap;
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct Signal;
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
+pub enum Signal {
+	#[default]
+	Default,
+	ForeignExternalPoweron,
+}
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Move {
 	Inside {
 		to: (i32, i32),
@@ -15,6 +19,12 @@ pub enum Move {
 	Input { id: usize, signal: Signal },
 	/// outputs are placed in the vec by world but are supposed to be handled externally
 	Output { id: usize, signal: Signal },
+	/// foreigns
+	Foreign {
+		inst_id: usize,
+		id: usize,
+		signal: Signal,
+	},
 }
 impl Move {
 	pub fn new(to: (i32, i32), from: Option<Direction>, signal: Signal) -> Self {
@@ -26,6 +36,7 @@ impl Move {
 			Move::Inside { signal, .. } => signal,
 			Move::Input { signal, .. } => signal,
 			Move::Output { signal, .. } => signal,
+			Move::Foreign { signal, .. } => signal,
 		}
 	}
 }
@@ -34,6 +45,7 @@ impl Move {
 pub enum PushMoveTo {
 	Rel(i32, i32),
 	OutputID(usize),
+	Foreign { inst_id: usize, id: usize },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
@@ -59,6 +71,11 @@ impl World {
 						});
 					}
 					PushMoveTo::OutputID(id) => new_moves.push(Move::Output { id, signal }),
+					PushMoveTo::Foreign { inst_id, id } => new_moves.push(Move::Foreign {
+						inst_id,
+						id,
+						signal,
+					}),
 				}
 			};
 		}
@@ -108,6 +125,25 @@ impl World {
 						*block
 					}
 				}
+				Move::Foreign {  inst_id, id, signal } => {
+					let input = match self.find_foreign(inst_id, id) {
+						Some(a) => a,
+						None => {
+							eprintln!("didn't find an foreign with inst_id {inst_id} and id {id}, dropping {signal:?}");
+							continue;
+						}
+					};
+					let block = self
+						.at(input.0, input.1)
+						.expect("couldn't find the block world.find_input found");
+					*self.mut_at(input.0, input.1) = if let Some(b) =
+						block.pass(signal, None, gen_push_move!(input.0, input.1))
+					{
+						b
+					} else {
+						*block
+					}
+				},
 				Move::Output { id, signal } => eprintln!("no Move::Output variant should be in the moves vec sent to world.tick, (Move::Output {{ id: {id}, signal: {signal:?} }})")
 			}
 		}
@@ -129,6 +165,11 @@ impl World {
 					});
 				}
 				PushMoveTo::OutputID(id) => new_moves.push(Move::Output { id, signal }),
+				PushMoveTo::Foreign { inst_id, id } => new_moves.push(Move::Foreign {
+					inst_id,
+					id,
+					signal,
+				}),
 			})
 		}
 
@@ -149,6 +190,28 @@ impl World {
 						),
 						Some(Block::Input(i_id)) => {
 							if *i_id == id {
+								return Some(chunk_coords_into_world_coords(*coords, (x, y)));
+							}
+						}
+						_ => continue,
+					}
+				}
+			}
+		}
+		None
+	}
+	pub fn find_foreign(&self, inst_id: usize, id: usize) -> Option<(i32, i32)> {
+		for (coords, c) in self.chunks() {
+			for x in 0..CHUNK_SIZE as i32 {
+				for y in 0..CHUNK_SIZE as i32 {
+					// this implementation will halt searching as soon as a matching one is found, might lead to weird behavior with
+					// duplicate ids
+					match c.at(x, y) {
+						None => panic!(
+							"a number between 0 and CHUNK_SIZE shouldn't be larger than CHUNK_SIZE"
+						),
+						Some(Block::Foreign(b_iid, b_id)) => {
+							if *b_iid == inst_id && *b_id == id {
 								return Some(chunk_coords_into_world_coords(*coords, (x, y)));
 							}
 						}

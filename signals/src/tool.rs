@@ -1,4 +1,7 @@
-use crate::world::{Block, Direction, World};
+use crate::{
+	game::Game,
+	world::{Block, Direction, World},
+};
 
 pub const TOOLS: &[(&str, Tool)] = &[
 	("place wire", Tool::PlaceWire { start: None }),
@@ -10,6 +13,17 @@ pub const TOOLS: &[(&str, Tool)] = &[
 	("rotate", Tool::Rotate),
 	("interact", Tool::Interact),
 ];
+pub const FOREIGNS: &[(&str, Tool)] = &[
+	("foreign to 1", Tool::PlaceForeign(1)),
+	("foreign to 2", Tool::PlaceForeign(2)),
+	("foreign to 3", Tool::PlaceForeign(3)),
+	("foreign to 4", Tool::PlaceForeign(4)),
+	("foreign to 5", Tool::PlaceForeign(5)),
+	("foreign to 6", Tool::PlaceForeign(6)),
+	("foreign to 7", Tool::PlaceForeign(7)),
+	("foreign to 8", Tool::PlaceForeign(8)),
+	("foreign to 9", Tool::PlaceForeign(9)),
+];
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 pub enum Tool {
@@ -20,6 +34,7 @@ pub enum Tool {
 	Rotate,
 	PlaceInput,
 	PlaceOutput,
+	PlaceForeign(usize), // world id
 	#[default]
 	Interact,
 }
@@ -36,24 +51,50 @@ impl Tool {
 	// 	}
 	// }
 
-	pub fn down(&mut self, x: i32, y: i32, world: &mut World) {
+	pub fn down(&mut self, x: i32, y: i32, game: &mut Game) {
 		match self {
 			Self::Place(block) => {
-				let ptr = world.mut_at(x, y);
+				let ptr = game.main.as_mut().mut_at(x, y);
 				*ptr = *block;
-				world.io_blocks_fix();
+				game.main.as_mut().io_blocks_fix();
 			}
 			Self::PlaceInput => {
-				*world.mut_at(x, y) = Block::Input(world.io_blocks_inputs_len());
-				world.io_blocks_fix();
+				*game.main.as_mut().mut_at(x, y) =
+					Block::Input(game.main.as_mut().io_blocks_inputs_len());
+				game.main.as_mut().io_blocks_fix();
 				// TODO if io_blocks_inputs_len() worked properly we wouldn't need to fix io blocks
 				// immediately afterwards
 			}
 			Self::PlaceOutput => {
-				*world.mut_at(x, y) = Block::Output(world.io_blocks_outputs_len());
-				world.io_blocks_fix();
+				*game.main.as_mut().mut_at(x, y) =
+					Block::Output(game.main.as_mut().io_blocks_outputs_len());
+				game.main.as_mut().io_blocks_fix();
 				// TODO if io_blocks_outputs_len() worked properly we wouldn't need to fix io blocks
 				// immediately afterwards
+			}
+			Self::PlaceForeign(wid) => {
+				// this part has to do suprisingly lot:
+				// - if there exists no foreign to wid, create one and link to it. (simplest case)
+				// - if there exists a foreign to wid, check if the highest id foreign to wid is the most a foreign id for that wid can be
+				//   - if there can be higher, create a reference to the already existing wid, with id highest id + 1
+				//   - if there can't be higher, create a new world with wid and id 1
+
+				// some part of this logic should be abstracted into Game
+
+				// like a game.fix_foreigns, that does all the foreign housekeeping:
+				// - check if there are any IngameWorld's with 0 references to them, if there are delete them
+				// - .
+				// idk this part is sm harder than it seemed
+
+				// just to test if things work:
+
+				game.moves.children.push(crate::game::IngameWorld {
+					id: Some(1),
+					..Default::default()
+				});
+				*game.main.as_mut().mut_at(x, y) = Block::Foreign(0, 0)
+
+				// this creates a foreign reference to 1
 			}
 			_ => {}
 		}
