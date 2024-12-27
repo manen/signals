@@ -5,12 +5,12 @@ pub enum Block {
 	#[default]
 	Nothing,
 	Wire(Direction),
-	Switch(bool),
-	// true if powered
+	Switch(bool), // true if powered
 	Not(bool),
 	Input(usize),
 	Output(usize),
-	Foreign(usize, usize), // (inst_id, input_and_output_id)
+	Foreign(Option<usize>, usize, usize), // (world_id (for redundancy), inst_id, input_and_output_id)
+	Error(&'static str),                  // error contains an error.
 }
 impl Block {
 	/// syntax: push_move(relative_x, relative_y, signal)
@@ -40,7 +40,7 @@ impl Block {
 				all_directions();
 			}
 			Self::Output(id) => push_move(PushMoveTo::OutputID(*id), signal),
-			Self::Foreign(inst_id, id) => match signal {
+			Self::Foreign(_, inst_id, id) => match signal {
 				Signal::Default => {
 					push_move(
 						PushMoveTo::Foreign {
@@ -54,7 +54,7 @@ impl Block {
 					all_directions();
 				}
 			},
-			Self::Nothing => {}
+			Self::Nothing | Block::Error(_) => {}
 		}
 		None
 	}

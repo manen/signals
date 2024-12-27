@@ -1,6 +1,9 @@
 use raylib::prelude::{RaylibDraw, RaylibDrawHandle};
 
-use crate::world::{self};
+use crate::{
+	game,
+	world::{self},
+};
 use raylib::color::Color;
 
 pub const fn color(r: u8, g: u8, b: u8, a: u8) -> Color {
@@ -56,6 +59,23 @@ impl PosInfo {
 	}
 	pub fn scale(&self, n: i32) -> i32 {
 		(self.scale * n as f32) as i32
+	}
+}
+
+pub fn render_game(game: &game::Game, d: &mut RaylibDrawHandle, pos_info: PosInfo) {
+	let lines = game
+		.moves
+		.children
+		.iter()
+		.enumerate()
+		.map(|(i, ingameworld)| format!("inst {i}: {:?}", ingameworld.world_id));
+
+	let mut y = pos_info.base.1;
+
+	for line in lines {
+		let text_size = 12;
+		d.draw_text(&line, pos_info.base.0, y, text_size, SWITCH_ON);
+		y += text_size;
 	}
 }
 

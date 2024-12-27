@@ -210,7 +210,7 @@ impl World {
 						None => panic!(
 							"a number between 0 and CHUNK_SIZE shouldn't be larger than CHUNK_SIZE"
 						),
-						Some(Block::Foreign(b_iid, b_id)) => {
+						Some(Block::Foreign(_, b_iid, b_id)) => {
 							if *b_iid == inst_id && *b_id == id {
 								return Some(chunk_coords_into_world_coords(*coords, (x, y)));
 							}
@@ -222,8 +222,26 @@ impl World {
 		}
 		None
 	}
+	pub fn find_foreigns<'a>(&'a self) -> Vec<((i32, i32), (Option<usize>, usize, usize))> {
+		let mut foreigns = vec![];
+		for (coords, c) in self.chunks() {
+			for x in 0..CHUNK_SIZE as i32 {
+				for y in 0..CHUNK_SIZE as i32 {
+					let b = c.at(x, y).expect("this is impossible in find_foreigns");
+					match b {
+						Block::Foreign(world_id, inst_id, id) => foreigns.push((
+							chunk_coords_into_world_coords(*coords, (x, y)),
+							(*world_id, *inst_id, *id),
+						)),
+						_ => continue,
+					}
+				}
+			}
+		}
+		foreigns
+	}
 
-	pub fn io_blocks_inputs_len(&self) -> usize {
+	pub fn inputs_count(&self) -> usize {
 		let mut i = 0;
 
 		for _ in self
@@ -239,7 +257,7 @@ impl World {
 
 		i
 	}
-	pub fn io_blocks_outputs_len(&self) -> usize {
+	pub fn outputs_count(&self) -> usize {
 		let mut i = 0;
 
 		for _ in self
@@ -255,6 +273,18 @@ impl World {
 
 		i
 	}
+	pub fn foreigns_count(&self, inst_id: usize) -> usize {
+		let mut i = 0;
+		self.chunks()
+			.map(|(_, c)| c.blocks())
+			.flatten()
+			.for_each(|b| match b {
+				Block::Foreign(_, f_inst_id, id) if *f_inst_id == inst_id => i += 1,
+				_ => (),
+			});
+		i
+	}
+
 	/// this makes sure input-output block's ids are in order
 	/// and there are no holes or duplicates\
 	/// returns (inputs.len + 1, outputs.len + 1)

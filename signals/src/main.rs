@@ -3,7 +3,7 @@ mod gfx;
 mod tool;
 mod world;
 
-use game::Game;
+use game::{Game, IngameWorld};
 use gfx::PosInfo;
 use raylib::{
 	ffi::{KeyboardKey, MouseButton},
@@ -132,6 +132,8 @@ fn main() {
 		if let Some(ch) = rl.get_char_pressed() {
 			if let Some(num) = ch.to_digit(10) {
 				game.switch_main(if num == 0 { None } else { Some(num as usize) });
+				let i = game.i;
+				game.moves = IngameWorld::generate(&mut game, i);
 			}
 		}
 
@@ -173,10 +175,10 @@ fn main() {
 					tool.down(point_x, point_y, &mut game);
 				}
 				if rl.is_mouse_button_pressed(TOOL_USE) {
-					tool.pressed(point_x, point_y, game.main.as_mut());
+					tool.pressed(point_x, point_y, &mut game);
 				}
 				if rl.is_mouse_button_released(TOOL_USE) {
-					tool.released(point_x, point_y, game.main.as_mut());
+					tool.released(point_x, point_y, &mut game);
 				}
 			}
 		}
@@ -224,6 +226,7 @@ fn main() {
 		d.clear_background(gfx::BACKGROUND);
 
 		gfx::render_world(&game.main, &mut d, pos_info);
+		gfx::render_game(&game, &mut d, Default::default());
 
 		tool_select.render(&mut d, tool_select_det, Some(&tool));
 		foreign_select.render(&mut d, foreign_select_det, Some(&tool));

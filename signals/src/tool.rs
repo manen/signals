@@ -1,5 +1,5 @@
 use crate::{
-	game::Game,
+	game::{Game, IngameWorld},
 	world::{Block, Direction, World},
 };
 
@@ -58,16 +58,26 @@ impl Tool {
 				*ptr = *block;
 				game.main.as_mut().io_blocks_fix();
 			}
+			_ => {}
+		}
+	}
+	pub fn pressed(&mut self, x: i32, y: i32, game: &mut Game) {
+		match self {
+			Self::Rotate => game.main.as_mut().map_at(x, y, |i| match i {
+				Block::Wire(dir) => Block::Wire(dir.rotate()),
+				_ => i,
+			}),
+			Self::PlaceWire { start } if *start == None => *start = Some((x, y)),
+			Self::Interact => game.main.as_mut().mut_at(x, y).interact(),
 			Self::PlaceInput => {
-				*game.main.as_mut().mut_at(x, y) =
-					Block::Input(game.main.as_mut().io_blocks_inputs_len());
+				*game.main.as_mut().mut_at(x, y) = Block::Input(game.main.as_mut().inputs_count());
 				game.main.as_mut().io_blocks_fix();
 				// TODO if io_blocks_inputs_len() worked properly we wouldn't need to fix io blocks
 				// immediately afterwards
 			}
 			Self::PlaceOutput => {
 				*game.main.as_mut().mut_at(x, y) =
-					Block::Output(game.main.as_mut().io_blocks_outputs_len());
+					Block::Output(game.main.as_mut().outputs_count());
 				game.main.as_mut().io_blocks_fix();
 				// TODO if io_blocks_outputs_len() worked properly we wouldn't need to fix io blocks
 				// immediately afterwards
@@ -88,29 +98,60 @@ impl Tool {
 
 				// just to test if things work:
 
-				game.moves.children.push(crate::game::IngameWorld {
-					id: Some(1),
-					..Default::default()
+				let mut foreigns = game
+					.main
+					.as_ref()
+					.find_foreigns()
+					.into_iter()
+					.filter(|(_, (world_id, _, _))| Some(*wid) == *world_id)
+					.collect::<Vec<_>>();
+				foreigns.sort_by(|(_, (_, a_inst_id, a_id)), (_, (_, b_inst_id, b_id))| {
+					(a_inst_id * 1000 + a_id).cmp(&(b_inst_id * 1000 + b_id))
 				});
-				*game.main.as_mut().mut_at(x, y) = Block::Foreign(0, 0)
 
-				// this creates a foreign reference to 1
+				macro_rules! new_instance {
+					() => {
+						// create new instance
+						game.moves.children.push(IngameWorld {
+							world_id: Some(*wid),
+							..Default::default()
+						});
+						let inst_id = game.moves.children.len() - 1;
+						*game.main.as_mut().mut_at(x, y) = Block::Foreign(Some(*wid), inst_id, 0);
+					};
+				}
+
+				println!("{foreigns:?}");
+				if foreigns.len() > 0 {
+					let max_id = {
+						let world = game.world(Some(*wid));
+						world.inputs_count().max(world.outputs_count())
+					};
+					let (_, inst_id, id) = foreigns[foreigns.len() - 1].1;
+					if id >= max_id {
+						dbg!(id, max_id);
+						new_instance!();
+					} else {
+						println!(
+							"{inst_id}, {id}, {:?}",
+							Block::Foreign(Some(*wid), inst_id, id + 1)
+						);
+						*game.main.as_mut().mut_at(x, y) =
+							Block::Foreign(Some(*wid), inst_id, id + 1)
+					}
+				} else {
+					println!("first foreign");
+					new_instance!();
+				};
+
+				let mut moves = std::mem::take(&mut game.moves);
+				moves.regenerate(game, game.i);
+				game.moves = moves;
 			}
-			_ => {}
-		}
-	}
-	pub fn pressed(&mut self, x: i32, y: i32, world: &mut World) {
-		match self {
-			Self::Rotate => world.map_at(x, y, |i| match i {
-				Block::Wire(dir) => Block::Wire(dir.rotate()),
-				_ => i,
-			}),
-			Self::PlaceWire { start } if *start == None => *start = Some((x, y)),
-			Self::Interact => world.mut_at(x, y).interact(),
 			_ => {}
 		};
 	}
-	pub fn released(&mut self, x: i32, y: i32, world: &mut World) {
+	pub fn released(&mut self, x: i32, y: i32, game: &mut Game) {
 		match self {
 			Self::PlaceWire { start } => {
 				if let Some(start) = start {
@@ -131,7 +172,7 @@ impl Tool {
 						let x = if horizontal { i } else { start.0 };
 						let y = if horizontal { start.1 } else { i };
 
-						*world.mut_at(x, y) = {
+						*game.main.as_mut().mut_at(x, y) = {
 							if horizontal {
 								Block::Wire(if !reverse {
 									Direction::Right
