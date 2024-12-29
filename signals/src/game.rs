@@ -74,13 +74,15 @@ impl IngameWorld {
 
 			let next = match next_id_per_inst_id.get(&inst_id) {
 				Some(next) => *next,
-				None => {
-					dbg!(&next_id_per_inst_id);
-					0
-				}
+				None => 0,
 			};
-			dbg!(next);
+			println!(
+				"inputs: {}, outputs: {}",
+				inst_world.inputs_count(),
+				inst_world.outputs_count()
+			);
 			let max_id = inst_world.inputs_count().max(inst_world.outputs_count());
+			println!("{max_id}");
 			if id > max_id {
 				eprintln!("the world (id: {world_id:?}) contained a foreign that exceeded the maximum possible id of {max_id} for the world given ({inst_world_id:?}) by being {id}");
 				game.world_mut(world_id).map_at(coords.0, coords.1, |_| {
@@ -91,7 +93,6 @@ impl IngameWorld {
 					Block::Foreign(inst_world_id, inst_id, next)
 				});
 				next_id_per_inst_id.insert(inst_id, next + 1);
-				dbg!(inst_id, next + 1, &next_id_per_inst_id);
 			}
 		}
 	}

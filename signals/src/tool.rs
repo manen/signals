@@ -121,26 +121,19 @@ impl Tool {
 					};
 				}
 
-				println!("{foreigns:?}");
 				if foreigns.len() > 0 {
 					let max_id = {
 						let world = game.world(Some(*wid));
 						world.inputs_count().max(world.outputs_count())
-					};
+					} - 1;
 					let (_, inst_id, id) = foreigns[foreigns.len() - 1].1;
 					if id >= max_id {
-						dbg!(id, max_id);
 						new_instance!();
 					} else {
-						println!(
-							"{inst_id}, {id}, {:?}",
-							Block::Foreign(Some(*wid), inst_id, id + 1)
-						);
 						*game.main.as_mut().mut_at(x, y) =
 							Block::Foreign(Some(*wid), inst_id, id + 1)
 					}
 				} else {
-					println!("first foreign");
 					new_instance!();
 				};
 

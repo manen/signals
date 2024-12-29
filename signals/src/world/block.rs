@@ -50,8 +50,29 @@ impl Block {
 						signal,
 					);
 				}
+				Signal::DefaultIf(f) => {
+					if f(*self) {
+						push_move(
+							PushMoveTo::Foreign {
+								inst_id: *inst_id,
+								id: *id,
+							},
+							signal,
+						);
+					}
+				}
 				Signal::ForeignExternalPoweron => {
-					all_directions();
+					fn cause(block: Block) -> bool {
+						match block {
+							Block::Foreign(_, _, _) => false,
+							_ => true,
+						}
+					}
+					let signal = Signal::DefaultIf(cause);
+					push_move(PushMoveTo::Rel(1, 0), signal.clone());
+					push_move(PushMoveTo::Rel(0, 1), signal.clone());
+					push_move(PushMoveTo::Rel(-1, 0), signal.clone());
+					push_move(PushMoveTo::Rel(0, -1), signal);
 				}
 			},
 			Self::Nothing | Block::Error(_) => {}

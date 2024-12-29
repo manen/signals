@@ -7,6 +7,7 @@ pub enum Signal {
 	#[default]
 	Default,
 	ForeignExternalPoweron,
+	DefaultIf(fn(Block) -> bool),
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Move {
@@ -80,7 +81,22 @@ impl World {
 			};
 		}
 
-		for mov in moves {
+		for mov in moves.into_iter().filter_map(|mov| match mov.signal() {
+			Signal::DefaultIf(f) => match mov {
+				Move::Inside { to,  .. } => {
+					if self.at(to.0, to.1).map(|b| f(*b)).unwrap_or(false) {
+						Some(mov)
+					} else {
+						None
+					}
+				}
+				_ => {
+					eprintln!("dropping a Signal::DefaultIf, since it only works with Move::Inside for performance");
+					None
+				}
+			},
+			_ => Some(mov)
+		}).collect::<Vec<_>>() {
 			match mov {
 				Move::Inside { to, from, signal } => {
 					let (x, y) = to;
