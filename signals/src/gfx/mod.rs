@@ -1,4 +1,5 @@
 use raylib::prelude::{RaylibDraw, RaylibDrawHandle};
+use sui::comp::Compatible;
 
 use crate::{
 	game,
@@ -62,21 +63,19 @@ impl PosInfo {
 	}
 }
 
-pub fn render_game(game: &game::Game, d: &mut RaylibDrawHandle, pos_info: PosInfo) {
+pub fn game_debug_ui<'a>(game: &'a game::Game) -> sui::comp::Comp<'a> {
 	let lines = game
 		.moves
 		.children
 		.iter()
 		.enumerate()
-		.map(|(i, ingameworld)| format!("inst {i}: {:?}", ingameworld.world_id));
+		.map(|(i, ingameworld)| format!("inst {i}: {:?}", ingameworld.world_id))
+		.map(|s| sui::comp::Text::new(s, 12).into_comp());
 
-	let mut y = pos_info.base.1;
+	let content = lines.chain(std::iter::once(sui::text(format!("{:#?}", game.moves), 16)));
+	let page = sui::layout::Page::new(content.collect::<Vec<_>>(), false);
 
-	for line in lines {
-		let text_size = 12;
-		d.draw_text(&line, pos_info.base.0, y, text_size, SWITCH_ON);
-		y += text_size;
-	}
+	page.into_comp()
 }
 
 pub fn render_world(world: &world::RenderedWorld, d: &mut RaylibDrawHandle, pos_info: PosInfo) {

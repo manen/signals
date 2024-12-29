@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use raylib::ffi::MouseButton;
 
 use crate::{
@@ -12,7 +14,7 @@ pub fn page<'a>(components: impl Into<Vec<Comp<'a>>>) -> Comp<'a> {
 pub fn page_h<'a>(components: impl Into<Vec<Comp<'a>>>) -> Comp<'a> {
 	layout::Page::new(components, true).into_comp()
 }
-pub fn text<'a>(text: &'a str, size: i32) -> Comp<'a> {
+pub fn text<'a, T: Into<Cow<'a, str>>>(text: T, size: i32) -> Comp<'a> {
 	comp::Text::new(text, size).into_comp()
 }
 

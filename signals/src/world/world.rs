@@ -83,9 +83,9 @@ impl World {
 
 		for mov in moves.into_iter().filter_map(|mov| match mov.signal() {
 			Signal::DefaultIf(f) => match mov {
-				Move::Inside { to,  .. } => {
+				Move::Inside { to,  from, .. } => {
 					if self.at(to.0, to.1).map(|b| f(*b)).unwrap_or(false) {
-						Some(mov)
+						Some(Move::Inside { to, from, signal: Signal::Default })
 					} else {
 						None
 					}

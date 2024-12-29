@@ -125,7 +125,8 @@ impl Tool {
 					let max_id = {
 						let world = game.world(Some(*wid));
 						world.inputs_count().max(world.outputs_count())
-					} - 1;
+					}
+					.max(1) - 1;
 					let (_, inst_id, id) = foreigns[foreigns.len() - 1].1;
 					if id >= max_id {
 						new_instance!();

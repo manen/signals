@@ -112,22 +112,6 @@ fn main() {
 
 	let mut g_pos = PosInfo::default();
 
-	// let mut page = sui::layout::Page::empty();
-	// page.push::<sui::Text>(("szia", 14));
-	// page.push::<sui::Text>(("SZIA", 34));
-	// page.push::<sui::Text>(("SZIA", 12));
-
-	let page = sui::page(vec![
-		sui::text("szia", 14),
-		sui::text("SZIA", 34),
-		sui::comp::Compatible::into_comp(sui::comp::Clickable::new(
-			sui::text("SZIA", 12),
-			"clicked",
-			0,
-		)),
-		sui::text("SZIA", 45),
-	]);
-
 	while !rl.window_should_close() {
 		if let Some(ch) = rl.get_char_pressed() {
 			if let Some(num) = ch.to_digit(10) {
@@ -202,21 +186,12 @@ fn main() {
 		delta += rl.get_frame_time();
 		for _ in 0..(delta / TICK_TIME) as i32 {
 			delta -= TICK_TIME;
-			// moves = world
-			// 	.tick(moves)
-			// 	.into_iter()
-			// 	.map(|mov| match mov {
-			// 		world::Move::Output { id, signal } => {
-			// 			// so sometimes it works sometimes it gets stuck in an infinite loop yk whatever it feels like
-			// 			world::Move::Input { id, signal }
-			// 		}
-			// 		mov => mov,
-			// 	})
-			// 	.collect();
 			game.tick();
 		}
 
-		let scale = (rl.get_time() % 2.0) as f32;
+		let page = gfx::game_debug_ui(&game);
+
+		let scale = 1.0;
 		let event_out = sui::handle_input(&page, &mut rl, 0, 100, scale);
 		if let Some(event_out) = event_out {
 			println!("{} {event_out:?}", rl.get_time());
@@ -226,7 +201,6 @@ fn main() {
 		d.clear_background(gfx::BACKGROUND);
 
 		gfx::render_world(&game.main, &mut d, pos_info);
-		gfx::render_game(&game, &mut d, Default::default());
 
 		tool_select.render(&mut d, tool_select_det, Some(&tool));
 		foreign_select.render(&mut d, foreign_select_det, Some(&tool));

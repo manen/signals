@@ -1,4 +1,5 @@
 mod select_bar;
+use raylib::prelude::RaylibDraw;
 pub use select_bar::SelectBar;
 
 pub mod text;
@@ -41,6 +42,13 @@ impl<'a> Layable for Comp<'a> {
 		}
 	}
 	fn render(&self, d: &mut raylib::prelude::RaylibDrawHandle, det: crate::Details, scale: f32) {
+		d.draw_rectangle_lines(
+			det.x,
+			det.y,
+			(det.aw as f32 * scale) as _,
+			(det.ah as f32 * scale) as _,
+			raylib::color::Color::WHITE,
+		);
 		match self {
 			Self::Page(a) => Layable::render(a, d, det, scale),
 			Self::Text(a) => a.render(d, det, scale),
