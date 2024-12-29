@@ -1,4 +1,6 @@
 mod select_bar;
+use std::fmt::Debug;
+
 use raylib::prelude::RaylibDraw;
 pub use select_bar::SelectBar;
 

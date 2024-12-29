@@ -56,7 +56,7 @@ impl<'a> Page<'a> {
 impl<'a> Layable for Page<'a> {
 	fn size(&self) -> (i32, i32) {
 		self.components.iter().fold((0, 0), |a, layable| {
-			let size = layable.d().size();
+			let size = layable.size();
 			if !self.horizontal {
 				(a.0 + size.0, a.1.max(size.1))
 			} else {
