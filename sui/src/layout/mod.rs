@@ -44,6 +44,7 @@ pub struct DynamicLayable {
 	render: fn(*const u8, d: &mut RaylibDrawHandle, det: Details, scale: f32),
 	pass_event: fn(*const u8, event: Event) -> Option<Event>,
 
+	drop: fn(*mut u8),
 	clone: Option<fn(*const u8, std::alloc::Layout) -> *mut u8>,
 	debug: Option<fn(*const u8) -> String>,
 }
@@ -115,6 +116,12 @@ impl DynamicLayable {
 			L::pass_event(unsafe { &*(ptr as *const L) }, event)
 		}
 
+		fn drop<L: Layable>(ptr: *mut u8) {
+			let mut layable: std::mem::MaybeUninit<L> = std::mem::MaybeUninit::uninit();
+			unsafe { std::ptr::copy_nonoverlapping(ptr as *const L, layable.as_mut_ptr(), 1) };
+			unsafe{ layable.assume_init_drop() };
+		}
+
 		let d = Self {
 			ptr,
 			layout,
@@ -122,6 +129,7 @@ impl DynamicLayable {
 			size: size::<L>,
 			render: render::<L>,
 			pass_event: pass_event::<L>,
+			drop: drop::<L>,
 			clone: None,
 			debug: None,
 		};
@@ -141,6 +149,7 @@ impl DynamicLayable {
 }
 impl Drop for DynamicLayable {
 	fn drop(&mut self) {
+		(self.drop)(self.ptr);
 		unsafe { std::alloc::dealloc(self.ptr as *mut u8, self.layout) };
 	}
 }
@@ -188,6 +197,7 @@ impl Clone for DynamicLayable {
 					size: self.size,
 					render: self.render,
 					pass_event: self.pass_event,
+					drop: self.drop,
 					clone: self.clone,
 					debug: self.debug
 				}
@@ -253,5 +263,33 @@ mod dynamiclayable_tests {
 		let d_d = d_c.clone();
 
 		test_pair(d_c, d_d);
+	}
+
+	static mut DROPPED: bool = false;
+
+	#[test]
+	fn test_drop() {
+		#[derive(Clone, Debug)]
+		struct Dummy;
+		impl Layable for Dummy {
+			fn size(&self) -> (i32, i32) {
+				(200, 200)
+			}
+			fn render(&self, _: &mut RaylibDrawHandle, _: Details, _: f32) {
+			}
+			fn pass_event(&self, event: Event) -> Option<Event> {
+				Some(event)
+			}
+		}
+		impl Drop for Dummy {
+			fn drop(&mut self) {
+				unsafe { DROPPED = true };
+			}
+		}
+
+		{
+			let d = DynamicLayable::new(Dummy);
+		}
+		assert!(unsafe{DROPPED});
 	}
 }
