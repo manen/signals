@@ -31,9 +31,7 @@ pub enum Event {
 	},
 }
 
-/// DynamicLayable is like dyn Layable but better \
-/// once a L: Layable is converted into a DynamicLayable it can't be taken back because
-/// i fear that'd open up pandora's box of unexplainable memory bugs
+/// DynamicLayable is like dyn Layable but better
 pub struct DynamicLayable {
 	/// heap pointer, allocated with std::alloc
 	ptr: *mut u8,
@@ -145,6 +143,23 @@ impl DynamicLayable {
 				self.type_name
 			)
 		}
+	}
+
+	/// basically [Self::new] but backwards
+	pub fn take<L: Layable>(self) -> Option<L> {
+		if self.can_take::<L>() {
+			let mut layable: std::mem::MaybeUninit<L> = std::mem::MaybeUninit::uninit();
+			unsafe { std::ptr::copy_nonoverlapping(self.ptr as *const L, layable.as_mut_ptr(), 1) };
+			let layable = unsafe { layable.assume_init() };
+			Some(layable)
+		}
+		else { None }
+	}
+	/// returns whether calling self.take<L> will return Some \
+	/// only here because Self::take takes by value not by reference
+	pub fn can_take<L: Layable>(&self) -> bool {
+		// this is our bulletproof type-checking
+		std::any::type_name::<L>() == self.type_name && self.layout == std::alloc::Layout::new::<L>()
 	}
 }
 impl Drop for DynamicLayable {
@@ -291,5 +306,29 @@ mod dynamiclayable_tests {
 			let d = DynamicLayable::new(Dummy);
 		}
 		assert!(unsafe{DROPPED});
+	}
+
+	#[test]
+	fn test_take() {
+		#[derive(Clone, Debug, PartialEq, Eq)]
+		struct Dummy(i32);
+		impl Layable for Dummy {
+			fn size(&self) -> (i32, i32) {
+				(200, 200)
+			}
+			fn render(&self, _: &mut RaylibDrawHandle, _: Details, _: f32) {
+			}
+			fn pass_event(&self, event: Event) -> Option<Event> {
+				Some(event)
+			}
+		}
+
+		let d = DynamicLayable::new(Dummy(30));
+		let d_cloned = d.clone();
+
+		assert!(!d_cloned.can_take::<crate::Comp>());
+		assert!(!d_cloned.can_take::<crate::Text>());
+		
+		assert_eq!(d_cloned.take(), Some(Dummy(30)));
 	}
 }
