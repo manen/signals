@@ -1,4 +1,4 @@
-use crate::{layout::Event, Layable};
+use crate::{core::Event, Layable};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 /// while this technically does work with any Layable, to implement Compatible C needs to be Comp

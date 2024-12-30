@@ -4,15 +4,15 @@ use raylib::ffi::MouseButton;
 
 use crate::{
 	comp::{self, Comp, Compatible},
-	layout::{self, Event},
+	core::Event,
 	Layable,
 };
 
 pub fn page<'a>(components: impl Into<Vec<Comp<'a>>>) -> Comp<'a> {
-	layout::Page::new(components, false).into_comp()
+	comp::Page::new(components, false).into_comp()
 }
 pub fn page_h<'a>(components: impl Into<Vec<Comp<'a>>>) -> Comp<'a> {
-	layout::Page::new(components, true).into_comp()
+	comp::Page::new(components, true).into_comp()
 }
 pub fn text<'a, T: Into<Cow<'a, str>>>(text: T, size: i32) -> Comp<'a> {
 	comp::Text::new(text, size).into_comp()
@@ -25,7 +25,7 @@ pub fn handle_input<'a, C: Layable>(
 	base_x: i32,
 	base_y: i32,
 	scale: f32,
-) -> Option<crate::layout::Event> {
+) -> Option<crate::core::Event> {
 	if rl.is_mouse_button_down(MouseButton::MOUSE_BUTTON_LEFT) {
 		let (ptr_x, ptr_y) = (rl.get_mouse_x(), rl.get_mouse_y());
 

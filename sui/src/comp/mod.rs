@@ -10,11 +10,14 @@ pub use text::Text;
 pub mod clickable;
 pub use clickable::Clickable;
 
+pub mod page;
+pub use page::Page;
+
 use crate::Layable;
 
 #[derive(Debug, Clone)]
 pub enum Comp<'a> {
-	Page(crate::layout::Page<'a>),
+	Page(Page<'a>),
 	Text(Text<'a>),
 	Clickable(Box<Clickable<Self>>), // it sucks that this has to be a box
 }
@@ -58,7 +61,7 @@ impl<'a> Layable for Comp<'a> {
 		}
 	}
 
-	fn pass_event(&self, event: crate::layout::Event) -> Option<crate::layout::Event> {
+	fn pass_event(&self, event: crate::core::Event) -> Option<crate::core::Event> {
 		match self {
 			Self::Page(a) => a.pass_event(event),
 			Self::Text(a) => a.pass_event(event),
@@ -95,7 +98,7 @@ macro_rules! compatible_impl {
 		}
 	};
 }
-compatible_impl!(Page, crate::layout::Page<'a>);
+compatible_impl!(Page, Page<'a>);
 compatible_impl!(Text, Text<'a>);
 
 impl<'a> Compatible<'a> for Clickable<Comp<'a>> {

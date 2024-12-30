@@ -59,7 +59,7 @@ impl<'a> Layable for Text<'a> {
 		);
 	}
 
-	fn pass_event(&self, _: crate::layout::Event) -> Option<crate::layout::Event> {
+	fn pass_event(&self, _: crate::core::Event) -> Option<crate::core::Event> {
 		None
 	}
 }

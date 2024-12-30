@@ -1,4 +1,4 @@
-use super::Layable;
+use crate::core::Layable;
 use crate::{
 	comp::{Comp, Compatible},
 	Details,
@@ -69,16 +69,16 @@ impl<'a> Layable for Page<'a> {
 		Page::render(&self, d, det.x, det.y, scale);
 	}
 
-	fn pass_event(&self, event: super::Event) -> Option<super::Event> {
+	fn pass_event(&self, event: crate::core::Event) -> Option<crate::core::Event> {
 		match event {
-			super::Event::MouseEvent { x: ptr_x, y: ptr_y } => {
+			crate::core::Event::MouseEvent { x: ptr_x, y: ptr_y } => {
 				let (mut x, mut y) = (0, 0);
 				for c in self.components.iter() {
 					let (cw, ch) = c.size();
 					if ptr_x >= x && ptr_x <= x + cw // x
 					 && ptr_y >= y && ptr_y <= y + ch
 					{
-						return c.pass_event(super::Event::MouseEvent {
+						return c.pass_event(crate::core::Event::MouseEvent {
 							x: ptr_x - x,
 							y: ptr_y - y,
 						});

@@ -1,6 +1,7 @@
 mod game;
 mod gfx;
 mod tool;
+mod ui;
 mod world;
 
 use game::{Game, IngameWorld};
@@ -17,64 +18,6 @@ pub const MOVE_LEFT: KeyboardKey = KeyboardKey::KEY_A;
 pub const MOVE_RIGHT: KeyboardKey = KeyboardKey::KEY_D;
 pub const TOOL_USE: MouseButton = MouseButton::MOUSE_BUTTON_LEFT;
 pub const MOVE_AMOUNT: f32 = 5000.0;
-
-// fn main() {
-// 	let (start_width, start_height) = (640, 480);
-
-// 	let (mut rl, thread) = raylib::init()
-// 		.size(start_width, start_height)
-// 		.title("signals")
-// 		.resizable()
-// 		.build();
-
-// 	{
-// 		// center window on screen
-// 		let monitor = unsafe { raylib::ffi::GetCurrentMonitor() };
-// 		let raylib::ffi::Vector2 { x: m_x, y: m_y } =
-// 			unsafe { raylib::ffi::GetMonitorPosition(monitor) };
-// 		let m_width = unsafe { raylib::ffi::GetMonitorWidth(monitor) };
-// 		let m_height = unsafe { raylib::ffi::GetMonitorHeight(monitor) };
-
-// 		rl.set_window_position(
-// 			m_x as i32 + m_width / 2 - start_width / 2,
-// 			m_y as i32 + m_height / 2 - start_height / 2,
-// 		);
-// 	}
-
-// 	let mut game = Game::default();
-
-// 	let mut delta = 0.0;
-// 	let mut moves = Vec::<world::Move>::new();
-// 	let mut g_pos = PosInfo::default();
-
-// 	while !rl.window_should_close() {
-// 		let screen = sui::Details::window(rl.get_render_width(), unsafe {
-// 			raylib::ffi::GetRenderHeight()
-// 		});
-
-// 		let screen_middle = (screen.aw / 2, screen.ah / 2);
-// 		let pos_info = g_pos.add(screen_middle.0, screen_middle.1);
-
-// 		{
-// 			// camera scale, move
-// 			g_pos.scale *= 1.0 + (rl.get_mouse_wheel_move() * 0.1);
-
-// 			let move_amount = (MOVE_AMOUNT * rl.get_frame_time()) as i32;
-// 			if rl.is_key_down(MOVE_UP) {
-// 				g_pos.base.1 += move_amount;
-// 			}
-// 			if rl.is_key_down(MOVE_DOWN) {
-// 				g_pos.base.1 -= move_amount;
-// 			}
-// 			if rl.is_key_down(MOVE_LEFT) {
-// 				g_pos.base.0 += move_amount;
-// 			}
-// 			if rl.is_key_down(MOVE_RIGHT) {
-// 				g_pos.base.0 -= move_amount;
-// 			}
-// 		}
-// 	}
-// }
 
 fn main() {
 	let (start_width, start_height) = (640, 480);

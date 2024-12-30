@@ -73,7 +73,7 @@ pub fn game_debug_ui<'a>(game: &'a game::Game) -> sui::comp::Comp<'a> {
 		.map(|s| sui::comp::Text::new(s, 12).into_comp());
 
 	let content = lines.chain(std::iter::once(sui::text(format!("{:#?}", game.moves), 16)));
-	let page = sui::layout::Page::new(content.collect::<Vec<_>>(), false);
+	let page = sui::page(content.collect::<Vec<_>>());
 
 	page.into_comp()
 }

@@ -1,38 +1,9 @@
+use crate::core::{Details, Event, Layable};
+use raylib::prelude::RaylibDrawHandle;
 use std::fmt::Debug;
 
-use crate::Details;
-use raylib::prelude::RaylibDrawHandle;
-
-pub mod page;
-pub use page::Page;
-
-pub trait Layable {
-	fn size(&self) -> (i32, i32);
-	fn render(&self, d: &mut RaylibDrawHandle, det: Details, scale: f32);
-
-	/// this function is called by the parent of this component \
-	/// return events to be bubbled back
-	fn pass_event(&self, event: Event) -> Option<Event>;
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub enum Event {
-	MouseEvent {
-		x: i32,
-		y: i32,
-	},
-
-	/// use these to bubble
-	Named {
-		/// id is meant to be a general identifier of what this event's about
-		id: &'static str,
-		/// n could be anything you want, probably most useful as an array index
-		n: i32,
-	},
-}
-
 /// DynamicLayable is like dyn Layable but better
-pub struct DynamicLayable {
+pub struct DynamicLayable<'a> {
 	/// heap pointer, allocated with std::alloc
 	ptr: *mut u8,
 	layout: std::alloc::Layout,
@@ -45,18 +16,20 @@ pub struct DynamicLayable {
 	drop: fn(*mut u8),
 	clone: Option<fn(*const u8, std::alloc::Layout) -> *mut u8>,
 	debug: Option<fn(*const u8) -> String>,
+
+	lifetime: std::marker::PhantomData<&'a ()>,
 }
 // memory stuff for DynamicLayable
-impl DynamicLayable {
-	pub fn new<L: Layable + Debug + Clone>(layable: L) -> Self {
+impl<'a> DynamicLayable<'a> {
+	pub fn new<L: Layable + Debug + Clone + 'a>(layable: L) -> Self {
 		Self::new_notraits(layable)
 			.add_debug::<L>()
 			.add_clone::<L>()
 	}
-	pub fn new_only_debug<L: Layable + Debug>(layable: L) -> Self {
+	pub fn new_only_debug<L: Layable + Debug + 'a>(layable: L) -> Self {
 		Self::new_notraits(layable).add_debug::<L>()
 	}
-	pub fn new_only_clone<L: Layable + Clone>(layable: L) -> Self {
+	pub fn new_only_clone<L: Layable + Clone + 'a>(layable: L) -> Self {
 		Self::new_notraits(layable).add_clone::<L>()
 	}
 
@@ -95,7 +68,7 @@ impl DynamicLayable {
 		self
 	}
 
-	pub fn new_notraits<L: Layable>(layable: L) -> Self {
+	pub fn new_notraits<L: Layable + 'a>(layable: L) -> Self {
 		let type_name = std::any::type_name::<L>();
 		let layout = std::alloc::Layout::new::<L>();
 		let ptr = unsafe { std::alloc::alloc(layout) } as *mut L;
@@ -130,6 +103,7 @@ impl DynamicLayable {
 			drop: drop::<L>,
 			clone: None,
 			debug: None,
+			lifetime: std::marker::PhantomData,
 		};
 		d.null_check();
 		d
@@ -145,6 +119,24 @@ impl DynamicLayable {
 		}
 	}
 
+	/// borrows self as L, if L is the type inside
+	pub fn borrow<L: Layable>(&self) -> Option<&L> {
+		if self.can_take::<L>() {
+			let b = unsafe { &*(self.ptr as *mut L) };
+			Some(b)
+		} else {
+			None
+		}
+	}
+	/// borrows self as L, if L is the type inside
+	pub fn borrow_mut<L: Layable>(&mut self) -> Option<&'a mut L> {
+		if self.can_take::<L>() {
+			let b = unsafe { &mut *(self.ptr as *mut L) };
+			Some(b)
+		} else {
+			None
+		}
+	}
 	/// basically [Self::new] but backwards
 	pub fn take<L: Layable>(self) -> Option<L> {
 		if self.can_take::<L>() {
@@ -164,14 +156,14 @@ impl DynamicLayable {
 			&& self.layout == std::alloc::Layout::new::<L>()
 	}
 }
-impl Drop for DynamicLayable {
+impl<'a> Drop for DynamicLayable<'a> {
 	fn drop(&mut self) {
 		(self.drop)(self.ptr);
 		unsafe { std::alloc::dealloc(self.ptr as *mut u8, self.layout) };
 	}
 }
 // layable impl
-impl Layable for DynamicLayable {
+impl<'a> Layable for DynamicLayable<'a> {
 	fn size(&self) -> (i32, i32) {
 		(self.size)(self.ptr)
 	}
@@ -183,7 +175,7 @@ impl Layable for DynamicLayable {
 	}
 }
 // common trait impls
-impl Debug for DynamicLayable {
+impl<'a> Debug for DynamicLayable<'a> {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self.debug {
 			None => write!(f, "[DynamicLayable {}]", self.type_name),
@@ -205,7 +197,7 @@ impl Debug for DynamicLayable {
 		}
 	}
 }
-impl Clone for DynamicLayable {
+impl<'a> Clone for DynamicLayable<'a> {
 	fn clone(&self) -> Self {
 		match self.clone {
 			None => panic!("attempted to clone a DynamicLayable that didn't implement cloning\nmake sure to use DynamicLayable::new or DynamicLayable::new_only_clone\nsorry for panicking but the only other option is memory corruption so i think u still got a good deal"),
@@ -221,7 +213,8 @@ impl Clone for DynamicLayable {
 					pass_event: self.pass_event,
 					drop: self.drop,
 					clone: self.clone,
-					debug: self.debug
+					debug: self.debug,
+					lifetime: std::marker::PhantomData,
 				}
 			}
 		}
@@ -244,7 +237,7 @@ mod dynamiclayable_tests {
 			crate::text("hi".to_owned(), 14),
 			crate::text("yessirski", 54),
 		]));
-		test_single(Page::new(
+		test_single(crate::comp::Page::new(
 			vec![
 				crate::text("hellop", 1),
 				crate::text("hi".to_owned(), 14),
@@ -288,7 +281,6 @@ mod dynamiclayable_tests {
 	}
 
 	static mut DROPPED: bool = false;
-
 	#[test]
 	fn test_drop() {
 		#[derive(Clone, Debug)]
@@ -309,7 +301,7 @@ mod dynamiclayable_tests {
 		}
 
 		{
-			let d = DynamicLayable::new(Dummy);
+			let _ = DynamicLayable::new(Dummy);
 		}
 		assert!(unsafe { DROPPED });
 	}
@@ -333,7 +325,56 @@ mod dynamiclayable_tests {
 
 		assert!(!d_cloned.can_take::<crate::Comp>());
 		assert!(!d_cloned.can_take::<crate::Text>());
+		assert!(!d.can_take::<crate::Comp>());
+		assert!(!d.can_take::<crate::Text>());
 
 		assert_eq!(d_cloned.take(), Some(Dummy(30)));
+		assert_eq!(d.take(), Some(Dummy(30)));
 	}
+
+	#[test]
+	fn test_borrow() {
+		#[derive(Clone, Debug, PartialEq, Eq)]
+		struct Dummy(i32);
+		impl Layable for Dummy {
+			fn size(&self) -> (i32, i32) {
+				(200, 200)
+			}
+			fn render(&self, _: &mut RaylibDrawHandle, _: Details, _: f32) {}
+			fn pass_event(&self, event: Event) -> Option<Event> {
+				Some(event)
+			}
+		}
+
+		let mut d = DynamicLayable::new(Dummy(10));
+
+		assert!(d.borrow::<crate::Page>().is_none());
+		match d.borrow_mut::<crate::Text>() {
+			None => { /* good!! */ }
+			Some(_) => panic!("d.borrow_mut for the incorrect type returned something?"),
+		}
+
+		assert_eq!(d.borrow::<Dummy>(), Some(&Dummy(10)));
+
+		d.borrow_mut::<Dummy>().expect("this is the correct type").0 = 3;
+
+		assert_eq!(d.borrow::<Dummy>(), Some(&Dummy(3)));
+		assert_eq!(d.take::<Dummy>(), Some(Dummy(3)))
+	}
+
+	// #[test]
+	// fn this_should_not_compile() {
+	// 	let d = {
+	// 		let s = "hello this data is going to disappear real soon".to_owned();
+	// 		DynamicLayable::new(crate::text(&s, 13)) // <- s does not live long enough
+	// 	};
+	// 	d.size();
+
+	// 	let b = {
+	// 		let s = "this is just a string!!".to_owned();
+	// 		let d = DynamicLayable::new(crate::text(s, 4));
+	// 		d.borrow::<crate::Comp>().expect("this is the correct type") // <- d does not live long enough
+	// 	};
+	// 	b.size();
+	// }
 }

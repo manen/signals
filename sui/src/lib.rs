@@ -1,11 +1,11 @@
 pub mod comp;
-pub use comp::{Comp, SelectBar, Text};
+pub use comp::{Comp, Page, SelectBar, Text};
 
 pub mod det;
 pub use det::Details;
 
-pub mod layout;
-pub use layout::{DynamicLayable, Layable};
+pub mod core;
+pub use core::{DynamicLayable, Layable};
 
 pub mod ui;
 pub use ui::*;
