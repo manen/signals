@@ -117,7 +117,7 @@ impl DynamicLayable {
 		fn drop<L: Layable>(ptr: *mut u8) {
 			let mut layable: std::mem::MaybeUninit<L> = std::mem::MaybeUninit::uninit();
 			unsafe { std::ptr::copy_nonoverlapping(ptr as *const L, layable.as_mut_ptr(), 1) };
-			unsafe{ layable.assume_init_drop() };
+			unsafe { layable.assume_init_drop() };
 		}
 
 		let d = Self {
@@ -152,14 +152,16 @@ impl DynamicLayable {
 			unsafe { std::ptr::copy_nonoverlapping(self.ptr as *const L, layable.as_mut_ptr(), 1) };
 			let layable = unsafe { layable.assume_init() };
 			Some(layable)
+		} else {
+			None
 		}
-		else { None }
 	}
 	/// returns whether calling self.take<L> will return Some \
 	/// only here because Self::take takes by value not by reference
 	pub fn can_take<L: Layable>(&self) -> bool {
 		// this is our bulletproof type-checking
-		std::any::type_name::<L>() == self.type_name && self.layout == std::alloc::Layout::new::<L>()
+		std::any::type_name::<L>() == self.type_name
+			&& self.layout == std::alloc::Layout::new::<L>()
 	}
 }
 impl Drop for DynamicLayable {
@@ -188,12 +190,17 @@ impl Debug for DynamicLayable {
 			Some(dbgf) => {
 				let s = dbgf(self.ptr);
 				let type_name = self.type_name;
-				fn none_or_some<T>(x: Option<T>) -> &'static str{match x {
-					Some(_) => "Some",
-					None => "None",
-				}}
+				fn none_or_some<T>(x: Option<T>) -> &'static str {
+					match x {
+						Some(_) => "Some",
+						None => "None",
+					}
+				}
 				let (clone, debug) = (none_or_some(self.clone), none_or_some(self.debug));
-				write!(f, "[DynamicLayable {type_name} {s}, clone: {clone}, debug: {debug}]")
+				write!(
+					f,
+					"[DynamicLayable {type_name} {s}, clone: {clone}, debug: {debug}]"
+				)
 			}
 		}
 	}
@@ -216,7 +223,7 @@ impl Clone for DynamicLayable {
 					clone: self.clone,
 					debug: self.debug
 				}
-			} 
+			}
 		}
 	}
 }
@@ -237,13 +244,14 @@ mod dynamiclayable_tests {
 			crate::text("hi".to_owned(), 14),
 			crate::text("yessirski", 54),
 		]));
-		test_single(Page::new(vec![
-			
-			crate::text("hellop", 1),
-			crate::text("hi".to_owned(), 14),
-			crate::text("yessirski", 54),
-
-		], false));
+		test_single(Page::new(
+			vec![
+				crate::text("hellop", 1),
+				crate::text("hi".to_owned(), 14),
+				crate::text("yessirski", 54),
+			],
+			false,
+		));
 	}
 	fn test_single<L: Layable + Clone + Debug>(l: L) {
 		let d = DynamicLayable::new(l.clone());
@@ -267,7 +275,6 @@ mod dynamiclayable_tests {
 
 		test_pair(d_a, d_b);
 
-
 		let xample = String::from("starting value");
 
 		let d_c = DynamicLayable::new(crate::page(vec![
@@ -290,8 +297,7 @@ mod dynamiclayable_tests {
 			fn size(&self) -> (i32, i32) {
 				(200, 200)
 			}
-			fn render(&self, _: &mut RaylibDrawHandle, _: Details, _: f32) {
-			}
+			fn render(&self, _: &mut RaylibDrawHandle, _: Details, _: f32) {}
 			fn pass_event(&self, event: Event) -> Option<Event> {
 				Some(event)
 			}
@@ -305,7 +311,7 @@ mod dynamiclayable_tests {
 		{
 			let d = DynamicLayable::new(Dummy);
 		}
-		assert!(unsafe{DROPPED});
+		assert!(unsafe { DROPPED });
 	}
 
 	#[test]
@@ -316,8 +322,7 @@ mod dynamiclayable_tests {
 			fn size(&self) -> (i32, i32) {
 				(200, 200)
 			}
-			fn render(&self, _: &mut RaylibDrawHandle, _: Details, _: f32) {
-			}
+			fn render(&self, _: &mut RaylibDrawHandle, _: Details, _: f32) {}
 			fn pass_event(&self, event: Event) -> Option<Event> {
 				Some(event)
 			}
@@ -328,7 +333,7 @@ mod dynamiclayable_tests {
 
 		assert!(!d_cloned.can_take::<crate::Comp>());
 		assert!(!d_cloned.can_take::<crate::Text>());
-		
+
 		assert_eq!(d_cloned.take(), Some(Dummy(30)));
 	}
 }
