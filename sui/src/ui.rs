@@ -8,6 +8,13 @@ use crate::{
 	Layable,
 };
 
+/// this will turn any layable into a Comp \
+///! do not use if Comp has an enum variant for the layable you're using,
+///  as it will create a DynamicLayable for nothing (causing performance & memory overhead)
+pub fn custom<'a, L: Layable + std::fmt::Debug + Clone + 'a>(layable: L) -> Comp<'a> {
+	crate::DynamicLayable::new(layable).into_comp()
+}
+
 pub fn page<'a>(components: impl Into<Vec<Comp<'a>>>) -> Comp<'a> {
 	comp::Page::new(components, false).into_comp()
 }

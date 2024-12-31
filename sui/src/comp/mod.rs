@@ -20,6 +20,7 @@ pub enum Comp<'a> {
 	Page(Page<'a>),
 	Text(Text<'a>),
 	Clickable(Box<Clickable<Self>>), // it sucks that this has to be a box
+	Dynamic(crate::core::DynamicLayable<'a>),
 }
 impl<'a> Comp<'a> {
 	pub fn new<C: Compatible<'a>>(c: C) -> Self {
@@ -27,14 +28,6 @@ impl<'a> Comp<'a> {
 	}
 	pub fn take<C: Compatible<'a>>(self) -> Option<C> {
 		C::from_comp(self)
-	}
-
-	pub fn d<'b>(&self) -> &dyn Layable {
-		match self {
-			Self::Page(a) => a,
-			Self::Text(a) => a,
-			Self::Clickable(a) => a.as_ref(),
-		}
 	}
 }
 
@@ -44,6 +37,7 @@ impl<'a> Layable for Comp<'a> {
 			Self::Page(a) => a.size(),
 			Self::Text(a) => a.size(),
 			Self::Clickable(a) => a.size(),
+			Self::Dynamic(d) => d.size(),
 		}
 	}
 	fn render(&self, d: &mut raylib::prelude::RaylibDrawHandle, det: crate::Details, scale: f32) {
@@ -58,6 +52,7 @@ impl<'a> Layable for Comp<'a> {
 			Self::Page(a) => Layable::render(a, d, det, scale),
 			Self::Text(a) => a.render(d, det, scale),
 			Self::Clickable(a) => a.render(d, det, scale),
+			Self::Dynamic(dl) => dl.render(d, det, scale),
 		}
 	}
 
@@ -66,6 +61,7 @@ impl<'a> Layable for Comp<'a> {
 			Self::Page(a) => a.pass_event(event),
 			Self::Text(a) => a.pass_event(event),
 			Self::Clickable(a) => a.pass_event(event),
+			Self::Dynamic(dl) => dl.pass_event(event),
 		}
 	}
 }
@@ -112,3 +108,5 @@ impl<'a> Compatible<'a> for Clickable<Comp<'a>> {
 		Comp::Clickable(Box::new(self))
 	}
 }
+
+compatible_impl!(Dynamic, crate::DynamicLayable<'a>);

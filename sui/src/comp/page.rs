@@ -34,8 +34,8 @@ impl<'a> Page<'a> {
 
 	pub fn render(&self, d: &mut RaylibDrawHandle, mut x: i32, mut y: i32, scale: f32) {
 		for e in self.components.iter() {
-			let (rw, rh) = e.d().size();
-			e.d().render(
+			let (rw, rh) = e.size();
+			e.render(
 				d,
 				Details {
 					x,
