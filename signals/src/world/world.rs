@@ -384,6 +384,45 @@ impl World {
 	pub fn chunks(&self) -> std::collections::hash_map::Iter<'_, (i32, i32), chunk::Chunk> {
 		self.chunks.iter()
 	}
+
+	/// returns: ((x, y) size in chunks, (x, y) chunk offset added to base coords to make world render the left upmost chunk at 0,0)
+	pub fn size_and_offset(&self) -> ((i32, i32), (i32, i32)) {
+		let ((x_smallest, x_biggest), (y_smallest, y_biggest)) = match self.biggest_smallest() {
+			None => return ((0, 0), (0, 0)),
+			Some(a) => a,
+		};
+
+		let x_offset = -x_smallest;
+		let y_offset = -y_smallest;
+
+		(
+			(x_biggest - x_smallest + 1, y_biggest - y_smallest + 1),
+			(x_offset, y_offset),
+		)
+	}
+	/// returns none if there are no chunks
+	pub fn biggest_smallest(&self) -> Option<((i32, i32), (i32, i32))> {
+		let (mut x_smallest, mut x_biggest) = (0, 0);
+		let (mut y_smallest, mut y_biggest) = (0, 0);
+
+		let mut did_anything = false;
+
+		for ((cx, cy), _) in self.chunks() {
+			did_anything = true;
+
+			x_smallest = x_smallest.min(*cx);
+			x_biggest = x_biggest.max(*cx);
+
+			y_smallest = y_smallest.min(*cy);
+			y_biggest = y_biggest.max(*cy);
+		}
+
+		if did_anything {
+			Some(((x_smallest, x_biggest), (y_smallest, y_biggest)))
+		} else {
+			None
+		}
+	}
 }
 
 pub fn chunk_coords_into_world_coords(

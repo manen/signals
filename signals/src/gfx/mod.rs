@@ -1,9 +1,11 @@
+use std::borrow::Cow;
+
 use raylib::prelude::{RaylibDraw, RaylibDrawHandle};
 use sui::comp::Compatible;
 
 use crate::{
 	game,
-	world::{self},
+	world::{self, Chunk},
 };
 use raylib::color::Color;
 
@@ -78,11 +80,24 @@ pub fn game_debug_ui<'a>(game: &'a game::Game) -> sui::comp::Comp<'a> {
 	page.into_comp()
 }
 
+pub fn render_basic_world(world: &world::World, d: &mut RaylibDrawHandle, pos_info: PosInfo) {
+	render_any_world(world, d, pos_info, |_| Cow::Owned(Default::default()));
+}
 pub fn render_world(world: &world::RenderedWorld, d: &mut RaylibDrawHandle, pos_info: PosInfo) {
-	for (coords, chunk) in world.as_ref().chunks() {
+	render_any_world(world.as_ref(), d, pos_info, |coords| {
+		Cow::Borrowed(world.drawmap_at(coords))
+	});
+}
+fn render_any_world<'a>(
+	world: &world::World,
+	d: &mut RaylibDrawHandle,
+	pos_info: PosInfo,
+	drawmap_at: impl Fn((i32, i32)) -> Cow<'a, Chunk<DrawType>>,
+) {
+	for (coords, chunk) in world.chunks() {
 		render_chunk(
 			&chunk,
-			world.drawmap_at(*coords),
+			drawmap_at(*coords).as_ref(),
 			d,
 			pos_info.transform(
 				coords.0 * world::CHUNK_SIZE as i32 * world::BLOCK_SIZE as i32,

@@ -154,6 +154,10 @@ fn main() {
 			foreign_select_det.ah,
 			gfx::NOT_BASE,
 		);
+
 		sui::render_root(&page, &mut d, 0, 100, scale);
+		std::mem::drop(page);
+
+		sui::render_root(&ui::worlds_bar(&game), &mut d, 300, 500, scale);
 	}
 }

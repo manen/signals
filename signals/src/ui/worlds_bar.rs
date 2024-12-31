@@ -1,5 +1,5 @@
-use crate::game::Game;
+use crate::{game::Game, ui::ingame::WorldPreview};
 
-pub fn worlds_bar<'a>(game: &'a Game) -> sui::Comp<'a> {
-	todo!();
+pub fn worlds_bar(game: &Game) -> sui::Comp {
+	sui::page(vec![sui::custom(WorldPreview::new(game.main.as_ref()))])
 }
