@@ -175,6 +175,38 @@ impl Game {
 		self.moves = moves;
 	}
 
+	pub fn switch_main(&mut self, new_i: Option<usize>) {
+		// grow the worlds vec if neccessary
+		if let Some(new_i) = new_i {
+			if self.worlds.len() <= new_i {
+				self.worlds.resize_with(new_i + 1, Default::default);
+			}
+		}
+
+		let mut switch_main_with = |i: usize| {
+			use std::mem;
+
+			let old_main = mem::take(&mut self.main).take();
+			let world_at_i = mem::replace(&mut self.worlds[i], old_main);
+
+			self.main = RenderedWorld::new(world_at_i);
+		};
+
+		// reset main
+		match self.i {
+			Some(i) => {
+				switch_main_with(i);
+				self.i = None;
+			}
+			None => {}
+		};
+
+		if let Some(new_i) = new_i {
+			switch_main_with(new_i);
+			self.i = Some(new_i);
+		}
+	}
+
 	/// returns main on None, world number n at Some(n), even if some numbered world is switched with main
 	pub fn world(&mut self, id: Option<usize>) -> &World {
 		// grow the worlds vec if neccessary
@@ -222,35 +254,28 @@ impl Game {
 		}
 	}
 
-	pub fn switch_main(&mut self, new_i: Option<usize>) {
-		// grow the worlds vec if neccessary
-		if let Some(new_i) = new_i {
-			if self.worlds.len() <= new_i {
-				self.worlds.resize_with(new_i + 1, Default::default);
+	/// [Self::world], but will not create the world if a world with `id` doesn't exist
+	pub fn world_opt(&self, id: Option<usize>) -> Option<&World> {
+		match id {
+			None => match self.i {
+				None => Some(self.main.as_ref()),
+				Some(wh) => self.worlds.iter().nth(wh),
+			},
+			Some(a) => {
+				if self.i != Some(a) {
+					self.worlds.iter().nth(a)
+				} else {
+					Some(self.main.as_ref())
+				}
 			}
 		}
+	}
 
-		let mut switch_main_with = |i: usize| {
-			use std::mem;
+	pub fn worlds(&self) -> impl Iterator<Item = &World> {
+		let main = std::iter::once(self.world_opt(None));
+		let numbered = (0..self.worlds.len().max(1) - 1).map(|i| self.world_opt(Some(i)));
 
-			let old_main = mem::take(&mut self.main).take();
-			let world_at_i = mem::replace(&mut self.worlds[i], old_main);
-
-			self.main = RenderedWorld::new(world_at_i);
-		};
-
-		// reset main
-		match self.i {
-			Some(i) => {
-				switch_main_with(i);
-				self.i = None;
-			}
-			None => {}
-		};
-
-		if let Some(new_i) = new_i {
-			switch_main_with(new_i);
-			self.i = Some(new_i);
-		}
+		main.chain(numbered)
+			.map(|opt| opt.expect("Game::worlds failed, as one of the worlds returned is None"))
 	}
 }

@@ -158,6 +158,14 @@ fn main() {
 		sui::render_root(&page, &mut d, 0, 100, scale);
 		std::mem::drop(page);
 
-		sui::render_root(&ui::worlds_bar(&game), &mut d, 300, 500, scale);
+		let worlds_bar_h = 400 as f32 / 1980 as f32 * screen.ah as f32;
+		let worlds_bar_h = worlds_bar_h as _;
+		sui::render_root(
+			&ui::worlds_bar(&game, worlds_bar_h),
+			&mut d,
+			0,
+			screen.ah - worlds_bar_h,
+			scale,
+		);
 	}
 }

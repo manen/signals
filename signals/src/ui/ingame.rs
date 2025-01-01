@@ -41,12 +41,12 @@ impl<'a> Layable for WorldPreview<'a> {
 						+ (w_offset.0 as f32
 							* world::CHUNK_SIZE as f32
 							* world::BLOCK_SIZE as f32
-							* PREVIEW_SCALE) as i32,
+							* PREVIEW_SCALE * scale) as i32,
 					det.y
 						+ (w_offset.1 as f32
 							* world::CHUNK_SIZE as f32
 							* world::BLOCK_SIZE as f32
-							* PREVIEW_SCALE) as i32,
+							* PREVIEW_SCALE * scale) as i32,
 				),
 				scale: scale * PREVIEW_SCALE,
 			},
