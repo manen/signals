@@ -13,13 +13,17 @@ pub use clickable::Clickable;
 pub mod page;
 pub use page::Page;
 
+pub mod scaletofit;
+pub use scaletofit::ScaleToFit;
+
 use crate::Layable;
 
 #[derive(Debug, Clone)]
 pub enum Comp<'a> {
 	Page(Page<'a>),
 	Text(Text<'a>),
-	Clickable(Box<Clickable<Self>>), // it sucks that this has to be a box
+	Clickable(Box<Clickable<Self>>), // it sucks that these have to be a box
+	ScaleToFit(Box<ScaleToFit<Self>>),
 	Dynamic(crate::core::DynamicLayable<'a>),
 }
 impl<'a> Comp<'a> {
@@ -37,6 +41,7 @@ impl<'a> Layable for Comp<'a> {
 			Self::Page(a) => a.size(),
 			Self::Text(a) => a.size(),
 			Self::Clickable(a) => a.size(),
+			Self::ScaleToFit(a) => a.size(),
 			Self::Dynamic(d) => d.size(),
 		}
 	}
@@ -52,6 +57,7 @@ impl<'a> Layable for Comp<'a> {
 			Self::Page(a) => Layable::render(a, d, det, scale),
 			Self::Text(a) => a.render(d, det, scale),
 			Self::Clickable(a) => a.render(d, det, scale),
+			Self::ScaleToFit(a) => a.render(d, det, scale),
 			Self::Dynamic(dl) => dl.render(d, det, scale),
 		}
 	}
@@ -61,6 +67,7 @@ impl<'a> Layable for Comp<'a> {
 			Self::Page(a) => a.pass_event(event),
 			Self::Text(a) => a.pass_event(event),
 			Self::Clickable(a) => a.pass_event(event),
+			Self::ScaleToFit(a) => a.pass_event(event),
 			Self::Dynamic(dl) => dl.pass_event(event),
 		}
 	}
