@@ -28,6 +28,8 @@ pub enum Move {
 	},
 }
 impl Move {
+	// wth i'm gonna have a new function
+	#[allow(dead_code)]
 	pub fn new(to: (i32, i32), from: Option<Direction>, signal: Signal) -> Self {
 		Self::Inside { to, from, signal }
 	}
@@ -287,17 +289,6 @@ impl World {
 			i += 1;
 		}
 
-		i
-	}
-	pub fn foreigns_count(&self, inst_id: usize) -> usize {
-		let mut i = 0;
-		self.chunks()
-			.map(|(_, c)| c.blocks())
-			.flatten()
-			.for_each(|b| match b {
-				Block::Foreign(_, f_inst_id, id) if *f_inst_id == inst_id => i += 1,
-				_ => (),
-			});
 		i
 	}
 

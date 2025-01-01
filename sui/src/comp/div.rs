@@ -3,7 +3,7 @@ use crate::{
 	comp::{Comp, Compatible},
 	Details,
 };
-use raylib::prelude::{RaylibDraw, RaylibDrawHandle};
+use raylib::prelude::RaylibDrawHandle;
 
 /// simple page layout, one element after another \
 /// just imagine an html div

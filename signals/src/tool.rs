@@ -1,6 +1,6 @@
 use crate::{
 	game::{Game, IngameWorld},
-	world::{Block, Direction, World},
+	world::{Block, Direction},
 };
 
 pub const TOOLS: &[(&str, Tool)] = &[

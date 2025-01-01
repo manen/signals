@@ -133,10 +133,23 @@ fn main() {
 		}
 
 		let page = ui::game_debug_ui(&game);
+		let worlds_bar_h = 400 as f32 / 1980 as f32 * screen.ah as f32;
+		let worlds_bar_h = worlds_bar_h as _;
+		let worlds_bar = ui::worlds_bar(&game, worlds_bar_h);
 
 		let scale = 1.0;
-		let event_out = sui::handle_input(&page, &mut rl, 0, 100, scale);
-		if let Some(event_out) = event_out {
+
+		let events = std::iter::once(sui::handle_input(&page, &mut rl, 0, 100, scale))
+			.chain(std::iter::once(sui::handle_input(
+				&worlds_bar,
+				&mut rl,
+				0,
+				screen.ah - worlds_bar_h,
+				scale,
+			)))
+			.filter_map(|opt| opt);
+
+		for event_out in events {
 			println!("{} {event_out:?}", rl.get_time());
 		}
 
@@ -158,14 +171,6 @@ fn main() {
 		sui::render_root(&page, &mut d, 0, 100, scale);
 		std::mem::drop(page);
 
-		let worlds_bar_h = 400 as f32 / 1980 as f32 * screen.ah as f32;
-		let worlds_bar_h = worlds_bar_h as _;
-		sui::render_root(
-			&ui::worlds_bar(&game, worlds_bar_h),
-			&mut d,
-			0,
-			screen.ah - worlds_bar_h,
-			scale,
-		);
+		sui::render_root(&worlds_bar, &mut d, 0, screen.ah - worlds_bar_h, scale);
 	}
 }

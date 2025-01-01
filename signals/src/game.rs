@@ -108,7 +108,7 @@ impl IngameWorld {
 	fn tick_children(&mut self, game: &mut Game) {
 		for (i, child) in self.children.iter_mut().enumerate() {
 			child.tick(game, |m| match m {
-				Move::Output { id, signal } => self.moves.push(Move::Foreign {
+				Move::Output { id, .. } => self.moves.push(Move::Foreign {
 					inst_id: i,
 					id,
 					signal: Signal::ForeignExternalPoweron,
