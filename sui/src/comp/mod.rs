@@ -10,14 +10,11 @@ pub use text::Text;
 pub mod clickable;
 pub use clickable::Clickable;
 
-pub mod page;
-pub use page::Box;
+pub mod div_box;
+pub use div_box::Box;
 
-pub mod scaletofit;
-pub use scaletofit::ScaleToFit;
-
-pub mod centered;
-pub use centered::Centered;
+pub mod fit;
+pub use fit::{Centered, FixedSize, ScaleToFit};
 
 use crate::Layable;
 

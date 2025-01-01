@@ -81,6 +81,7 @@ pub fn game_debug_ui<'a>(game: &'a game::Game) -> sui::comp::Comp<'a> {
 }
 
 pub fn render_basic_world(world: &world::World, d: &mut RaylibDrawHandle, pos_info: PosInfo) {
+	println!("rendering preview of world");
 	render_any_world(world, d, pos_info, |_| Cow::Owned(Default::default()));
 }
 pub fn render_world(world: &world::RenderedWorld, d: &mut RaylibDrawHandle, pos_info: PosInfo) {

@@ -17,7 +17,10 @@ impl<L: Layable> Layable for Centered<L> {
 	fn render(&self, d: &mut raylib::prelude::RaylibDrawHandle, det: crate::Details, scale: f32) {
 		let (l_w, l_h) = self.layable.size();
 
-		let (base_x, base_y) = (det.x + det.aw / 2 - l_w / 2, det.y + det.ah / 2 - l_h);
+		let (base_x, base_y) = (
+			det.x + (det.aw as f32 / 2.0 - l_w as f32 / 2.0 * scale) as i32,
+			det.y + (det.ah as f32 / 2.0 - l_h as f32 / 2.0 * scale) as i32,
+		);
 		let l_det = crate::Details {
 			x: base_x,
 			y: base_y,

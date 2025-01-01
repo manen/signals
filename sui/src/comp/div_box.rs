@@ -44,28 +44,26 @@ impl<'a> Layable for Box<'a> {
 			}
 		})
 	}
-	/// this implementation does care about width and height!!
+
 	fn render(&self, d: &mut RaylibDrawHandle, det: Details, scale: f32) {
-		let size = self.size();
+		let (box_w, box_h) = self.size();
 
 		let (mut x, mut y) = (0, 0);
-		for e in self.components.iter() {
-			let (rw, rh) = e.size();
+		for child in self.components.iter() {
+			let (child_w, child_h) = child.size();
 
-			e.render(
-				d,
-				Details {
-					x: det.x + x,
-					y: det.y + y,
-					aw: if self.horizontal { rw } else { size.0 },
-					ah: if self.horizontal { size.1 } else { rh },
-				},
-				scale,
-			);
+			let child_det = Details {
+				x: det.x + x,
+				y: det.y + y,
+				aw: if !self.horizontal { box_h } else { child_w }, // I HAVE NO IDEA WHY THIS WORKS
+				ah: if self.horizontal { box_w } else { child_h }, // why do box_w and box_h have to be swapped? idk
+			};
+
+			child.render(d, child_det, scale);
 			if !self.horizontal {
-				y += (rh as f32 * scale).floor() as i32;
+				y += (child_det.ah as f32 * scale).floor() as i32;
 			} else {
-				x += (rw as f32 * scale).floor() as i32;
+				x += (child_det.aw as f32 * scale).floor() as i32;
 			}
 		}
 	}

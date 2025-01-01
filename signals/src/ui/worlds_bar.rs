@@ -13,7 +13,17 @@ pub fn worlds_bar(game: &Game, height: i32) -> sui::Comp {
 			println!("{i}");
 			a
 		})
-		.map(|w| sui::custom(sui::comp::ScaleToFit::fix_h(WorldPreview::new(w), height)));
+		.map(|w| sui::custom(sui::comp::ScaleToFit::fix_h(WorldPreview::new(w), height)))
+		.chain(std::iter::once(sui::custom(
+			sui::comp::FixedSize::fix_both(
+				sui::comp::Centered::new(sui::comp::Text::new("+", 50)),
+				height,
+			),
+		)));
 
-	sui::page_h(previews.collect::<Vec<_>>())
+	sui::custom(sui::comp::FixedSize::fix_h(
+		sui::comp::Box::new(previews.collect::<Vec<_>>(), true),
+		height,
+	))
+	// sui::page_h(previews.collect::<Vec<_>>())
 }
