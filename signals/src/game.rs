@@ -76,13 +76,7 @@ impl IngameWorld {
 				Some(next) => *next,
 				None => 0,
 			};
-			println!(
-				"inputs: {}, outputs: {}",
-				inst_world.inputs_count(),
-				inst_world.outputs_count()
-			);
 			let max_id = inst_world.inputs_count().max(inst_world.outputs_count());
-			println!("{max_id}");
 			if id > max_id {
 				eprintln!("the world (id: {world_id:?}) contained a foreign that exceeded the maximum possible id of {max_id} for the world given ({inst_world_id:?}) by being {id}");
 				game.world_mut(world_id).map_at(coords.0, coords.1, |_| {

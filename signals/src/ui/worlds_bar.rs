@@ -8,11 +8,6 @@ pub fn worlds_bar(game: &Game, height: i32) -> sui::Comp {
 
 	let previews = game
 		.worlds()
-		.enumerate()
-		.map(|(i, a)| {
-			println!("{i}");
-			a
-		})
 		.map(|w| sui::custom(sui::comp::ScaleToFit::fix_h(WorldPreview::new(w), height)))
 		.chain(std::iter::once(sui::custom(
 			sui::comp::FixedSize::fix_both(
