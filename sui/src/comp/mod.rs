@@ -15,6 +15,9 @@ pub use div::Div;
 pub mod fit;
 pub use fit::{Centered, FixedSize, ScaleToFit};
 
+pub mod overlay;
+pub use overlay::Overlay;
+
 use crate::Layable;
 
 #[derive(Debug, Clone)]
