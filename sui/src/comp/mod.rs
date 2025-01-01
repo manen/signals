@@ -11,19 +11,22 @@ pub mod clickable;
 pub use clickable::Clickable;
 
 pub mod page;
-pub use page::Page;
+pub use page::Box;
 
 pub mod scaletofit;
 pub use scaletofit::ScaleToFit;
 
+pub mod centered;
+pub use centered::Centered;
+
 use crate::Layable;
 
 #[derive(Debug, Clone)]
+/// this enum contains variants for every base layable (layables that don't have a generic type) \
+/// for components with generic types or for anything else really use [Comp::Dynamic] (also [crate::custom])
 pub enum Comp<'a> {
-	Page(Page<'a>),
+	Page(Box<'a>),
 	Text(Text<'a>),
-	Clickable(Box<Clickable<Self>>), // it sucks that these have to be a box
-	ScaleToFit(Box<ScaleToFit<Self>>),
 	Dynamic(crate::core::DynamicLayable<'a>),
 }
 impl<'a> Comp<'a> {
@@ -40,8 +43,6 @@ impl<'a> Layable for Comp<'a> {
 		match self {
 			Self::Page(a) => a.size(),
 			Self::Text(a) => a.size(),
-			Self::Clickable(a) => a.size(),
-			Self::ScaleToFit(a) => a.size(),
 			Self::Dynamic(d) => d.size(),
 		}
 	}
@@ -56,8 +57,6 @@ impl<'a> Layable for Comp<'a> {
 		match self {
 			Self::Page(a) => Layable::render(a, d, det, scale),
 			Self::Text(a) => a.render(d, det, scale),
-			Self::Clickable(a) => a.render(d, det, scale),
-			Self::ScaleToFit(a) => a.render(d, det, scale),
 			Self::Dynamic(dl) => dl.render(d, det, scale),
 		}
 	}
@@ -66,8 +65,6 @@ impl<'a> Layable for Comp<'a> {
 		match self {
 			Self::Page(a) => a.pass_event(event),
 			Self::Text(a) => a.pass_event(event),
-			Self::Clickable(a) => a.pass_event(event),
-			Self::ScaleToFit(a) => a.pass_event(event),
 			Self::Dynamic(dl) => dl.pass_event(event),
 		}
 	}
@@ -101,19 +98,7 @@ macro_rules! compatible_impl {
 		}
 	};
 }
-compatible_impl!(Page, Page<'a>);
+compatible_impl!(Page, Box<'a>);
 compatible_impl!(Text, Text<'a>);
-
-impl<'a> Compatible<'a> for Clickable<Comp<'a>> {
-	fn from_comp(comp: Comp<'a>) -> Option<Self> {
-		match comp {
-			Comp::Clickable(c) => Some(*c),
-			_ => None,
-		}
-	}
-	fn into_comp(self) -> Comp<'a> {
-		Comp::Clickable(Box::new(self))
-	}
-}
 
 compatible_impl!(Dynamic, crate::DynamicLayable<'a>);

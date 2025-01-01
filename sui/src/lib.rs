@@ -1,5 +1,5 @@
 pub mod comp;
-pub use comp::{Comp, Page, SelectBar, Text};
+pub use comp::{Box, Comp, SelectBar, Text};
 
 pub mod det;
 pub use det::Details;

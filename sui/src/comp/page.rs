@@ -5,13 +5,14 @@ use crate::{
 };
 use raylib::prelude::RaylibDrawHandle;
 
-/// simple page layout, one element after another
+/// simple page layout, one element after another \
+/// just imagine an html div
 #[derive(Clone, Debug, Default)]
-pub struct Page<'a> {
+pub struct Box<'a> {
 	components: Vec<Comp<'a>>,
 	horizontal: bool,
 }
-impl<'a> Page<'a> {
+impl<'a> Box<'a> {
 	pub fn empty() -> Self {
 		Self::default()
 	}
@@ -31,29 +32,8 @@ impl<'a> Page<'a> {
 	pub fn push<C: Compatible<'a>>(&mut self, c: C) {
 		self.components.push(c.into_comp());
 	}
-
-	pub fn render(&self, d: &mut RaylibDrawHandle, mut x: i32, mut y: i32, scale: f32) {
-		for e in self.components.iter() {
-			let (rw, rh) = e.size();
-			e.render(
-				d,
-				Details {
-					x,
-					y,
-					aw: rw,
-					ah: rh,
-				},
-				scale,
-			);
-			if !self.horizontal {
-				y += (rh as f32 * scale).floor() as i32;
-			} else {
-				x += (rw as f32 * scale).floor() as i32;
-			}
-		}
-	}
 }
-impl<'a> Layable for Page<'a> {
+impl<'a> Layable for Box<'a> {
 	fn size(&self) -> (i32, i32) {
 		self.components.iter().fold((0, 0), |a, layable| {
 			let size = layable.size();
@@ -64,9 +44,30 @@ impl<'a> Layable for Page<'a> {
 			}
 		})
 	}
-	/// this implementation doesn't care about available width and height
+	/// this implementation does care about width and height!!
 	fn render(&self, d: &mut RaylibDrawHandle, det: Details, scale: f32) {
-		Page::render(&self, d, det.x, det.y, scale);
+		let size = self.size();
+
+		let (mut x, mut y) = (0, 0);
+		for e in self.components.iter() {
+			let (rw, rh) = e.size();
+
+			e.render(
+				d,
+				Details {
+					x: det.x + x,
+					y: det.y + y,
+					aw: if self.horizontal { rw } else { size.0 },
+					ah: if self.horizontal { size.1 } else { rh },
+				},
+				scale,
+			);
+			if !self.horizontal {
+				y += (rh as f32 * scale).floor() as i32;
+			} else {
+				x += (rw as f32 * scale).floor() as i32;
+			}
+		}
 	}
 
 	fn pass_event(&self, event: crate::core::Event) -> Option<crate::core::Event> {
