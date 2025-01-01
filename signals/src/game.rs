@@ -66,6 +66,14 @@ impl IngameWorld {
 					}
 				};
 
+				if inst_world_id == world_id {
+					println!("deleting a foreign referencing the world the foreign's in (world_id: {world_id:?})");
+					game.world_mut(world_id).map_at(coords.0, coords.1, |_| {
+						Block::Error("here lies a foreign to this world (infinite recursion)")
+					});
+					continue;
+				}
+
 				inst.regenerate(game, inst_world_id);
 				inst_ids_already_done.push(inst_id);
 			}

@@ -132,7 +132,7 @@ fn main() {
 			game.tick();
 		}
 
-		let page = gfx::game_debug_ui(&game);
+		let page = ui::game_debug_ui(&game);
 
 		let scale = 1.0;
 		let event_out = sui::handle_input(&page, &mut rl, 0, 100, scale);

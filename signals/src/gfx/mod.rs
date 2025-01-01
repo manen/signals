@@ -1,12 +1,8 @@
 use std::borrow::Cow;
 
 use raylib::prelude::{RaylibDraw, RaylibDrawHandle};
-use sui::comp::Compatible;
 
-use crate::{
-	game,
-	world::{self, Chunk},
-};
+use crate::world::{self, Chunk};
 use raylib::color::Color;
 
 pub const fn color(r: u8, g: u8, b: u8, a: u8) -> Color {
@@ -63,21 +59,6 @@ impl PosInfo {
 	pub fn scale(&self, n: i32) -> i32 {
 		(self.scale * n as f32) as i32
 	}
-}
-
-pub fn game_debug_ui<'a>(game: &'a game::Game) -> sui::comp::Comp<'a> {
-	let lines = game
-		.moves
-		.children
-		.iter()
-		.enumerate()
-		.map(|(i, ingameworld)| format!("inst {i}: {:?}", ingameworld.world_id))
-		.map(|s| sui::comp::Text::new(s, 12).into_comp());
-
-	let content = lines.chain(std::iter::once(sui::text(format!("{:#?}", game.moves), 16)));
-	let page = sui::page(content.collect::<Vec<_>>());
-
-	page.into_comp()
 }
 
 pub fn render_basic_world(world: &world::World, d: &mut RaylibDrawHandle, pos_info: PosInfo) {

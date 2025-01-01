@@ -16,9 +16,6 @@ pub fn worlds_bar(game: &Game, height: i32) -> sui::Comp {
 			),
 		)));
 
-	sui::custom(sui::comp::FixedSize::fix_h(
-		sui::comp::Box::new(previews.collect::<Vec<_>>(), true),
-		height,
-	))
-	// sui::page_h(previews.collect::<Vec<_>>())
+	// sui::custom(sui::comp::Div::new(previews.collect::<Vec<_>>(), true))
+	sui::page_h(previews.collect::<Vec<_>>())
 }

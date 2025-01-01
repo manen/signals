@@ -10,8 +10,8 @@ pub use text::Text;
 pub mod clickable;
 pub use clickable::Clickable;
 
-pub mod div_box;
-pub use div_box::Box;
+pub mod div;
+pub use div::Div;
 
 pub mod fit;
 pub use fit::{Centered, FixedSize, ScaleToFit};
@@ -22,7 +22,7 @@ use crate::Layable;
 /// this enum contains variants for every base layable (layables that don't have a generic type) \
 /// for components with generic types or for anything else really use [Comp::Dynamic] (also [crate::custom])
 pub enum Comp<'a> {
-	Page(Box<'a>),
+	Page(Div<'a>),
 	Text(Text<'a>),
 	Dynamic(crate::core::DynamicLayable<'a>),
 }
@@ -44,13 +44,6 @@ impl<'a> Layable for Comp<'a> {
 		}
 	}
 	fn render(&self, d: &mut raylib::prelude::RaylibDrawHandle, det: crate::Details, scale: f32) {
-		d.draw_rectangle_lines(
-			det.x,
-			det.y,
-			(det.aw as f32 * scale) as _,
-			(det.ah as f32 * scale) as _,
-			raylib::color::Color::WHITE,
-		);
 		match self {
 			Self::Page(a) => Layable::render(a, d, det, scale),
 			Self::Text(a) => a.render(d, det, scale),
@@ -95,7 +88,7 @@ macro_rules! compatible_impl {
 		}
 	};
 }
-compatible_impl!(Page, Box<'a>);
+compatible_impl!(Page, Div<'a>);
 compatible_impl!(Text, Text<'a>);
 
 compatible_impl!(Dynamic, crate::DynamicLayable<'a>);

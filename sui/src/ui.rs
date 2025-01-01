@@ -16,10 +16,10 @@ pub fn custom<'a, L: Layable + std::fmt::Debug + Clone + 'a>(layable: L) -> Comp
 }
 
 pub fn page<'a>(components: impl Into<Vec<Comp<'a>>>) -> Comp<'a> {
-	comp::Box::new(components, false).into_comp()
+	comp::Div::new(components, false).into_comp()
 }
 pub fn page_h<'a>(components: impl Into<Vec<Comp<'a>>>) -> Comp<'a> {
-	comp::Box::new(components, true).into_comp()
+	comp::Div::new(components, true).into_comp()
 }
 pub fn text<'a, T: Into<Cow<'a, str>>>(text: T, size: i32) -> Comp<'a> {
 	comp::Text::new(text, size).into_comp()

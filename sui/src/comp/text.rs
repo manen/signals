@@ -18,7 +18,7 @@ pub const DEFAULT_COLOR: Color = Color::WHITE;
 pub struct Font;
 
 #[derive(Debug, Clone)]
-pub struct Text<'a>(Cow<'a, str>, i32, Font, Color);
+pub struct Text<'a>(pub Cow<'a, str>, pub i32, Font, Color);
 
 impl<'a> Text<'a> {
 	pub fn new<I: Into<Cow<'a, str>>>(text: I, size: i32) -> Self {

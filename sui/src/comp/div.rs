@@ -3,16 +3,16 @@ use crate::{
 	comp::{Comp, Compatible},
 	Details,
 };
-use raylib::prelude::RaylibDrawHandle;
+use raylib::prelude::{RaylibDraw, RaylibDrawHandle};
 
 /// simple page layout, one element after another \
 /// just imagine an html div
 #[derive(Clone, Debug, Default)]
-pub struct Box<'a> {
+pub struct Div<'a> {
 	components: Vec<Comp<'a>>,
 	horizontal: bool,
 }
-impl<'a> Box<'a> {
+impl<'a> Div<'a> {
 	pub fn empty() -> Self {
 		Self::default()
 	}
@@ -33,37 +33,50 @@ impl<'a> Box<'a> {
 		self.components.push(c.into_comp());
 	}
 }
-impl<'a> Layable for Box<'a> {
+impl<'a> Layable for Div<'a> {
 	fn size(&self) -> (i32, i32) {
-		self.components.iter().fold((0, 0), |a, layable| {
-			let size = layable.size();
+		let (mut w, mut h) = (0, 0);
+
+		for comp in self.components.iter() {
+			let (comp_w, comp_h) = comp.size();
+
 			if !self.horizontal {
-				(a.0 + size.0, a.1.max(size.1))
+				(w, h) = (w.max(comp_w), h + comp_h)
 			} else {
-				(a.0.max(size.0), a.1 + size.1)
+				(w, h) = (w + comp_w, h.max(comp_h))
 			}
-		})
+		}
+
+		(w, h)
 	}
 
 	fn render(&self, d: &mut RaylibDrawHandle, det: Details, scale: f32) {
-		let (box_w, box_h) = self.size();
+		let (self_w, self_h) = self.size();
 
-		let (mut x, mut y) = (0, 0);
-		for child in self.components.iter() {
-			let (child_w, child_h) = child.size();
-
-			let child_det = Details {
-				x: det.x + x,
-				y: det.y + y,
-				aw: if !self.horizontal { box_h } else { child_w }, // I HAVE NO IDEA WHY THIS WORKS
-				ah: if self.horizontal { box_w } else { child_h }, // why do box_w and box_h have to be swapped? idk
+		let (mut x, mut y) = (det.x, det.y);
+		for comp in self.components.iter() {
+			let (comp_w, comp_h) = comp.size();
+			let comp_det = Details {
+				x,
+				y,
+				aw: if !self.horizontal {
+					(self_w as f32 * scale) as i32
+				} else {
+					comp_w
+				},
+				ah: if self.horizontal {
+					(self_h as f32 * scale) as i32
+				} else {
+					comp_h
+				},
 			};
 
-			child.render(d, child_det, scale);
+			comp.render(d, comp_det, scale);
+
 			if !self.horizontal {
-				y += (child_det.ah as f32 * scale).floor() as i32;
+				y += (comp_h as f32 * scale) as i32;
 			} else {
-				x += (child_det.aw as f32 * scale).floor() as i32;
+				x += (comp_w as f32 * scale) as i32;
 			}
 		}
 	}
