@@ -18,6 +18,9 @@ pub use fit::{Centered, FixedSize, ScaleToFit};
 pub mod overlay;
 pub use overlay::Overlay;
 
+pub mod space;
+pub use space::Space;
+
 use crate::Layable;
 
 #[derive(Debug, Clone)]
@@ -26,6 +29,7 @@ use crate::Layable;
 pub enum Comp<'a> {
 	Page(Div<'a>),
 	Text(Text<'a>),
+	Space(Space),
 	Dynamic(crate::core::DynamicLayable<'a>),
 }
 impl<'a> Comp<'a> {
@@ -42,6 +46,7 @@ impl<'a> Layable for Comp<'a> {
 		match self {
 			Self::Page(a) => a.size(),
 			Self::Text(a) => a.size(),
+			Self::Space(a) => a.size(),
 			Self::Dynamic(d) => d.size(),
 		}
 	}
@@ -49,6 +54,7 @@ impl<'a> Layable for Comp<'a> {
 		match self {
 			Self::Page(a) => Layable::render(a, d, det, scale),
 			Self::Text(a) => a.render(d, det, scale),
+			Self::Space(a) => a.render(d, det, scale),
 			Self::Dynamic(dl) => dl.render(d, det, scale),
 		}
 	}
@@ -57,6 +63,7 @@ impl<'a> Layable for Comp<'a> {
 		match self {
 			Self::Page(a) => a.pass_event(event),
 			Self::Text(a) => a.pass_event(event),
+			Self::Space(a) => a.pass_event(event),
 			Self::Dynamic(dl) => dl.pass_event(event),
 		}
 	}
@@ -92,5 +99,6 @@ macro_rules! compatible_impl {
 }
 compatible_impl!(Page, Div<'a>);
 compatible_impl!(Text, Text<'a>);
+compatible_impl!(Space, Space);
 
 compatible_impl!(Dynamic, crate::DynamicLayable<'a>);
