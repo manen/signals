@@ -5,7 +5,7 @@ pub use worlds_bar::worlds_bar;
 
 use sui::comp::Compatible;
 
-pub fn game_debug_ui(game: &crate::Game) -> sui::comp::Comp {
+pub fn game_debug_ui(game: &crate::Game) -> sui::comp::Comp<'static> {
 	let lines = game
 		.moves
 		.children

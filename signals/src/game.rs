@@ -177,6 +177,12 @@ impl Game {
 		self.moves = moves;
 	}
 
+	/// creates a new worlds, returning its id
+	pub fn push(&mut self) -> Option<usize> {
+		self.worlds.push(Default::default());
+		Some(self.worlds.len() - 1)
+	}
+	/// switch main to `new_i`
 	pub fn switch_main(&mut self, new_i: Option<usize>) {
 		// grow the worlds vec if neccessary
 		if let Some(new_i) = new_i {

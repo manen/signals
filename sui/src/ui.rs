@@ -46,7 +46,7 @@ impl<'a, L: Layable> RootContext<'a, L> {
 		self.layable.render(d, self.det, self.scale);
 	}
 	pub fn handle_input(&self, rl: &mut RaylibHandle) -> impl Iterator<Item = Event> {
-		let mouse_back = if rl.is_mouse_button_down(MouseButton::MOUSE_BUTTON_LEFT) {
+		let mouse_back = if rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
 			let (ptr_x, ptr_y) = (rl.get_mouse_x(), rl.get_mouse_y());
 
 			if ptr_x as f32 > self.det.x as f32 && ptr_y as f32 > self.det.y as f32 {

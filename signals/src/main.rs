@@ -10,6 +10,8 @@ use raylib::{
 	ffi::{KeyboardKey, MouseButton},
 	prelude::RaylibDraw,
 };
+use sui::core::Event;
+use tool::Tool;
 
 pub const TICK_TIME: f32 = 0.03;
 pub const MOVE_UP: KeyboardKey = KeyboardKey::KEY_W;
@@ -46,30 +48,16 @@ fn main() {
 
 	let mut tool: tool::Tool = Default::default();
 	let tool_select = sui::SelectBar::new(tool::TOOLS);
-	let foreign_select = sui::SelectBar::new(tool::FOREIGNS);
-
-	// world.mut_at(-2, 2);
 
 	let mut delta = 0.0;
-	// let mut moves = Vec::new();
 
 	let mut g_pos = PosInfo::default();
 
 	while !rl.window_should_close() {
-		if let Some(ch) = rl.get_char_pressed() {
-			if let Some(num) = ch.to_digit(10) {
-				game.switch_main(if num == 0 { None } else { Some(num as usize) });
-				let i = game.i;
-				game.moves = IngameWorld::generate(&mut game, i);
-			}
-		}
-
 		let screen = sui::Details::window(rl.get_render_width(), unsafe {
 			raylib::ffi::GetRenderHeight()
 		});
-		let mut select_det = screen.from_top(60).split_h(2);
-		let (tool_select_det, foreign_select_det) =
-			(select_det.next().unwrap(), select_det.next().unwrap());
+		let tool_select_det = screen.from_top(30);
 
 		let screen_middle = (screen.aw / 2, screen.ah / 2);
 		let pos_info = g_pos.add(screen_middle.0, screen_middle.1);
@@ -81,34 +69,6 @@ fn main() {
 				a as i32
 			}
 		};
-
-		{
-			let foreign_select_trig = foreign_select.tick(&mut rl, foreign_select_det, &mut tool);
-			let tool_select_trig = tool_select.tick(&mut rl, tool_select_det, &mut tool);
-
-			if !tool_select_trig && !foreign_select_trig {
-				let point_x = round(
-					(rl.get_mouse_x() as f32 - pos_info.base.0 as f32)
-						/ world::BLOCK_SIZE as f32
-						/ pos_info.scale,
-				);
-				let point_y = round(
-					(rl.get_mouse_y() as f32 - pos_info.base.1 as f32)
-						/ world::BLOCK_SIZE as f32
-						/ pos_info.scale,
-				);
-
-				if rl.is_mouse_button_down(TOOL_USE) {
-					tool.down(point_x, point_y, &mut game);
-				}
-				if rl.is_mouse_button_pressed(TOOL_USE) {
-					tool.pressed(point_x, point_y, &mut game);
-				}
-				if rl.is_mouse_button_released(TOOL_USE) {
-					tool.released(point_x, point_y, &mut game);
-				}
-			}
-		}
 
 		g_pos.scale *= 1.0 + (rl.get_mouse_wheel_move() * 0.1);
 
@@ -132,56 +92,111 @@ fn main() {
 			game.tick();
 		}
 
-		let page = ui::game_debug_ui(&game);
-		let page_ctx = sui::RootContext::new(
-			&page,
-			sui::Details {
-				x: 0,
-				y: 100,
-				..Default::default()
-			},
-			1.0,
-		);
-
 		let worlds_bar_h = 400 as f32 / 1980 as f32 * screen.ah as f32;
 		let worlds_bar_h = worlds_bar_h as _;
-		let worlds_bar = ui::worlds_bar(&game, worlds_bar_h);
-		let worlds_bar_ctx = sui::RootContext::new(
-			&worlds_bar,
-			sui::Details {
-				x: 0,
-				y: screen.ah - worlds_bar_h,
-				aw: screen.aw,
-				ah: worlds_bar_h,
-			},
-			1.0,
-		);
+		let worlds_bar_det = sui::Details {
+			x: 0,
+			y: screen.ah - worlds_bar_h,
+			aw: screen.aw,
+			ah: worlds_bar_h,
+		};
 
-		let events = page_ctx
-			.handle_input(&mut rl)
-			.chain(worlds_bar_ctx.handle_input(&mut rl));
-		for event_out in events {
-			println!("{} {event_out:?}", rl.get_time());
+		// don't be confused by the name, this code block mostly handles rendering
+		let events = {
+			let page = ui::game_debug_ui(&game);
+			let page_ctx = sui::RootContext::new(
+				&page,
+				sui::Details {
+					x: 0,
+					y: 100,
+					..Default::default()
+				},
+				1.0,
+			);
+
+			let worlds_bar = ui::worlds_bar(&game, worlds_bar_h);
+			let worlds_bar_ctx = sui::RootContext::new(&worlds_bar, worlds_bar_det, 1.0);
+
+			// handled later, when there's no other references to game
+			let events = page_ctx
+				.handle_input(&mut rl)
+				.chain(worlds_bar_ctx.handle_input(&mut rl));
+
+			let mut d = rl.begin_drawing(&thread);
+			d.clear_background(gfx::BACKGROUND);
+
+			gfx::render_world(&game.main, &mut d, pos_info);
+
+			tool_select.render(&mut d, tool_select_det, Some(&tool));
+
+			page_ctx.render(&mut d);
+			worlds_bar_ctx.render(&mut d);
+			events.collect::<Vec<_>>()
+		};
+
+		{
+			let (mouse_x, mouse_y) = (rl.get_mouse_x(), rl.get_mouse_y());
+
+			let tool_select_trig = tool_select.tick(&mut rl, tool_select_det, &mut tool);
+			if !tool_select_trig && !worlds_bar_det.is_inside(mouse_x, mouse_y) {
+				let point_x = round(
+					(mouse_x as f32 - pos_info.base.0 as f32)
+						/ world::BLOCK_SIZE as f32
+						/ pos_info.scale,
+				);
+				let point_y = round(
+					(mouse_y as f32 - pos_info.base.1 as f32)
+						/ world::BLOCK_SIZE as f32
+						/ pos_info.scale,
+				);
+
+				if rl.is_mouse_button_down(TOOL_USE) {
+					tool.down(point_x, point_y, &mut game);
+				}
+				if rl.is_mouse_button_pressed(TOOL_USE) {
+					tool.pressed(point_x, point_y, &mut game);
+				}
+				if rl.is_mouse_button_released(TOOL_USE) {
+					tool.released(point_x, point_y, &mut game);
+				}
+			}
 		}
 
-		let mut d = rl.begin_drawing(&thread);
-		d.clear_background(gfx::BACKGROUND);
+		for event_out in events {
+			let n_to_id = |n: i32| match n {
+				0 => Option::<usize>::None,
+				n => Some(n as usize - 1),
+			};
 
-		gfx::render_world(&game.main, &mut d, pos_info);
-
-		tool_select.render(&mut d, tool_select_det, Some(&tool));
-		foreign_select.render(&mut d, foreign_select_det, Some(&tool));
-		d.draw_rectangle_lines(
-			foreign_select_det.x,
-			foreign_select_det.y,
-			foreign_select_det.aw,
-			foreign_select_det.ah,
-			gfx::NOT_BASE,
-		);
-
-		page_ctx.render(&mut d);
-		std::mem::drop(page);
-
-		worlds_bar_ctx.render(&mut d);
+			println!("{} {event_out:?}", rl.get_time());
+			match event_out {
+				Event::Named {
+					id: ui::worlds_bar::PLUS_CLICKED,
+					..
+				} => {
+					game.push();
+				}
+				Event::Named {
+					id: ui::worlds_bar::SWITCH_CLICKED,
+					n,
+				} => {
+					let id = n_to_id(n);
+					game.switch_main(id);
+					let i = game.i;
+					game.moves = IngameWorld::generate(&mut game, i);
+				}
+				Event::Named {
+					id: ui::worlds_bar::FOREIGN_CLICKED,
+					n,
+				} => {
+					if let Some(id) = n_to_id(n) {
+						tool = Tool::PlaceForeign(id)
+					} else {
+						println!("can't really place a foreign to main")
+					}
+				}
+				_ => (),
+			}
+		}
 	}
 }

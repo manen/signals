@@ -1,9 +1,9 @@
 use crate::{game::Game, ui::ingame::WorldPreview, world::World};
 use sui::{Compatible, Debuggable};
 
-const SWITCH_CLICKED: &str = "worlds_bar_worlds_switch_clicked";
-const FOREIGN_CLICKED: &str = "worlds_bar_worlds_place_clicked";
-const PLUS_CLICKED: &str = "worlds_bar_worlds_plus_clicked";
+pub const SWITCH_CLICKED: &str = "worlds_bar_worlds_switch_clicked";
+pub const FOREIGN_CLICKED: &str = "worlds_bar_worlds_place_clicked";
+pub const PLUS_CLICKED: &str = "worlds_bar_worlds_plus_clicked";
 
 pub fn worlds_bar(game: &Game, height: i32) -> sui::Comp {
 	// sui::page(vec![sui::custom(sui::comp::ScaleToFit::fix_h(

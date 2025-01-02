@@ -13,17 +13,6 @@ pub const TOOLS: &[(&str, Tool)] = &[
 	("rotate", Tool::Rotate),
 	("interact", Tool::Interact),
 ];
-pub const FOREIGNS: &[(&str, Tool)] = &[
-	("foreign to 1", Tool::PlaceForeign(1)),
-	("foreign to 2", Tool::PlaceForeign(2)),
-	("foreign to 3", Tool::PlaceForeign(3)),
-	("foreign to 4", Tool::PlaceForeign(4)),
-	("foreign to 5", Tool::PlaceForeign(5)),
-	("foreign to 6", Tool::PlaceForeign(6)),
-	("foreign to 7", Tool::PlaceForeign(7)),
-	("foreign to 8", Tool::PlaceForeign(8)),
-	("foreign to 9", Tool::PlaceForeign(9)),
-];
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 pub enum Tool {
