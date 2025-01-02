@@ -16,7 +16,12 @@ impl Layable for Space {
 		(self.w, self.h)
 	}
 	fn render(&self, _: &mut raylib::prelude::RaylibDrawHandle, _: crate::Details, _: f32) {}
-	fn pass_event(&self, _: crate::core::Event) -> Option<crate::core::Event> {
+	fn pass_event(
+		&self,
+		_: crate::core::Event,
+		_: crate::Details,
+		_: f32,
+	) -> Option<crate::core::Event> {
 		None
 	}
 }

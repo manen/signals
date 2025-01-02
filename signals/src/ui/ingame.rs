@@ -52,7 +52,12 @@ impl<'a> Layable for WorldPreview<'a> {
 			},
 		);
 	}
-	fn pass_event(&self, _: sui::core::Event) -> Option<sui::core::Event> {
+	fn pass_event(
+		&self,
+		_: sui::core::Event,
+		_: sui::core::Details,
+		_: f32,
+	) -> Option<sui::core::Event> {
 		None
 	}
 }

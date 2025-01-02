@@ -12,7 +12,13 @@ pub fn game_debug_ui(game: &crate::Game) -> sui::comp::Comp {
 		.iter()
 		.enumerate()
 		.map(|(i, ingameworld)| format!("inst {i}: {:?}", ingameworld.world_id))
-		.map(|s| sui::comp::Text::new(s, 12).into_comp());
+		.map(|s| {
+			[
+				sui::comp::Text::new(s, 12).into_comp(),
+				sui::comp::Space::new(0, 5).into_comp(), // <- this is kinda just for testing i want to make a margin component later
+			]
+		})
+		.flatten();
 
 	let content = lines
 		.chain(std::iter::once(sui::text(format!("{:#?}", game.moves), 16)))

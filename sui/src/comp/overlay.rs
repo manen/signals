@@ -13,6 +13,16 @@ impl<A: Layable, B: Layable> Overlay<A, B> {
 			background,
 		}
 	}
+
+	fn l_det(&self, det: crate::Details) -> crate::Details {
+		let (w, h) = self.size();
+		let det = crate::Details {
+			aw: det.aw.min(w),
+			ah: det.ah.min(h),
+			..det
+		};
+		det
+	}
 }
 impl<A: Layable, B: Layable> Layable for Overlay<A, B> {
 	fn size(&self) -> (i32, i32) {
@@ -22,21 +32,22 @@ impl<A: Layable, B: Layable> Layable for Overlay<A, B> {
 		(a_w.max(b_w), a_h.max(b_h))
 	}
 	fn render(&self, d: &mut raylib::prelude::RaylibDrawHandle, det: crate::Details, scale: f32) {
-		let (w, h) = self.size();
-		let det = crate::Details {
-			aw: det.aw.min(w),
-			ah: det.ah.min(h),
-			..det
-		};
+		let l_det = self.l_det(det);
 
-		self.background.render(d, det, scale);
-		self.foreground.render(d, det, scale);
+		self.background.render(d, l_det, scale);
+		self.foreground.render(d, l_det, scale);
 	}
-	fn pass_event(&self, event: crate::core::Event) -> Option<crate::core::Event> {
-		if let Some(ret) = self.foreground.pass_event(event) {
+	fn pass_event(
+		&self,
+		event: crate::core::Event,
+		det: crate::Details,
+		scale: f32,
+	) -> Option<crate::core::Event> {
+		let l_det = self.l_det(det);
+		if let Some(ret) = self.foreground.pass_event(event, l_det, scale) {
 			Some(ret)
 		} else {
-			self.background.pass_event(event)
+			self.background.pass_event(event, l_det, scale)
 		}
 	}
 }

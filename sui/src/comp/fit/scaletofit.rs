@@ -44,8 +44,14 @@ impl<L: Layable> Layable for ScaleToFit<L> {
 	fn render(&self, d: &mut raylib::prelude::RaylibDrawHandle, det: crate::Details, scale: f32) {
 		self.layable.render(d, det, scale * self.scale(None));
 	}
-	fn pass_event(&self, event: crate::core::Event) -> Option<crate::core::Event> {
-		self.layable.pass_event(event) // TODO fix mouse events to have correct x,y
+	fn pass_event(
+		&self,
+		event: crate::core::Event,
+		det: crate::Details,
+		scale: f32,
+	) -> Option<crate::core::Event> {
+		self.layable
+			.pass_event(event, det, scale * self.scale(None))
 	}
 }
 
@@ -62,7 +68,12 @@ mod scaletofit_tests {
 			}
 			fn render(&self, _: &mut raylib::prelude::RaylibDrawHandle, _: crate::Details, _: f32) {
 			}
-			fn pass_event(&self, event: crate::core::Event) -> Option<crate::core::Event> {
+			fn pass_event(
+				&self,
+				event: crate::core::Event,
+				_: crate::Details,
+				_: f32,
+			) -> Option<crate::core::Event> {
 				Some(event)
 			}
 		}

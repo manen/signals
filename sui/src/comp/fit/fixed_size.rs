@@ -30,6 +30,16 @@ impl<L: Layable> FixedSize<L> {
 	pub fn fix_both(layable: L, both: i32) -> Self {
 		Self::fix_size(layable, (both, both))
 	}
+
+	fn l_det(&self, det: crate::Details) -> crate::Details {
+		let (w, h) = self.size();
+		crate::Details {
+			x: det.x,
+			y: det.y,
+			aw: w,
+			ah: h,
+		}
+	}
 }
 impl<L: Layable> Layable for FixedSize<L> {
 	fn size(&self) -> (i32, i32) {
@@ -40,19 +50,14 @@ impl<L: Layable> Layable for FixedSize<L> {
 		}
 	}
 	fn render(&self, d: &mut raylib::prelude::RaylibDrawHandle, det: crate::Details, scale: f32) {
-		let (w, h) = self.size();
-		self.layable.render(
-			d,
-			crate::Details {
-				x: det.x,
-				y: det.y,
-				aw: w,
-				ah: h,
-			},
-			scale,
-		)
+		self.layable.render(d, self.l_det(det), scale)
 	}
-	fn pass_event(&self, event: crate::core::Event) -> Option<crate::core::Event> {
-		self.layable.pass_event(event)
+	fn pass_event(
+		&self,
+		event: crate::core::Event,
+		det: crate::Details,
+		scale: f32,
+	) -> Option<crate::core::Event> {
+		self.layable.pass_event(event, self.l_det(det), scale)
 	}
 }

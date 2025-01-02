@@ -1,5 +1,4 @@
 mod select_bar;
-use std::fmt::Debug;
 
 pub use select_bar::SelectBar;
 
@@ -20,6 +19,9 @@ pub use overlay::Overlay;
 
 pub mod space;
 pub use space::Space;
+
+pub mod debug;
+pub use debug::{Debug, Debuggable};
 
 use crate::Layable;
 
@@ -59,12 +61,17 @@ impl<'a> Layable for Comp<'a> {
 		}
 	}
 
-	fn pass_event(&self, event: crate::core::Event) -> Option<crate::core::Event> {
+	fn pass_event(
+		&self,
+		event: crate::core::Event,
+		det: crate::Details,
+		scale: f32,
+	) -> Option<crate::core::Event> {
 		match self {
-			Self::Page(a) => a.pass_event(event),
-			Self::Text(a) => a.pass_event(event),
-			Self::Space(a) => a.pass_event(event),
-			Self::Dynamic(dl) => dl.pass_event(event),
+			Self::Page(a) => a.pass_event(event, det, scale),
+			Self::Text(a) => a.pass_event(event, det, scale),
+			Self::Space(a) => a.pass_event(event, det, scale),
+			Self::Dynamic(dl) => dl.pass_event(event, det, scale),
 		}
 	}
 }

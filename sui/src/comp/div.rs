@@ -1,4 +1,4 @@
-use crate::core::Layable;
+use crate::core::{Event, Layable};
 use crate::{
 	comp::{Comp, Compatible},
 	Details,
@@ -81,28 +81,48 @@ impl<'a> Layable for Div<'a> {
 		}
 	}
 
-	fn pass_event(&self, event: crate::core::Event) -> Option<crate::core::Event> {
+	fn pass_event(
+		&self,
+		event: crate::core::Event,
+		det: Details,
+		scale: f32,
+	) -> Option<crate::core::Event> {
 		match event {
-			crate::core::Event::MouseEvent { x: ptr_x, y: ptr_y } => {
-				let (mut x, mut y) = (0, 0);
-				for c in self.components.iter() {
-					let (cw, ch) = c.size();
-					if ptr_x >= x && ptr_x <= x + cw // x
-					 && ptr_y >= y && ptr_y <= y + ch
-					{
-						return c.pass_event(crate::core::Event::MouseEvent {
-							x: ptr_x - x,
-							y: ptr_y - y,
-						});
-					} else {
-						if !self.horizontal {
-							y += ch;
+			Event::MouseEvent {
+				x: mouse_x,
+				y: mouse_y,
+			} => {
+				let (self_w, self_h) = self.size();
+
+				let (mut x, mut y) = (det.x, det.y);
+				for comp in self.components.iter() {
+					let (comp_w, comp_h) = comp.size();
+					let comp_det = Details {
+						x,
+						y,
+						aw: if !self.horizontal {
+							(self_w as f32 * scale) as i32
 						} else {
-							x += cw;
-						}
+							comp_w
+						},
+						ah: if self.horizontal {
+							(self_h as f32 * scale) as i32
+						} else {
+							comp_h
+						},
+					};
+
+					if comp_det.is_inside(mouse_x, mouse_y) {
+						return comp.pass_event(event, comp_det, scale);
+					}
+
+					if !self.horizontal {
+						y += (comp_h as f32 * scale) as i32;
+					} else {
+						x += (comp_w as f32 * scale) as i32;
 					}
 				}
-				None // mouseevent didn't intersect any of the components
+				None
 			}
 			_ => None,
 		}
