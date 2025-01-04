@@ -174,7 +174,8 @@ fn main() {
 					id: ui::worlds_bar::PLUS_CLICKED,
 					..
 				} => {
-					game.push();
+					let id = game.push();
+					game.switch_main(id);
 				}
 				Event::Named {
 					id: ui::worlds_bar::SWITCH_CLICKED,
@@ -182,8 +183,6 @@ fn main() {
 				} => {
 					let id = n_to_id(n);
 					game.switch_main(id);
-					let i = game.i;
-					game.moves = IngameWorld::generate(&mut game, i);
 				}
 				Event::Named {
 					id: ui::worlds_bar::FOREIGN_CLICKED,

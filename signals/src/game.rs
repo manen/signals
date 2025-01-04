@@ -213,6 +213,9 @@ impl Game {
 			switch_main_with(new_i);
 			self.i = Some(new_i);
 		}
+
+		let i = self.i;
+		self.moves = IngameWorld::generate(self, i);
 	}
 
 	/// returns main on None, world number n at Some(n), even if some numbered world is switched with main
