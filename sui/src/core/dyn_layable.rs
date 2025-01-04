@@ -126,6 +126,7 @@ impl<'a> DynamicLayable<'a> {
 
 	/// borrows self as L, if L is the type inside
 	pub fn borrow<L: Layable>(&self) -> Option<&L> {
+		self.null_check();
 		if self.can_take::<L>() {
 			let b = unsafe { &*(self.ptr as *mut L) };
 			Some(b)
@@ -135,6 +136,7 @@ impl<'a> DynamicLayable<'a> {
 	}
 	/// borrows self as L, if L is the type inside
 	pub fn borrow_mut<L: Layable>(&mut self) -> Option<&'a mut L> {
+		self.null_check();
 		if self.can_take::<L>() {
 			let b = unsafe { &mut *(self.ptr as *mut L) };
 			Some(b)
@@ -143,10 +145,18 @@ impl<'a> DynamicLayable<'a> {
 		}
 	}
 	/// basically [Self::new] but backwards
-	pub fn take<L: Layable>(self) -> Option<L> {
+	pub fn take<L: Layable>(mut self) -> Option<L> {
+		self.null_check();
 		if self.can_take::<L>() {
 			let mut layable: std::mem::MaybeUninit<L> = std::mem::MaybeUninit::uninit();
+
 			unsafe { std::ptr::copy_nonoverlapping(self.ptr as *const L, layable.as_mut_ptr(), 1) };
+
+			// double free protection
+			// with this, dropping self at the end of this function will only deallocate the pointer
+			fn empty_drop(_: *mut u8) {}
+			self.drop = empty_drop;
+
 			let layable = unsafe { layable.assume_init() };
 			Some(layable)
 		} else {
@@ -182,6 +192,7 @@ impl<'a> Layable for DynamicLayable<'a> {
 // common trait impls
 impl<'a> Debug for DynamicLayable<'a> {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		self.null_check();
 		match self.debug {
 			None => write!(f, "[DynamicLayable {}]", self.type_name),
 			Some(dbgf) => {
@@ -204,12 +215,13 @@ impl<'a> Debug for DynamicLayable<'a> {
 }
 impl<'a> Clone for DynamicLayable<'a> {
 	fn clone(&self) -> Self {
+		self.null_check();
 		match self.clone {
 			None => panic!("attempted to clone a DynamicLayable that didn't implement cloning\nmake sure to use DynamicLayable::new or DynamicLayable::new_only_clone\nsorry for panicking but the only other option is memory corruption so i think u still got a good deal"),
 			Some(clonef) => {
 				let new_ptr = clonef(self.ptr, self.layout);
 
-				Self {
+				let cloned = Self {
 					ptr: new_ptr,
 					layout: self.layout,
 					type_name: self.type_name,
@@ -220,7 +232,9 @@ impl<'a> Clone for DynamicLayable<'a> {
 					clone: self.clone,
 					debug: self.debug,
 					lifetime: std::marker::PhantomData,
-				}
+				};
+				cloned.null_check();
+				cloned
 			}
 		}
 	}
@@ -317,7 +331,7 @@ mod dynamiclayable_tests {
 	#[test]
 	fn test_take() {
 		#[derive(Clone, Debug, PartialEq, Eq)]
-		struct Dummy(i32);
+		struct Dummy(Vec<i32>);
 		impl Layable for Dummy {
 			fn size(&self) -> (i32, i32) {
 				(200, 200)
@@ -328,7 +342,7 @@ mod dynamiclayable_tests {
 			}
 		}
 
-		let d = DynamicLayable::new(Dummy(30));
+		let d = DynamicLayable::new(Dummy(vec![30]));
 		let d_cloned = d.clone();
 
 		assert!(!d_cloned.can_take::<crate::Comp>());
@@ -336,8 +350,8 @@ mod dynamiclayable_tests {
 		assert!(!d.can_take::<crate::Comp>());
 		assert!(!d.can_take::<crate::Text>());
 
-		assert_eq!(d_cloned.take(), Some(Dummy(30)));
-		assert_eq!(d.take(), Some(Dummy(30)));
+		assert_eq!(d_cloned.take(), Some(Dummy(vec![30])));
+		assert_eq!(d.take(), Some(Dummy(vec![30])));
 	}
 
 	#[test]
