@@ -282,11 +282,21 @@ impl Game {
 		}
 	}
 
+	/// self.world(None) without being &mut self
+	pub fn world_main(&self) -> &World {
+		self.world_opt(None).expect("the main world exists")
+	}
 	pub fn worlds(&self) -> impl Iterator<Item = &World> {
-		let main = std::iter::once(self.world_opt(None));
-		let numbered = (0..self.worlds.len().max(1) - 1).map(|i| self.world_opt(Some(i)));
+		// this could be a pretty and efficient Iterator type but this is all for now
 
-		main.chain(numbered)
-			.map(|opt| opt.expect("Game::worlds failed, as one of the worlds returned is None"))
+		fn world_at(i: usize, game: &Game) -> &World {
+			if game.i == Some(i) {
+				game.main.as_ref()
+			} else {
+				&game.worlds[i]
+			}
+		};
+
+		(0..(self.worlds.len())).map(|i| world_at(i, self))
 	}
 }

@@ -62,18 +62,29 @@ impl PosInfo {
 }
 
 pub fn render_basic_world(world: &world::World, d: &mut RaylibDrawHandle, pos_info: PosInfo) {
-	render_any_world(world, d, pos_info, |_| Cow::Owned(Default::default()));
+	render_any_world(
+		world,
+		d,
+		pos_info,
+		|_| Cow::Owned(Default::default()),
+		false,
+	);
 }
 pub fn render_world(world: &world::RenderedWorld, d: &mut RaylibDrawHandle, pos_info: PosInfo) {
-	render_any_world(world.as_ref(), d, pos_info, |coords| {
-		Cow::Borrowed(world.drawmap_at(coords))
-	});
+	render_any_world(
+		world.as_ref(),
+		d,
+		pos_info,
+		|coords| Cow::Borrowed(world.drawmap_at(coords)),
+		true,
+	);
 }
 fn render_any_world<'a>(
 	world: &world::World,
 	d: &mut RaylibDrawHandle,
 	pos_info: PosInfo,
 	drawmap_at: impl Fn((i32, i32)) -> Cow<'a, Chunk<DrawType>>,
+	draw_misc: bool,
 ) {
 	for (coords, chunk) in world.chunks() {
 		render_chunk(
@@ -84,6 +95,7 @@ fn render_any_world<'a>(
 				coords.0 * world::CHUNK_SIZE as i32 * world::BLOCK_SIZE as i32,
 				coords.1 * world::CHUNK_SIZE as i32 * world::BLOCK_SIZE as i32,
 			),
+			draw_misc,
 		);
 	}
 }
@@ -93,6 +105,7 @@ pub fn render_chunk(
 	drawmap: &Drawmap,
 	d: &mut RaylibDrawHandle,
 	pos_info: PosInfo,
+	draw_misc: bool,
 ) {
 	for px in 0..world::CHUNK_SIZE as i32 {
 		for py in 0..world::CHUNK_SIZE as i32 {
@@ -106,10 +119,11 @@ pub fn render_chunk(
 						.expect("drawmap chunks are smaller than regular chunks(how)"),
 					d,
 					pos_info,
+					draw_misc,
 				)
 			});
 
-			if DEBUG_CHUNKS {
+			if DEBUG_CHUNKS && draw_misc {
 				use raylib::prelude::RaylibDraw;
 				d.draw_text(
 					&format!("{px} {py}"),
@@ -128,6 +142,7 @@ pub fn render_block(
 	dt: &DrawType,
 	d: &mut RaylibDrawHandle,
 	pos_info: PosInfo,
+	draw_misc: bool,
 ) {
 	match block {
 		world::Block::Nothing => {}
@@ -155,7 +170,7 @@ pub fn render_block(
 				color,
 			);
 
-			if DEBUG_WIRES {
+			if DEBUG_WIRES && draw_misc {
 				use raylib::color::Color;
 				let c_dir = match dir {
 					world::Direction::Right => "r",
@@ -220,7 +235,7 @@ pub fn render_block(
 				excl_color,
 			);
 
-			if DEBUG_NOT {
+			if DEBUG_NOT && draw_misc {
 				d.draw_text(
 					&format!("{block:?}"),
 					pos_info.base.0,
@@ -238,13 +253,15 @@ pub fn render_block(
 				pos_info.scale(world::BLOCK_SIZE),
 				SWITCH_OFF,
 			);
-			d.draw_text(
-				&format!("{rest:?}"),
-				pos_info.base.0,
-				pos_info.base.1,
-				12,
-				SWITCH_ON,
-			)
+			if draw_misc {
+				d.draw_text(
+					&format!("{rest:?}"),
+					pos_info.base.0,
+					pos_info.base.1,
+					12,
+					SWITCH_ON,
+				)
+			}
 		}
 	}
 }
