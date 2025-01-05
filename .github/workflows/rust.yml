@@ -49,5 +49,5 @@ jobs:
     
     - uses: actions/upload-artifact@v4
       with:
-        name: executable
+        name: windows executable
         path: target/release/signals.exe
