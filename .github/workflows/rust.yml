@@ -16,7 +16,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: install x11 dev libs
-      run: sudo apt-get update && sudo apt-get install -y libx11-dev libxrandr
+      run: sudo apt-get update && sudo apt-get install -y libx11-dev libxrandr-dev
     - name: Build
       run: cargo build --verbose
     - name: Run tests
