@@ -257,12 +257,12 @@ mod dynamiclayable_tests {
 			crate::text("yessirski", 54),
 		]));
 		test_single(crate::comp::Div::new(
+			false,
 			vec![
 				crate::text("hellop", 1),
 				crate::text("hi".to_owned(), 14),
 				crate::text("yessirski", 54),
 			],
-			false,
 		));
 	}
 	fn test_single<L: Layable + Clone + Debug>(l: L) {
@@ -370,7 +370,7 @@ mod dynamiclayable_tests {
 
 		let mut d = DynamicLayable::new(Dummy(10));
 
-		assert!(d.borrow::<crate::Div>().is_none());
+		assert!(d.borrow::<crate::Div<Dummy>>().is_none());
 		match d.borrow_mut::<crate::Text>() {
 			None => { /* good!! */ }
 			Some(_) => panic!("d.borrow_mut for the incorrect type returned something?"),

@@ -1,83 +1,64 @@
 use crate::{game::Game, ui::ingame::WorldPreview, world::World};
-use sui::Compatible;
+use sui::{comp::*, Compatible};
 
 pub const SWITCH_CLICKED: &str = "worlds_bar_worlds_switch_clicked";
 pub const FOREIGN_CLICKED: &str = "worlds_bar_worlds_place_clicked";
 pub const PLUS_CLICKED: &str = "worlds_bar_worlds_plus_clicked";
 
 pub fn worlds_bar(game: &Game, height: i32) -> sui::Comp {
-	// sui::page(vec![sui::custom(sui::comp::ScaleToFit::fix_h(
-	// 	WorldPreview::new(game.main.as_ref()),
-	// 	200,
-	// ))])
+	let previews = std::iter::once(worlds_bar_main(height, game.world_main()))
+		.chain(
+			game.worlds()
+				.enumerate()
+				.map(|(i, w)| worlds_bar_world(height, i, w)),
+		)
+		.chain(std::iter::once(sui::custom(FixedSize::fix_both(
+			height,
+			Clickable::new(PLUS_CLICKED, 0, Centered::new(Text::new("+", 50))),
+		))));
 
-	let previews = std::iter::once(game.world_main())
-		.chain(game.worlds())
-		.enumerate()
-		.map(|(i, w)| worlds_bar_world(height, i, w))
-		.chain(std::iter::once(sui::custom(
-			sui::comp::FixedSize::fix_both(
-				height,
-				sui::comp::Clickable::new(
-					PLUS_CLICKED,
-					0,
-					sui::comp::Centered::new(sui::comp::Text::new("+", 50)),
-				),
-			),
-		)));
-
-	sui::custom(sui::comp::Clickable::new_fallback(
+	sui::custom(Clickable::new_fallback(
 		"faszopm kivan mar",
 		6,
-		sui::comp::Div::new(previews.collect::<Vec<_>>(), true),
+		Div::new(true, previews.collect::<Vec<_>>()),
 	))
-	// sui::page_h(previews.collect::<Vec<_>>())
 }
 
 /// i is 0 on main, i + 1 on Some(i)
 fn worlds_bar_world(height: i32, i: usize, w: &World) -> sui::Comp {
-	sui::custom(sui::comp::Overlay::new(
-		sui::comp::ScaleToFit::fix_h(height, WorldPreview::new(w)),
-		sui::comp::FixedSize::fix_both(
+	sui::custom(Overlay::new(
+		ScaleToFit::fix_h(height, WorldPreview::new(w)),
+		FixedSize::fix_both(
 			height,
-			sui::comp::Centered::new(sui::Div::new(
-				{
-					// the clickable buttons in front of every world
-
-					let mut vec = Vec::with_capacity(3);
-					// vec![
-					// 	sui::custom(sui::comp::Clickable::new(
-					// 		// sui::comp::Centered::new(
-					// 		sui::comp::Text::new("switch here", 14), // )
-					// 		SWITCH_CLICKED,
-					// 		i as i32,
-					// 	)),
-					// 	sui::comp::Space::new(0, 20).into_comp(),
-					// 	sui::custom(sui::comp::Clickable::new(
-					// 		sui::comp::Centered::new(sui::comp::Text::new("place", 14)),
-					// 		FOREIGN_CLICKED,
-					// 		i as i32,
-					// 	)),
-					// ];
-					if i != 0 {
-						vec.push(sui::custom(sui::comp::Clickable::new(
-							FOREIGN_CLICKED,
-							i as i32,
-							sui::comp::Centered::new(sui::comp::Text::new("place", 14)),
-						)));
-
-						vec.push(sui::comp::Space::new(0, 20).into_comp())
-					}
-					vec.push(sui::custom(sui::comp::Clickable::new(
-						// sui::comp::Centered::new(
-						SWITCH_CLICKED,
-						i as i32,
-						sui::comp::Text::new("switch here", 14),
-					)));
-
-					vec
-				},
+			Centered::new(sui::Div::new(
 				false,
+				[
+					sui::custom(Clickable::new(
+						FOREIGN_CLICKED,
+						i as i32 + 1,
+						Centered::new(Text::new("place", 14)),
+					)),
+					Space::new(0, 20).into_comp(),
+					sui::custom(Clickable::new(
+						SWITCH_CLICKED,
+						i as i32 + 1,
+						Text::new("switch here", 14),
+					)),
+				],
+			)),
+		),
+	))
+}
+
+fn worlds_bar_main(height: i32, w: &World) -> sui::Comp {
+	sui::custom(Clickable::new(
+		SWITCH_CLICKED,
+		0,
+		Overlay::new(
+			ScaleToFit::fix_h(height, WorldPreview::new(w)),
+			Centered::new(FixedSize::fix_both(
+				height,
+				Centered::new(Text::new("switch here", 14)),
 			)),
 		),
 	))

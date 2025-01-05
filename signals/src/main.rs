@@ -10,7 +10,7 @@ use raylib::{
 	ffi::{KeyboardKey, MouseButton},
 	prelude::RaylibDraw,
 };
-use sui::core::Event;
+use sui::{core::Event, Layable};
 use tool::Tool;
 
 pub const TICK_TIME: f32 = 0.03;
@@ -94,7 +94,8 @@ fn main() {
 
 		let worlds_bar_h = 400 as f32 / 1980 as f32 * screen.ah as f32;
 		let worlds_bar_h = worlds_bar_h as _;
-		let worlds_bar_det = sui::Details {
+		// modified so width reflects the real width
+		let mut worlds_bar_det = sui::Details {
 			x: 0,
 			y: screen.ah - worlds_bar_h,
 			aw: screen.aw,
@@ -115,6 +116,8 @@ fn main() {
 			);
 
 			let worlds_bar = ui::worlds_bar(&game, worlds_bar_h);
+			worlds_bar_det.aw = worlds_bar_det.aw.min(worlds_bar.size().0);
+
 			let worlds_bar_ctx = sui::RootContext::new(&worlds_bar, worlds_bar_det, 1.0);
 
 			// handled later, when there's no other references to game

@@ -29,7 +29,7 @@ use crate::Layable;
 /// this enum contains variants for every base layable (layables that don't have a generic type) \
 /// for components with generic types or for anything else really use [Comp::Dynamic] (also [crate::custom])
 pub enum Comp<'a> {
-	Page(Div<'a>),
+	Page(Div<Vec<Comp<'a>>>),
 	Text(Text<'a>),
 	Space(Space),
 	Dynamic(crate::core::DynamicLayable<'a>),
@@ -104,8 +104,7 @@ macro_rules! compatible_impl {
 		}
 	};
 }
-compatible_impl!(Page, Div<'a>);
+compatible_impl!(Page, Div<Vec<Comp<'a>>>);
 compatible_impl!(Text, Text<'a>);
 compatible_impl!(Space, Space);
-
 compatible_impl!(Dynamic, crate::DynamicLayable<'a>);

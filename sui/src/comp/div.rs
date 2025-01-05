@@ -5,14 +5,48 @@ use crate::{
 };
 use raylib::prelude::RaylibDrawHandle;
 
+pub trait DivComponents {
+	type L: Layable;
+
+	fn iter_components(&self) -> impl Iterator<Item = &Self::L>;
+}
+impl<const N: usize, L: Layable> DivComponents for [L; N] {
+	type L = L;
+
+	fn iter_components(&self) -> impl Iterator<Item = &Self::L> {
+		self.iter()
+	}
+}
+impl<L: Layable> DivComponents for &[L] {
+	type L = L;
+
+	fn iter_components(&self) -> impl Iterator<Item = &Self::L> {
+		self.iter()
+	}
+}
+impl<L: Layable> DivComponents for Vec<L> {
+	type L = L;
+
+	fn iter_components(&self) -> impl Iterator<Item = &Self::L> {
+		self.iter()
+	}
+}
+impl<L: Layable> DivComponents for L {
+	type L = L;
+
+	fn iter_components(&self) -> impl Iterator<Item = &Self::L> {
+		std::iter::once(self)
+	}
+}
+
 /// simple page layout, one element after another \
 /// just imagine an html div
 #[derive(Clone, Debug, Default)]
-pub struct Div<'a> {
-	components: Vec<Comp<'a>>,
+pub struct Div<D: DivComponents> {
+	components: D,
 	horizontal: bool,
 }
-impl<'a> Div<'a> {
+impl<D: DivComponents + Default> Div<D> {
 	pub fn empty() -> Self {
 		Self::default()
 	}
@@ -22,22 +56,25 @@ impl<'a> Div<'a> {
 			..Default::default()
 		}
 	}
-	pub fn new<I: Into<Vec<Comp<'a>>>>(components: I, horizontal: bool) -> Self {
+}
+impl<D: DivComponents> Div<D> {
+	pub fn new(horizontal: bool, components: D) -> Self {
 		Self {
-			components: components.into(),
+			components: components,
 			horizontal,
 		}
 	}
-
+}
+impl<'a> Div<Vec<Comp<'a>>> {
 	pub fn push<C: Compatible<'a>>(&mut self, c: C) {
 		self.components.push(c.into_comp());
 	}
 }
-impl<'a> Layable for Div<'a> {
+impl<D: DivComponents> Layable for Div<D> {
 	fn size(&self) -> (i32, i32) {
 		let (mut w, mut h) = (0, 0);
 
-		for comp in self.components.iter() {
+		for comp in self.components.iter_components() {
 			let (comp_w, comp_h) = comp.size();
 
 			if !self.horizontal {
@@ -54,7 +91,7 @@ impl<'a> Layable for Div<'a> {
 		let (self_w, self_h) = self.size();
 
 		let (mut x, mut y) = (det.x, det.y);
-		for comp in self.components.iter() {
+		for comp in self.components.iter_components() {
 			let (comp_w, comp_h) = comp.size();
 			let comp_det = Details {
 				x,
@@ -95,7 +132,7 @@ impl<'a> Layable for Div<'a> {
 				let (self_w, self_h) = self.size();
 
 				let (mut x, mut y) = (det.x, det.y);
-				for comp in self.components.iter() {
+				for comp in self.components.iter_components() {
 					let (comp_w, comp_h) = comp.size();
 					let comp_det = Details {
 						x,
