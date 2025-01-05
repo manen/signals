@@ -17,10 +17,10 @@ impl<L: Layable> ScaleToFit<L> {
 	pub fn new(layable: L, fit_opt: FitOpt) -> Self {
 		Self { layable, fit_opt }
 	}
-	pub fn fix_w(layable: L, width: i32) -> Self {
+	pub fn fix_w(width: i32, layable: L) -> Self {
 		Self::new(layable, FitOpt::Width(width))
 	}
-	pub fn fix_h(layable: L, height: i32) -> Self {
+	pub fn fix_h(height: i32, layable: L) -> Self {
 		Self::new(layable, FitOpt::Height(height))
 	}
 
@@ -78,11 +78,11 @@ mod scaletofit_tests {
 			}
 		}
 		{
-			let stf = ScaleToFit::fix_w(Dummy, 50);
+			let stf = ScaleToFit::fix_w(50, Dummy);
 			assert_eq!(stf.size(), (50, 100));
 		}
 		{
-			let stf = ScaleToFit::fix_h(Dummy, 400);
+			let stf = ScaleToFit::fix_h(400, Dummy);
 			assert_eq!(stf.size(), (200, 400));
 		}
 	}

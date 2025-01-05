@@ -10,7 +10,7 @@ pub struct Clickable<C: Layable> {
 	fallback: bool,
 }
 impl<C: Layable> Clickable<C> {
-	pub fn new(comp: C, id: &'static str, n: i32) -> Self {
+	pub fn new(id: &'static str, n: i32, comp: C) -> Self {
 		Clickable {
 			comp,
 			id,
@@ -18,7 +18,7 @@ impl<C: Layable> Clickable<C> {
 			fallback: false,
 		}
 	}
-	pub fn new_fallback(comp: C, id: &'static str, n: i32) -> Self {
+	pub fn new_fallback(id: &'static str, n: i32, comp: C) -> Self {
 		Clickable {
 			comp,
 			id,

@@ -18,17 +18,17 @@ impl<L: Layable> FixedSize<L> {
 	pub fn new(layable: L, fit_opt: FitOpt) -> Self {
 		Self { layable, fit_opt }
 	}
-	pub fn fix_w(layable: L, width: i32) -> Self {
+	pub fn fix_w(width: i32, layable: L) -> Self {
 		Self::new(layable, FitOpt::Width(width))
 	}
-	pub fn fix_h(layable: L, height: i32) -> Self {
+	pub fn fix_h(height: i32, layable: L) -> Self {
 		Self::new(layable, FitOpt::Height(height))
 	}
-	pub fn fix_size(layable: L, size: (i32, i32)) -> Self {
+	pub fn fix_size(size: (i32, i32), layable: L) -> Self {
 		Self::new(layable, FitOpt::Both(size))
 	}
-	pub fn fix_both(layable: L, both: i32) -> Self {
-		Self::fix_size(layable, (both, both))
+	pub fn fix_both(both: i32, layable: L) -> Self {
+		Self::fix_size((both, both), layable)
 	}
 
 	fn l_det(&self, det: crate::Details) -> crate::Details {

@@ -295,7 +295,7 @@ impl Game {
 			} else {
 				&game.worlds[i]
 			}
-		};
+		}
 
 		(0..(self.worlds.len())).map(|i| world_at(i, self))
 	}

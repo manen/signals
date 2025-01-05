@@ -4,7 +4,7 @@ mod tool;
 mod ui;
 mod world;
 
-use game::{Game, IngameWorld};
+use game::Game;
 use gfx::PosInfo;
 use raylib::{
 	ffi::{KeyboardKey, MouseButton},
