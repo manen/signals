@@ -1,6 +1,6 @@
 use crate::world::*;
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default)]
 pub enum Block {
 	#[default]
 	Nothing,
@@ -103,7 +103,7 @@ impl Block {
 	}
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Direction {
 	Right,
 	Bottom,

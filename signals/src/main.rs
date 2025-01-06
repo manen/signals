@@ -49,6 +49,9 @@ fn main() {
 	let mut tool: tool::Tool = Default::default();
 	let tool_select = sui::SelectBar::new(tool::TOOLS);
 
+	let mut worlds_bar_cache = sui::core::Cached::default();
+	let mut game_retexture_counter = 0; // <- change this variable for the worlds_bar to regenerate
+
 	let mut delta = 0.0;
 
 	let mut g_pos = PosInfo::default();
@@ -115,17 +118,20 @@ fn main() {
 				1.0,
 			);
 
-			let worlds_bar = ui::worlds_bar(&game, worlds_bar_h);
+			let mut d = rl.begin_drawing(&thread);
+			let worlds_bar = worlds_bar_cache.update_with_unchecked(
+				(game_retexture_counter, worlds_bar_h),
+				(&mut d, &game),
+				|(_, height), (d, game)| ui::worlds_bar(d, game, height),
+			);
 			worlds_bar_det.aw = worlds_bar_det.aw.min(worlds_bar.size().0);
-
 			let worlds_bar_ctx = sui::RootContext::new(&worlds_bar, worlds_bar_det, 1.0);
 
 			// handled later, when there's no other references to game
 			let events = page_ctx
-				.handle_input(&mut rl)
-				.chain(worlds_bar_ctx.handle_input(&mut rl));
+				.handle_input_d(&mut d)
+				.chain(worlds_bar_ctx.handle_input_d(&mut d));
 
-			let mut d = rl.begin_drawing(&thread);
 			d.clear_background(gfx::BACKGROUND);
 
 			gfx::render_world(&game.main, &mut d, pos_info);
@@ -179,6 +185,7 @@ fn main() {
 				} => {
 					let id = game.push();
 					game.switch_main(id);
+					game_retexture_counter += 1;
 				}
 				Event::Named {
 					id: ui::worlds_bar::SWITCH_CLICKED,
@@ -186,6 +193,7 @@ fn main() {
 				} => {
 					let id = n_to_id(n);
 					game.switch_main(id);
+					game_retexture_counter += 1;
 				}
 				Event::Named {
 					id: ui::worlds_bar::FOREIGN_CLICKED,

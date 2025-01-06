@@ -14,6 +14,17 @@ pub trait Layable {
 	/// return events to be bubbled back \
 	fn pass_event(&self, event: Event, det: Details, scale: f32) -> Option<Event>;
 }
+impl<L: Layable> Layable for &L {
+	fn size(&self) -> (i32, i32) {
+		L::size(self)
+	}
+	fn render(&self, d: &mut RaylibDrawHandle, det: Details, scale: f32) {
+		L::render(self, d, det, scale)
+	}
+	fn pass_event(&self, event: Event, det: Details, scale: f32) -> Option<Event> {
+		L::pass_event(self, event, det, scale)
+	}
+}
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum Event {

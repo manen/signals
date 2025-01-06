@@ -66,10 +66,15 @@ mod tests {
 
 // ---
 
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone)]
 pub struct Cached<T> {
 	hash: u64,
-	val: T,
+	val: Option<T>,
+}
+impl<T> Default for Cached<T> {
+	fn default() -> Self {
+		Self { hash: 0, val: None }
+	}
 }
 impl<T> Cached<T> {
 	/// re-runs f and returns a borrow to its return value if args isn't the args this function was run with before
@@ -78,9 +83,34 @@ impl<T> Cached<T> {
 		args.hash(&mut hasher);
 		let new_hash = hasher.finish();
 
-		if self.hash != new_hash {
-			self.val = f(args);
+		if self.hash != new_hash || self.val.is_none() {
+			self.val = Some(f(args));
 		}
-		&self.val
+		if let Some(val) = &self.val {
+			val
+		} else {
+			panic!("self.val is none, even though we just checked if it's none and set it to some if it is")
+		}
+	}
+	/// same as [Self::update], but has an unchecked args field which goes... well unchecked.
+	pub fn update_with_unchecked<CA: PartialEq + Hash, UCA>(
+		&mut self,
+		checked_args: CA,
+		unchecked_args: UCA,
+		f: impl Fn(CA, UCA) -> T,
+	) -> &T {
+		let mut hasher = DefaultHasher::new();
+		checked_args.hash(&mut hasher);
+		let new_hash = hasher.finish();
+
+		if self.hash != new_hash || self.val.is_none() {
+			self.val = Some(f(checked_args, unchecked_args));
+			self.hash = new_hash;
+		}
+		if let Some(val) = &self.val {
+			val
+		} else {
+			panic!("self.val is none, even though we just checked if it's none and set it to some if it is")
+		}
 	}
 }

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, hash::Hash};
 
 use crate::{
 	gfx,
@@ -58,6 +58,16 @@ impl RenderedWorld {
 		self.drawmap = drawmap;
 
 		moves
+	}
+}
+impl Hash for RenderedWorld {
+	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+		self.world.hash(state);
+
+		for (coords, c) in self.drawmap.iter() {
+			coords.hash(state);
+			c.hash(state);
+		}
 	}
 }
 

@@ -19,7 +19,7 @@ use crate::world::{Block, Move, RenderedWorld, Signal, World};
 
 /// IngameWorld is a recursive structure that contains the moves (instance) of the world it's pointing to in id \
 /// this is needed to make every world have unique instances of worlds, to be contained in foreigns
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct IngameWorld {
 	/// index of game, see Game::world
 	pub world_id: Option<usize>,
@@ -154,7 +154,7 @@ impl IngameWorld {
 }
 
 // very proof of concept-y
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct Game {
 	// the way this works is when we switch to another world we write the index of
 	// the world we switched to in i, when we switch back we read i to figure out worlds[?] is main

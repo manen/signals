@@ -8,11 +8,11 @@ scrollable component
 
 before we do that:
 
-- [ ] stores, also just like think about component lifecycles
-- [ ] cache function, only rerun something if the inputs change
+- [x] stores, also just like think about component lifecycles
+- [x] cache function, only rerun something if the inputs change
 
-- [ ] rendering to images (so the scrolled element gets clipped by scrollable bounds)
-- [ ] rendering images
+- [x] rendering to images (so the scrolled element gets clipped by scrollable bounds)
+- [x] rendering images
 
 ---
 

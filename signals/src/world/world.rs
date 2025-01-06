@@ -1,15 +1,15 @@
 use crate::{gfx, world::*};
 
-use std::collections::HashMap;
+use std::{collections::HashMap, hash::Hash};
 
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub enum Signal {
 	#[default]
 	Default,
 	ForeignExternalPoweron,
 	DefaultIf(fn(Block) -> bool),
 }
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Move {
 	Inside {
 		to: (i32, i32),
@@ -412,6 +412,14 @@ impl World {
 			Some(((x_smallest, x_biggest), (y_smallest, y_biggest)))
 		} else {
 			None
+		}
+	}
+}
+impl Hash for World {
+	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+		for (coords, c) in self.chunks() {
+			coords.hash(state);
+			c.hash(state);
 		}
 	}
 }

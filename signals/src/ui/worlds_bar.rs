@@ -1,16 +1,18 @@
 use crate::{game::Game, ui::ingame::WorldPreview, world::World};
-use sui::{comp::*, Compatible};
+use raylib::prelude::RaylibDrawHandle;
+use sui::{comp::*, tex::Texture, Compatible};
 
 pub const SWITCH_CLICKED: &str = "worlds_bar_worlds_switch_clicked";
 pub const FOREIGN_CLICKED: &str = "worlds_bar_worlds_place_clicked";
 pub const PLUS_CLICKED: &str = "worlds_bar_worlds_plus_clicked";
 
-pub fn worlds_bar(game: &Game, height: i32) -> sui::Comp {
-	let previews = std::iter::once(worlds_bar_main(height, game.world_main()))
+pub fn worlds_bar(d: &mut RaylibDrawHandle, game: &Game, height: i32) -> sui::Comp<'static> {
+	println!("recreating world_bar");
+	let previews = std::iter::once(worlds_bar_main(d, height, game.world_main()))
 		.chain(
 			game.worlds()
 				.enumerate()
-				.map(|(i, w)| worlds_bar_world(height, i, w)),
+				.map(|(i, w)| worlds_bar_world(d, height, i, w)),
 		)
 		.chain(std::iter::once(sui::custom(FixedSize::fix_both(
 			height,
@@ -25,9 +27,16 @@ pub fn worlds_bar(game: &Game, height: i32) -> sui::Comp {
 }
 
 /// i is 0 on main, i + 1 on Some(i)
-fn worlds_bar_world(height: i32, i: usize, w: &World) -> sui::Comp {
+fn worlds_bar_world(
+	d: &mut RaylibDrawHandle,
+	height: i32,
+	i: usize,
+	w: &World,
+) -> sui::Comp<'static> {
+	let world_preview = ScaleToFit::fix_h(height, WorldPreview::new(w));
+
 	sui::custom(Overlay::new(
-		ScaleToFit::fix_h(height, WorldPreview::new(w)),
+		Texture::from_layable(d, &world_preview),
 		FixedSize::fix_both(
 			height,
 			Centered::new(sui::Div::new(
@@ -50,12 +59,14 @@ fn worlds_bar_world(height: i32, i: usize, w: &World) -> sui::Comp {
 	))
 }
 
-fn worlds_bar_main(height: i32, w: &World) -> sui::Comp {
+fn worlds_bar_main(d: &mut RaylibDrawHandle, height: i32, w: &World) -> sui::Comp<'static> {
+	let world_preview = ScaleToFit::fix_h(height, WorldPreview::new(w));
+
 	sui::custom(Clickable::new(
 		SWITCH_CLICKED,
 		0,
 		Overlay::new(
-			ScaleToFit::fix_h(height, WorldPreview::new(w)),
+			Texture::from_layable(d, &world_preview),
 			Centered::new(FixedSize::fix_both(
 				height,
 				Centered::new(Text::new("switch here", 14)),

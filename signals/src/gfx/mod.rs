@@ -21,7 +21,7 @@ pub const DEBUG_WIRES: bool = false;
 pub const DEBUG_CHUNKS: bool = false;
 pub const DEBUG_NOT: bool = false;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Default)]
 /// this is the enum that is used to determine what type of a block should be rendered at a position
 pub enum DrawType {
 	#[default]
