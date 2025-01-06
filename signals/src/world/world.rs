@@ -179,7 +179,7 @@ impl World {
 					new_moves.push(Move::Inside {
 						to,
 						from: Direction::from_rel((rx, ry)).map(|dir| dir.reverse()),
-						signal: signal,
+						signal,
 					});
 				}
 				PushMoveTo::OutputID(id) => new_moves.push(Move::Output { id, signal }),
