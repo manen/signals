@@ -3,6 +3,9 @@ pub use dyn_layable::DynamicLayable;
 use raylib::prelude::RaylibDrawHandle;
 use std::fmt::Debug;
 
+mod store;
+pub use store::{Cached, Store};
+
 pub trait Layable {
 	fn size(&self) -> (i32, i32);
 	fn render(&self, d: &mut RaylibDrawHandle, det: Details, scale: f32);
