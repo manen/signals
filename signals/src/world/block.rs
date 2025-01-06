@@ -20,14 +20,15 @@ impl Block {
 		from: Option<Direction>,
 		mut push_move: impl FnMut(PushMoveTo, Signal),
 	) -> Option<Self> {
-		let mut all_directions = || {
-			push_move(PushMoveTo::Rel(1, 0), Default::default());
-			push_move(PushMoveTo::Rel(0, 1), Default::default());
-			push_move(PushMoveTo::Rel(-1, 0), Default::default());
-			push_move(PushMoveTo::Rel(0, -1), Default::default());
+		let mut all_directions = |signal: Signal| {
+			push_move(PushMoveTo::Rel(1, 0), signal.clone());
+			push_move(PushMoveTo::Rel(0, 1), signal.clone());
+			push_move(PushMoveTo::Rel(-1, 0), signal.clone());
+			push_move(PushMoveTo::Rel(0, -1), signal);
 		};
 		match self {
 			Self::Wire(dir) => {
+				// only accept the signal if it's coming from any other direction than the wire is pointing to
 				if from.map(|from| from == *dir).unwrap_or(false) {
 				} else {
 					let (rx, ry) = dir.rel();
@@ -37,7 +38,13 @@ impl Block {
 			Self::Not(_) => return Some(Self::Not(true)),
 			Self::Switch(_) => {}
 			Self::Input(_) => {
-				all_directions();
+				fn cause(block: Block) -> bool {
+					match block {
+						Block::Input(_) => false,
+						_ => true,
+					}
+				}
+				all_directions(Signal::DefaultIf(cause));
 			}
 			Self::Output(id) => push_move(PushMoveTo::OutputID(*id), signal),
 			Self::Foreign(_, inst_id, id) => match signal {
@@ -68,11 +75,7 @@ impl Block {
 							_ => true,
 						}
 					}
-					let signal = Signal::DefaultIf(cause);
-					push_move(PushMoveTo::Rel(1, 0), signal.clone());
-					push_move(PushMoveTo::Rel(0, 1), signal.clone());
-					push_move(PushMoveTo::Rel(-1, 0), signal.clone());
-					push_move(PushMoveTo::Rel(0, -1), signal);
+					all_directions(Signal::DefaultIf(cause));
 				}
 			},
 			Self::Nothing | Block::Error(_) => {}

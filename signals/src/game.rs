@@ -133,18 +133,24 @@ impl IngameWorld {
 	fn process_moves(&mut self, new_moves: Vec<Move>, mut ret: impl FnMut(Move)) {
 		self.moves = Vec::with_capacity(new_moves.len());
 
+		let push_unique = |moves: &mut Vec<_>, mov: Move| {
+			if !moves.contains(&mov) {
+				moves.push(mov);
+			}
+		};
+
 		for mov in new_moves {
 			match mov {
-				Move::Inside { .. } => self.moves.push(mov),
+				Move::Inside { .. } => push_unique(&mut self.moves, mov),
 				Move::Output { .. } => ret(mov),
 				Move::Foreign {
 					inst_id,
 					id,
 					signal, // we assume this isn't a ForeignExternalPoweron cause how'd that end up in new_moves
-				} => self
-					.child_mut(inst_id)
-					.moves
-					.push(Move::Input { id, signal }),
+				} => push_unique(
+					&mut self.child_mut(inst_id).moves,
+					Move::Input { id, signal },
+				),
 				Move::Input { .. } => {
 					eprintln!("unexpected input move in moves processing: {mov:?}")
 				}

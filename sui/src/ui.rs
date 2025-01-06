@@ -1,4 +1,4 @@
-use std::{borrow::Cow, ops::Deref};
+use std::borrow::Cow;
 
 use raylib::{ffi::MouseButton, prelude::RaylibDrawHandle, RaylibHandle};
 

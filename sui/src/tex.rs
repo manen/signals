@@ -1,14 +1,11 @@
-use std::ops::Deref;
+use crate::{Details, Layable};
 
 use raylib::{
 	color::Color,
 	math::{Rectangle, Vector2},
-	prelude::{RaylibDraw, RaylibDrawHandle, RaylibTextureModeExt},
-	texture::{RaylibTexture2D, RenderTexture2D, Texture2D},
-	RaylibThread,
+	prelude::{RaylibDraw, RaylibDrawHandle},
+	texture::{RaylibTexture2D, Texture2D},
 };
-
-use crate::{Details, Layable};
 
 pub fn render_to_raylib_tex<L: Layable>(
 	layable: &L,
@@ -91,25 +88,24 @@ impl Layable for Texture {
 		(self.tex.width, self.tex.height)
 	}
 	fn render(&self, d: &mut RaylibDrawHandle, det: Details, scale: f32) {
-		// d.draw_texture_pro(
-		// 	&self.tex,
-		// 	Rectangle {
-		// 		x: 0.0,
-		// 		y: 0.0,
-		// 		width: self.tex.width as f32,
-		// 		height: self.tex.height as f32,
-		// 	},
-		// 	Rectangle {
-		// 		x: det.x as f32,
-		// 		y: det.y as f32,
-		// 		width: det.aw as f32 * scale,
-		// 		height: det.ah as f32 * scale,
-		// 	},
-		// 	Vector2::default(),
-		// 	Default::default(),
-		// 	Color::default(),
-		// );
-		d.draw_texture(&self.tex, det.x, det.y, Color::new(255, 255, 255, 255));
+		d.draw_texture_pro(
+			&self.tex,
+			Rectangle {
+				x: 0.0,
+				y: 0.0,
+				width: self.tex.width as f32,
+				height: self.tex.height as f32,
+			},
+			Rectangle {
+				x: det.x as f32,
+				y: det.y as f32,
+				width: det.aw as f32 * scale,
+				height: det.ah as f32 * scale,
+			},
+			Vector2::default(),
+			Default::default(),
+			Color::new(255, 255, 255, 255),
+		);
 	}
 	fn pass_event(&self, _: crate::core::Event, _: Details, _: f32) -> Option<crate::core::Event> {
 		None
