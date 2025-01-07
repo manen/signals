@@ -26,18 +26,15 @@ pub fn worlds_bar(
 		))));
 	let previews = previews.collect::<Vec<_>>();
 
-	sui::custom(
-		FixedSize::fix_size(
-			(d.get_render_width(), height),
-			Scrollable::new(
-				scroll_state,
-				fit::scrollable::ScrollableMode::Vertical,
-				Clickable::new_fallback("faszopm kivan mar", 6, Div::new(true, previews)),
-			)
-			.debug(),
+	sui::custom(FixedSize::fix_size(
+		(d.get_render_width(), height),
+		Scrollable::new(
+			scroll_state,
+			fit::scrollable::ScrollableMode::Vertical,
+			Clickable::new_fallback("faszopm kivan mar", 6, Div::new(true, previews)).debug(),
 		)
 		.debug(),
-	)
+	))
 }
 
 /// i is 0 on main, i + 1 on Some(i)
