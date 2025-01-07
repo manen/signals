@@ -125,7 +125,7 @@ impl<D: DivComponents> Layable for Div<D> {
 		scale: f32,
 	) -> Option<crate::core::Event> {
 		match event {
-			Event::MouseEvent {
+			Event::MouseClick {
 				x: mouse_x,
 				y: mouse_y,
 			} => {

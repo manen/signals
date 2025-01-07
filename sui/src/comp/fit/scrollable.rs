@@ -1,8 +1,12 @@
 use raylib::prelude::RaylibDraw;
 
-use crate::{core::Store, Layable};
+use crate::{
+	core::{Event, Store},
+	Layable,
+};
 
 pub const SCROLLBAR_WIDTH: f32 = 10.0; // it's getting multiplied by scale anyway so we just savin a step
+pub const SCROLLBAR_LENGTH: f32 = SCROLLBAR_WIDTH * 4.0;
 const SCROLLBAR_BG_COLOR: raylib::color::Color = crate::comp::select_bar::color(33, 35, 38, 255);
 const SCROLLBAR_HANDLE_COLOR: raylib::color::Color =
 	crate::comp::select_bar::color(106, 113, 122, 255);
@@ -38,11 +42,26 @@ impl ScrollableMode {
 }
 
 /// ScrollableData stores the data needed for a scrollable to actually scroll
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Copy, Clone, Debug, PartialEq, Default)]
 pub struct ScrollableState {
 	// unscaled pixels scrolled in each direction, from 0 to big_width/big_height-small_width/small_height
 	pub scroll_x: i32,
 	pub scroll_y: i32,
+
+	pub action: ScrollbarAction,
+}
+#[derive(Copy, Clone, Debug, PartialEq, Default)]
+pub enum ScrollbarAction {
+	#[default]
+	None,
+	ScrollingXFrom {
+		before: i32,
+		drag_start_c: i32,
+	}, // the screen x coord the scroll was initiated from
+	ScrollingYFrom {
+		before: i32,
+		drag_start_c: i32,
+	}, // the screen y coord the scroll was initiated from
 }
 
 #[derive(Clone, Debug)]
@@ -80,6 +99,73 @@ impl<L: Layable> Scrollable<L> {
 			ah: det.ah - (y_mul * SCROLLBAR_WIDTH * scale) as i32,
 		}
 	}
+
+	fn for_each_scrollbar(
+		&self,
+		l_size: Option<(i32, i32)>,
+		view_det: crate::Details,
+		scale: f32,
+		mut f: impl FnMut((i32, i32, i32, i32), (i32, i32, i32, i32), bool), // last arg is whether the scrollbar's on the bottom
+	) {
+		let (l_w, l_h) = l_size.unwrap_or_else(|| self.layable.size());
+		let (scrollbar_at_side, scrollbar_at_bottom) = self.mode.bools();
+
+		if scrollbar_at_side {
+			let (scrollbar_base_x, scrollbar_base_y) = (view_det.x + view_det.aw, view_det.y);
+			let (scrollbar_w, scrollbar_h) = ((SCROLLBAR_WIDTH * scale) as i32, view_det.ah);
+
+			let (_, scroll_y) = self.state.with_borrow(|a| (a.scroll_x, a.scroll_y));
+
+			let (scrollbar_handle_w, scrollbar_handle_h) = (
+				(SCROLLBAR_WIDTH * scale) as i32,
+				(SCROLLBAR_LENGTH * scale) as i32,
+			);
+			let (scrollbar_handle_base_x, scrollbar_handle_base_y) = (
+				scrollbar_base_x,
+				scrollbar_base_y
+					+ (scroll_y as f32 / (l_h - view_det.ah) as f32
+						* (view_det.ah as f32 - scrollbar_handle_h as f32)) as i32,
+			);
+			f(
+				(scrollbar_base_x, scrollbar_base_y, scrollbar_w, scrollbar_h),
+				(
+					scrollbar_handle_base_x,
+					scrollbar_handle_base_y,
+					scrollbar_handle_w,
+					scrollbar_handle_h,
+				),
+				false,
+			);
+		}
+		if scrollbar_at_bottom {
+			let (scrollbar_base_x, scrollbar_base_y) = (view_det.x, view_det.y + view_det.ah);
+			let (scrollbar_w, scrollbar_h) = (view_det.aw, (SCROLLBAR_WIDTH * scale) as i32);
+
+			let (scroll_x, _) = self.state.with_borrow(|a| (a.scroll_x, a.scroll_y));
+
+			let (scrollbar_handle_w, scrollbar_handle_h) = (
+				// ((l_w as f32 - det.aw as f32) / l_w as f32 * det.aw as f32 * scale) as i32,
+				(SCROLLBAR_LENGTH * scale) as i32,
+				(SCROLLBAR_WIDTH * scale) as i32,
+			);
+			let (scrollbar_handle_base_x, scrollbar_handle_base_y) = (
+				scrollbar_base_x
+					+ (scroll_x as f32 / (l_w - view_det.aw) as f32
+						* (view_det.aw as f32 - scrollbar_handle_w as f32)) as i32,
+				scrollbar_base_y,
+			);
+			f(
+				(scrollbar_base_x, scrollbar_base_y, scrollbar_w, scrollbar_h),
+				(
+					scrollbar_handle_base_x,
+					scrollbar_handle_base_y,
+					scrollbar_handle_w,
+					scrollbar_handle_h,
+				),
+				true,
+			);
+		}
+	}
 }
 impl<L: Layable> Layable for Scrollable<L> {
 	/// returns self.layable.size(), because this scrollable is likely in a FixedSize, so it doesn't really matter
@@ -93,67 +179,29 @@ impl<L: Layable> Layable for Scrollable<L> {
 		let view_det = self.l_det(det, scale);
 		view.render(d, view_det, scale);
 
-		let (scrollbar_at_side, scrollbar_at_bottom) = self.mode.bools();
-
-		if scrollbar_at_side {
-			let (scrollbar_base_x, scrollbar_base_y) = (view_det.x + view_det.aw, view_det.y);
-			let (scrollbar_w, scrollbar_h) = ((SCROLLBAR_WIDTH * scale) as i32, view_det.ah);
-			d.draw_rectangle(
-				scrollbar_base_x,
-				scrollbar_base_y,
-				scrollbar_w,
-				scrollbar_h,
-				SCROLLBAR_BG_COLOR,
-			);
-
-			let (_, scroll_y) = self.state.with_borrow(|a| (a.scroll_x, a.scroll_y));
-
-			let (scrollbar_handle_base_x, scrollbar_handle_base_y) = (
-				scrollbar_base_x,
-				scrollbar_base_y + (scroll_y as f32 / l_h as f32 * det.ah as f32) as i32,
-			);
-			let (scrollbar_handle_w, scrollbar_handle_h) = (
-				(SCROLLBAR_WIDTH * scale) as i32,
-				(l_h as f32 / det.ah as f32 * scale) as i32,
-			);
-			d.draw_rectangle(
-				scrollbar_handle_base_x,
-				scrollbar_handle_base_y,
-				scrollbar_handle_w,
-				scrollbar_handle_h,
-				SCROLLBAR_HANDLE_COLOR,
-			);
-		}
-		if scrollbar_at_bottom {
-			let (scrollbar_base_x, scrollbar_base_y) = (view_det.x, view_det.y + view_det.ah);
-			let (scrollbar_w, scrollbar_h) = (view_det.aw, (SCROLLBAR_WIDTH * scale) as i32);
-			d.draw_rectangle(
-				scrollbar_base_x,
-				scrollbar_base_y,
-				scrollbar_w,
-				scrollbar_h,
-				SCROLLBAR_BG_COLOR,
-			);
-
-			let (scroll_x, _) = self.state.with_borrow(|a| (a.scroll_x, a.scroll_y));
-
-			let (scrollbar_handle_base_x, scrollbar_handle_base_y) = (
-				scrollbar_base_x + (scroll_x as f32 / l_w as f32 * det.aw as f32) as i32,
-				scrollbar_base_y,
-			);
-			let (scrollbar_handle_w, scrollbar_handle_h) = (
-				// ((l_w as f32 - det.aw as f32) / l_w as f32 * det.aw as f32 * scale) as i32,
-				(SCROLLBAR_WIDTH * scale * 4.0) as i32,
-				(SCROLLBAR_WIDTH * scale) as i32,
-			);
-			d.draw_rectangle(
-				scrollbar_handle_base_x,
-				scrollbar_handle_base_y,
-				scrollbar_handle_w,
-				scrollbar_handle_h,
-				SCROLLBAR_HANDLE_COLOR,
-			);
-		}
+		self.for_each_scrollbar(
+			Some((l_w, l_h)),
+			view_det,
+			scale,
+			|(scrollbar_base_x, scrollbar_base_y, scrollbar_w, scrollbar_h),
+			 (handle_base_x, handle_base_y, handle_w, handle_h),
+			 _| {
+				d.draw_rectangle(
+					scrollbar_base_x,
+					scrollbar_base_y,
+					scrollbar_w,
+					scrollbar_h,
+					SCROLLBAR_BG_COLOR,
+				);
+				d.draw_rectangle(
+					handle_base_x,
+					handle_base_y,
+					handle_w,
+					handle_h,
+					SCROLLBAR_HANDLE_COLOR,
+				);
+			},
+		);
 	}
 	fn pass_event(
 		&self,
@@ -161,8 +209,85 @@ impl<L: Layable> Layable for Scrollable<L> {
 		det: crate::Details,
 		scale: f32,
 	) -> Option<crate::core::Event> {
+		let (l_w, l_h) = self.layable.size();
+
 		let view = self.view(scale);
-		view.pass_event(event, self.l_det(det, scale), scale)
+		let view_det = self.l_det(det, scale);
+
+		// different events do different things:
+		// - pressing once starts the action
+		// - MouseHeld updates self.scroll_x or self.scroll_y
+		// - release stops the action
+		match event {
+			Event::MouseClick {
+				x: mouse_x,
+				y: mouse_y,
+			} => {
+				self.for_each_scrollbar(Some((l_w, l_h)), view_det, scale, |_, handle, bottom| {
+					let handle_det = crate::Details {
+						x: handle.0,
+						y: handle.1,
+						aw: handle.2,
+						ah: handle.3,
+					};
+
+					if handle_det.is_inside(mouse_x, mouse_y) {
+						self.state.with_mut_borrow(|s| {
+							s.action = if bottom {
+								ScrollbarAction::ScrollingXFrom {
+									before: s.scroll_x,
+									drag_start_c: mouse_x,
+								}
+							} else {
+								ScrollbarAction::ScrollingYFrom {
+									before: s.scroll_y,
+									drag_start_c: mouse_y,
+								}
+							}
+						})
+					}
+				});
+			}
+			Event::MouseHeld {
+				x: mouse_x,
+				y: mouse_y,
+			} => {
+				self.state.with_mut_borrow(|s| match s.action {
+					ScrollbarAction::ScrollingXFrom {
+						before,
+						drag_start_c,
+					} => {
+						let og = before
+							+ ((mouse_x - drag_start_c) as f32
+								/ (view_det.aw as f32 - SCROLLBAR_LENGTH * scale)
+								* (l_w - view_det.aw) as f32) as i32;
+
+						s.scroll_x = og.min(l_w - det.aw).max(0);
+					}
+					ScrollbarAction::ScrollingYFrom {
+						before,
+						drag_start_c,
+					} => {
+						let og = before
+							+ ((mouse_y - drag_start_c) as f32
+								/ (view_det.ah as f32 - SCROLLBAR_LENGTH * scale)
+								* (l_w - view_det.ah) as f32) as i32;
+
+						s.scroll_y = og.min(l_h - det.ah).max(0);
+					}
+					_ => (), // no action has been started
+				})
+			}
+			Event::MouseRelease { .. } => {
+				// expects everything to be handled in Event::MouseHeld
+				self.state.with_mut_borrow(|s| {
+					s.action = ScrollbarAction::None;
+				})
+			}
+			_ => (),
+		}
+
+		view.pass_event(event, view_det, scale)
 	}
 }
 

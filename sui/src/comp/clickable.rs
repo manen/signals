@@ -42,7 +42,7 @@ impl<C: Layable> Layable for Clickable<C> {
 
 	fn pass_event(&self, event: Event, det: crate::Details, scale: f32) -> Option<Event> {
 		let respond = || match event {
-			Event::MouseEvent { x, y } if det.mul_size(scale).is_inside(x, y) => {
+			Event::MouseClick { x, y } if det.mul_size(scale).is_inside(x, y) => {
 				Some(Event::Named {
 					id: self.id,
 					n: self.n,

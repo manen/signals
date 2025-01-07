@@ -28,8 +28,19 @@ impl<L: Layable> Layable for &L {
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum Event {
-	/// uses window coords
-	MouseEvent { x: i32, y: i32 },
+	// these all use window coords
+	MouseClick {
+		x: i32,
+		y: i32,
+	},
+	MouseHeld {
+		x: i32,
+		y: i32,
+	},
+	MouseRelease {
+		x: i32,
+		y: i32,
+	},
 
 	/// use these to bubble
 	Named {

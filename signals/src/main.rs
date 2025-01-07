@@ -56,7 +56,7 @@ fn main() {
 	let mut worlds_bar_cache = sui::core::Cached::default();
 	let scroll_state = Store::new(ScrollableState {
 		scroll_x: 100,
-		scroll_y: 0,
+		..Default::default()
 	});
 	let mut game_retexture_counter = 0; // <- change this variable for the worlds_bar to regenerate
 
@@ -110,7 +110,7 @@ fn main() {
 			x: 0,
 			y: screen.ah - worlds_bar_h - scrollable::SCROLLBAR_WIDTH as i32,
 			aw: screen.aw,
-			ah: worlds_bar_h,
+			ah: worlds_bar_h + scrollable::SCROLLBAR_WIDTH as i32,
 		};
 
 		// don't be confused by the name, this code block mostly handles rendering
