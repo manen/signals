@@ -10,7 +10,11 @@ use raylib::{
 	ffi::{KeyboardKey, MouseButton},
 	prelude::RaylibDraw,
 };
-use sui::{core::Event, Layable};
+use sui::{
+	comp::fit::scrollable::{self, ScrollableState},
+	core::{Event, Store},
+	Layable,
+};
 use tool::Tool;
 
 pub const TICK_TIME: f32 = 0.03;
@@ -50,6 +54,10 @@ fn main() {
 	let tool_select = sui::SelectBar::new(tool::TOOLS);
 
 	let mut worlds_bar_cache = sui::core::Cached::default();
+	let scroll_state = Store::new(ScrollableState {
+		scroll_x: 100,
+		scroll_y: 0,
+	});
 	let mut game_retexture_counter = 0; // <- change this variable for the worlds_bar to regenerate
 
 	let mut delta = 0.0;
@@ -96,11 +104,11 @@ fn main() {
 		}
 
 		let worlds_bar_h = 400 as f32 / 1980 as f32 * screen.ah as f32;
-		let worlds_bar_h = worlds_bar_h as _;
+		let worlds_bar_h = worlds_bar_h as i32;
 		// modified so width reflects the real width
 		let mut worlds_bar_det = sui::Details {
 			x: 0,
-			y: screen.ah - worlds_bar_h,
+			y: screen.ah - worlds_bar_h - scrollable::SCROLLBAR_WIDTH as i32,
 			aw: screen.aw,
 			ah: worlds_bar_h,
 		};
@@ -122,7 +130,7 @@ fn main() {
 			let worlds_bar = worlds_bar_cache.update_with_unchecked(
 				(game_retexture_counter, worlds_bar_h),
 				(&mut d, &game),
-				|(_, height), (d, game)| ui::worlds_bar(d, game, height),
+				|(_, height), (d, game)| ui::worlds_bar(d, game, height, scroll_state.clone()),
 			);
 			worlds_bar_det.aw = worlds_bar_det.aw.min(worlds_bar.size().0);
 			let worlds_bar_ctx = sui::RootContext::new(&worlds_bar, worlds_bar_det, 1.0);

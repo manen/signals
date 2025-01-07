@@ -1,12 +1,18 @@
 use crate::{game::Game, ui::ingame::WorldPreview, world::World};
+use fit::scrollable::ScrollableState;
 use raylib::prelude::RaylibDrawHandle;
-use sui::{comp::*, tex::Texture, Compatible};
+use sui::{comp::*, core::Store, tex::Texture, Compatible};
 
 pub const SWITCH_CLICKED: &str = "worlds_bar_worlds_switch_clicked";
 pub const FOREIGN_CLICKED: &str = "worlds_bar_worlds_place_clicked";
 pub const PLUS_CLICKED: &str = "worlds_bar_worlds_plus_clicked";
 
-pub fn worlds_bar(d: &mut RaylibDrawHandle, game: &Game, height: i32) -> sui::Comp<'static> {
+pub fn worlds_bar(
+	d: &mut RaylibDrawHandle,
+	game: &Game,
+	height: i32,
+	scroll_state: Store<ScrollableState>,
+) -> sui::Comp<'static> {
 	println!("recreating world_bar");
 	let previews = std::iter::once(worlds_bar_main(d, height, game.world_main()))
 		.chain(
@@ -18,12 +24,20 @@ pub fn worlds_bar(d: &mut RaylibDrawHandle, game: &Game, height: i32) -> sui::Co
 			height,
 			Clickable::new(PLUS_CLICKED, 0, Centered::new(Text::new("+", 50))),
 		))));
+	let previews = previews.collect::<Vec<_>>();
 
-	sui::custom(Clickable::new_fallback(
-		"faszopm kivan mar",
-		6,
-		Div::new(true, previews.collect::<Vec<_>>()),
-	))
+	sui::custom(
+		FixedSize::fix_size(
+			(d.get_render_width(), height),
+			Scrollable::new(
+				scroll_state,
+				fit::scrollable::ScrollableMode::Vertical,
+				Clickable::new_fallback("faszopm kivan mar", 6, Div::new(true, previews)),
+			)
+			.debug(),
+		)
+		.debug(),
+	)
 }
 
 /// i is 0 on main, i + 1 on Some(i)

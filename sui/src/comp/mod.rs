@@ -12,7 +12,7 @@ pub mod div;
 pub use div::Div;
 
 pub mod fit;
-pub use fit::{Centered, FixedSize, ScaleToFit};
+pub use fit::{Centered, FixedSize, ScaleToFit, Scrollable};
 
 pub mod overlay;
 pub use overlay::Overlay;
