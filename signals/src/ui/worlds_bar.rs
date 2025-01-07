@@ -1,5 +1,5 @@
 use crate::{game::Game, ui::ingame::WorldPreview, world::World};
-use fit::scrollable::ScrollableState;
+use fit::scrollable::{self, ScrollableState};
 use raylib::prelude::RaylibDrawHandle;
 use sui::{comp::*, core::Store, tex::Texture, Compatible};
 
@@ -27,7 +27,10 @@ pub fn worlds_bar(
 	let previews = previews.collect::<Vec<_>>();
 
 	sui::custom(FixedSize::fix_size(
-		(d.get_render_width(), height),
+		(
+			d.get_render_width(),
+			height + scrollable::SCROLLBAR_WIDTH as i32,
+		),
 		Scrollable::new(
 			scroll_state,
 			fit::scrollable::ScrollableMode::Vertical,
