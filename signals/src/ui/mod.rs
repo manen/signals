@@ -4,35 +4,54 @@ pub mod worlds_bar;
 use fit::scrollable::ScrollableState;
 pub use worlds_bar::worlds_bar;
 
+use crate::game::IngameWorld;
 use sui::{comp::*, core::Store};
 
 pub fn game_debug_ui(
 	game: &crate::Game,
 	scroll_state: Store<ScrollableState>,
 ) -> sui::comp::Comp<'static> {
-	let lines = game
-		.moves
-		.children
-		.iter()
-		.enumerate()
-		.map(|(i, ingameworld)| format!("inst {i}: {:?}", ingameworld.world_id))
-		.map(|s| {
-			[
-				sui::comp::Text::new(s, 12).into_comp(),
-				sui::comp::Space::new(0, 5).into_comp(), // <- this is kinda just for testing i want to make a margin component later
-			]
-		})
-		.flatten();
+	let ingameworld_dbg = ingameworld_dbg_ui(0, &game.moves);
 
-	let content = lines
-		.chain(std::iter::once(sui::text(format!("{:#?}", game.moves), 16)))
-		.chain(std::iter::once(sui::custom(sui::comp::Centered::new(
-			sui::comp::Text::new("this is centered!!!", 13),
-		))));
-	let page = Div::new(false, content.collect::<Vec<_>>());
+	let page = Div::new(
+		false,
+		[
+			ingameworld_dbg,
+			sui::custom(sui::comp::Centered::new(sui::comp::Text::new(
+				"this is centered!!!",
+				13,
+			))),
+		],
+	);
 
 	sui::custom(FixedSize::fix_both(
 		300,
 		Scrollable::new(scroll_state, fit::scrollable::ScrollableMode::Both, page),
+	))
+}
+
+fn ingameworld_dbg_ui(i: usize, moves: &IngameWorld) -> sui::comp::Comp<'static> {
+	let line = Text::new(format!("inst {i}: {:?}", moves.world_id), 12);
+
+	let children = moves
+		.children
+		.iter()
+		.enumerate()
+		.map(|(i, child)| ingameworld_dbg_ui(i, child));
+	let children_div = Div::new(
+		true,
+		[
+			Space::new(10, 0).into_comp(),
+			sui::page(children.collect::<Vec<_>>()),
+		],
+	);
+
+	sui::custom(Div::new(
+		false,
+		[
+			line.into_comp(),
+			Space::new(0, 5).into_comp(),
+			sui::custom(children_div),
+		],
 	))
 }
