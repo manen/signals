@@ -1,5 +1,6 @@
 mod game;
 mod gfx;
+mod processor;
 mod tool;
 mod ui;
 mod world;
