@@ -13,7 +13,7 @@ use raylib::{
 use sui::{
 	comp::fit::scrollable::{self, ScrollableState},
 	core::{Event, Store},
-	Layable,
+	Debuggable, Layable,
 };
 use tool::Tool;
 
@@ -54,11 +54,10 @@ fn main() {
 	let tool_select = sui::SelectBar::new(tool::TOOLS);
 
 	let mut worlds_bar_cache = sui::core::Cached::default();
-	let scroll_state = Store::new(ScrollableState {
-		scroll_x: 100,
-		..Default::default()
-	});
+	let scroll_state = Store::new(Default::default());
 	let mut game_retexture_counter = 0; // <- change this variable for the worlds_bar to regenerate
+
+	let dbg_scroll_state = Store::new(Default::default());
 
 	let mut delta = 0.0;
 
@@ -115,7 +114,7 @@ fn main() {
 
 		// don't be confused by the name, this code block mostly handles rendering
 		let events = {
-			let page = ui::game_debug_ui(&game);
+			let page = ui::game_debug_ui(&game, dbg_scroll_state.clone()).debug();
 			let page_ctx = sui::RootContext::new(
 				&page,
 				sui::Details {

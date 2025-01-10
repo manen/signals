@@ -36,7 +36,7 @@ pub fn worlds_bar(
 			),
 			Scrollable::new(
 				scroll_state,
-				fit::scrollable::ScrollableMode::Vertical,
+				fit::scrollable::ScrollableMode::Horizontal,
 				Div::new(true, previews),
 			),
 		),

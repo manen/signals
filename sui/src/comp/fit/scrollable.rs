@@ -22,8 +22,8 @@ impl ScrollableMode {
 	fn multipliers(&self) -> (i32, i32) {
 		match self {
 			ScrollableMode::Neither => (0, 0),
-			ScrollableMode::Vertical => (0, 1),
-			ScrollableMode::Horizontal => (1, 0),
+			ScrollableMode::Vertical => (1, 0),
+			ScrollableMode::Horizontal => (0, 1),
 			ScrollableMode::Both => (1, 1),
 		}
 	}
@@ -34,8 +34,8 @@ impl ScrollableMode {
 	fn bools(&self) -> (bool, bool) {
 		match self {
 			ScrollableMode::Neither => (false, false),
-			ScrollableMode::Vertical => (false, true),
-			ScrollableMode::Horizontal => (true, false),
+			ScrollableMode::Vertical => (true, false),
+			ScrollableMode::Horizontal => (false, true),
 			ScrollableMode::Both => (true, true),
 		}
 	}
@@ -209,6 +209,9 @@ impl<L: Layable> Layable for Scrollable<L> {
 		det: crate::Details,
 		scale: f32,
 	) -> Option<crate::core::Event> {
+		println!("{event:?}: {:?}", self.state.with_borrow(|a| a.action));
+
+		let (mul_x, mul_y) = self.mode.multipliers_f32();
 		let (l_w, l_h) = self.layable.size();
 
 		let view = self.view(scale);
@@ -262,7 +265,13 @@ impl<L: Layable> Layable for Scrollable<L> {
 								/ (view_det.aw as f32 - SCROLLBAR_LENGTH * scale)
 								* (l_w - view_det.aw) as f32) as i32;
 
-						s.scroll_x = og.min(l_w - det.aw).max(0);
+						// i know this is a little unreadable :(
+						// basically all this math is just the inverse of how we calculate where the scrollbar handle should be
+						// same for ScrollingFromY
+
+						s.scroll_x = og
+							.min(l_w - det.aw + (SCROLLBAR_WIDTH * scale * mul_x) as i32)
+							.max(0);
 					}
 					ScrollbarAction::ScrollingYFrom {
 						before,
@@ -271,9 +280,11 @@ impl<L: Layable> Layable for Scrollable<L> {
 						let og = before
 							+ ((mouse_y - drag_start_c) as f32
 								/ (view_det.ah as f32 - SCROLLBAR_LENGTH * scale)
-								* (l_w - view_det.ah) as f32) as i32;
+								* (l_h - view_det.ah) as f32) as i32;
 
-						s.scroll_y = og.min(l_h - det.ah).max(0);
+						s.scroll_y = og
+							.min(l_h - det.ah + (SCROLLBAR_WIDTH * scale * mul_y) as i32)
+							.max(0);
 					}
 					_ => (), // no action has been started
 				})

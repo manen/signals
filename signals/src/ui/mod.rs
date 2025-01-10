@@ -1,11 +1,15 @@
 pub mod ingame;
 
 pub mod worlds_bar;
+use fit::scrollable::ScrollableState;
 pub use worlds_bar::worlds_bar;
 
-use sui::comp::Compatible;
+use sui::{comp::*, core::Store, Debuggable};
 
-pub fn game_debug_ui(game: &crate::Game) -> sui::comp::Comp<'static> {
+pub fn game_debug_ui(
+	game: &crate::Game,
+	scroll_state: Store<ScrollableState>,
+) -> sui::comp::Comp<'static> {
 	let lines = game
 		.moves
 		.children
@@ -21,11 +25,16 @@ pub fn game_debug_ui(game: &crate::Game) -> sui::comp::Comp<'static> {
 		.flatten();
 
 	let content = lines
-		.chain(std::iter::once(sui::text(format!("{:#?}", game.moves), 16)))
+		.chain(std::iter::once(sui::custom(
+			Text::new(format!("{:#?}", game.moves), 16).debug(),
+		)))
 		.chain(std::iter::once(sui::custom(sui::comp::Centered::new(
 			sui::comp::Text::new("this is centered!!!", 13),
 		))));
-	let page = sui::page(content.collect::<Vec<_>>());
+	let page = Div::new(false, content.collect::<Vec<_>>());
 
-	page.into_comp()
+	sui::custom(FixedSize::fix_both(
+		300,
+		Scrollable::new(scroll_state, fit::scrollable::ScrollableMode::Both, page),
+	))
 }

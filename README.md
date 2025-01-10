@@ -14,6 +14,10 @@ before we do that:
 - [x] rendering to images (so the scrolled element gets clipped by scrollable bounds)
 - [x] rendering images
 
+we have a scrollable component!!
+
+it works on the worlds bar, horizontally. it doesn't work in the debug ui for some fucking reason, check main to see what differences there are in implementation
+
 ---
 
 also a processor block \
