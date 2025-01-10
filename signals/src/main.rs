@@ -11,9 +11,9 @@ use raylib::{
 	prelude::RaylibDraw,
 };
 use sui::{
-	comp::fit::scrollable::{self, ScrollableState},
+	comp::fit::scrollable,
 	core::{Event, Store},
-	Debuggable, Layable,
+	Layable,
 };
 use tool::Tool;
 
@@ -114,7 +114,7 @@ fn main() {
 
 		// don't be confused by the name, this code block mostly handles rendering
 		let events = {
-			let page = ui::game_debug_ui(&game, dbg_scroll_state.clone()).debug();
+			let page = ui::game_debug_ui(&game, dbg_scroll_state.clone());
 			let page_ctx = sui::RootContext::new(
 				&page,
 				sui::Details {

@@ -209,8 +209,6 @@ impl<L: Layable> Layable for Scrollable<L> {
 		det: crate::Details,
 		scale: f32,
 	) -> Option<crate::core::Event> {
-		println!("{event:?}: {:?}", self.state.with_borrow(|a| a.action));
-
 		let (mul_x, mul_y) = self.mode.multipliers_f32();
 		let (l_w, l_h) = self.layable.size();
 

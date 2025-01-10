@@ -4,7 +4,7 @@ pub mod worlds_bar;
 use fit::scrollable::ScrollableState;
 pub use worlds_bar::worlds_bar;
 
-use sui::{comp::*, core::Store, Debuggable};
+use sui::{comp::*, core::Store};
 
 pub fn game_debug_ui(
 	game: &crate::Game,
@@ -25,9 +25,7 @@ pub fn game_debug_ui(
 		.flatten();
 
 	let content = lines
-		.chain(std::iter::once(sui::custom(
-			Text::new(format!("{:#?}", game.moves), 16).debug(),
-		)))
+		.chain(std::iter::once(sui::text(format!("{:#?}", game.moves), 16)))
 		.chain(std::iter::once(sui::custom(sui::comp::Centered::new(
 			sui::comp::Text::new("this is centered!!!", 13),
 		))));
