@@ -9,7 +9,7 @@ use raylib::{
 use crate::Layable;
 
 pub const BOUNDS_DEBUG: bool = false;
-pub const SPACING: f32 = 1.0; //idk idc
+pub const SPACING: f32 = 1.0; // idk idc
 pub const DEFAULT_COLOR: Color = Color::WHITE;
 
 /// Font is currently a placeholder for if fonts were ever to be implemented,
@@ -35,13 +35,21 @@ impl<'a> Layable for Text<'a> {
 	fn size(&self) -> (i32, i32) {
 		let font = unsafe { raylib::ffi::GetFontDefault() };
 
-		let cstring = std::ffi::CString::new(self.0.as_ref())
-			.expect("CString::new failed while measuring text size:(");
+		let measure_line = |text| {
+			let cstring = std::ffi::CString::new(text)
+				.expect("CString::new failed while measuring text size:(");
 
-		let dimensions =
-			unsafe { raylib::ffi::MeasureTextEx(font, cstring.as_ptr(), self.1 as f32, SPACING) };
+			let dimensions = unsafe {
+				raylib::ffi::MeasureTextEx(font, cstring.as_ptr(), self.1 as f32, SPACING)
+			};
 
-		(dimensions.x.ceil() as i32, dimensions.y.ceil() as i32)
+			(dimensions.x.ceil() as i32, dimensions.y.ceil() as i32)
+		};
+
+		self.0
+			.split('\n')
+			.map(measure_line)
+			.fold((0, 0), |acc, (x, y)| (acc.0.max(x), acc.1 + y - 1)) // i don't know why we need to remove 1 pixel from height per line
 	}
 	fn render(&self, d: &mut RaylibDrawHandle, det: crate::Details, scale: f32) {
 		if BOUNDS_DEBUG {
