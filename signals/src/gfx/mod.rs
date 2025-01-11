@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use raylib::prelude::{RaylibDraw, RaylibDrawHandle};
 
-use crate::world::{self, Chunk};
+use crate::world::{self, Chunk, Direction};
 use raylib::color::Color;
 
 pub const fn color(r: u8, g: u8, b: u8, a: u8) -> Color {
@@ -16,6 +16,7 @@ pub const SWITCH_OFF: Color = color(100, 100, 100, 255);
 pub const NOT_BASE: Color = color(39, 143, 86, 255);
 pub const NOT_ON: Color = color(82, 81, 80, 255);
 pub const NOT_OFF: Color = color(255, 255, 255, 255);
+pub const REST_ON: Color = color(150, 150, 150, 255);
 
 pub const DEBUG_WIRES: bool = false;
 pub const DEBUG_CHUNKS: bool = false;
@@ -27,6 +28,21 @@ pub enum DrawType {
 	#[default]
 	Off,
 	On,
+	/// junction stores values for both axis, they should be reset before every render,
+	/// and entering false won't actually set it to false if it's already true from that same tick
+	Junction {
+		vertical: bool,
+		horizontal: bool,
+	},
+}
+impl From<bool> for DrawType {
+	fn from(value: bool) -> Self {
+		if value {
+			Self::On
+		} else {
+			Self::Off
+		}
+	}
 }
 pub type Drawmap = world::Chunk<DrawType>;
 
@@ -245,13 +261,42 @@ pub fn render_block(
 				);
 			}
 		}
+		world::Block::Junction => {
+			let (vert_dt, horiz_dt) = match dt {
+				DrawType::Junction {
+					vertical,
+					horizontal,
+				} => (*vertical, *horizontal),
+				_ => (false, false),
+			};
+
+			render_block(
+				&world::Block::Wire(world::Direction::Bottom),
+				&vert_dt.into(),
+				d,
+				pos_info,
+				draw_misc,
+			);
+			render_block(
+				&world::Block::Wire(world::Direction::Right),
+				&horiz_dt.into(),
+				d,
+				pos_info,
+				draw_misc,
+			);
+		}
 		rest => {
+			let color = if *dt == DrawType::On {
+				REST_ON
+			} else {
+				SWITCH_OFF
+			};
 			d.draw_rectangle(
 				pos_info.base.0,
 				pos_info.base.1,
 				pos_info.scale(world::BLOCK_SIZE),
 				pos_info.scale(world::BLOCK_SIZE),
-				SWITCH_OFF,
+				color,
 			);
 			if draw_misc {
 				d.draw_text(

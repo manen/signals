@@ -5,6 +5,8 @@ pub enum Block {
 	#[default]
 	Nothing,
 	Wire(Direction),
+	Router, // for now, two routers next to each are gonna power each other indefinitely
+	Junction,
 	Switch(bool), // true if powered
 	Not(bool),
 	Input(usize),
@@ -33,6 +35,15 @@ impl Block {
 				} else {
 					let (rx, ry) = dir.rel();
 					push_move(PushMoveTo::Rel(rx, ry), signal);
+				}
+			}
+			Self::Router => {
+				all_directions(Default::default());
+			}
+			Self::Junction => {
+				if let Some(dir) = from {
+					let (rel_x, rel_y) = dir.reverse().rel();
+					push_move(PushMoveTo::Rel(rel_x, rel_y), signal)
 				}
 			}
 			Self::Not(_) => return Some(Self::Not(true)),

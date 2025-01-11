@@ -105,16 +105,22 @@ impl World {
 					let a = *crate::continue_on_none!(self.at(x, y));
 
 					// if a is a wire receiving a signal from the direction it's passing signals
-					if if let Block::Wire(dir) = a {
-						if from.map(|from| from == dir).unwrap_or(false) {
-							false
-						} else {
-							true
-						}
-					} else {
-						true
-					} {
+					match a {
+						Block::Wire(dir) => {
+						if !from.map(|from| from == dir).unwrap_or(false) {
 						set_drawtype(to.0, to.1, gfx::DrawType::On);
+						}
+
+						}
+						Block::Junction => {
+							if let Some(dir) = from {
+								match dir {
+									Direction::Bottom | Direction::Top => set_drawtype(to.0, to.1, gfx::DrawType::Junction { vertical: true, horizontal: false }),
+									Direction::Right | Direction::Left => set_drawtype(to.0, to.1, gfx::DrawType::Junction { vertical: false, horizontal: true })
+								}
+							}
+						}
+						_ => set_drawtype(to.0, to.1, gfx::DrawType::On)
 					}
 
 					*self.mut_at(x, y) = if let Some(b) = a.pass(signal, from, gen_push_move!(x, y))

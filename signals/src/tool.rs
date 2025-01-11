@@ -6,6 +6,8 @@ use crate::{
 pub const TOOLS: &[(&str, Tool)] = &[
 	("place wire", Tool::PlaceWire { start: None }),
 	("place switch", Tool::Place(Block::Switch(false))),
+	("place junction", Tool::Place(Block::Junction)),
+	("place router", Tool::Place(Block::Router)),
 	("place not", Tool::Place(Block::Not(false))),
 	("place input", Tool::PlaceInput),
 	("place output", Tool::PlaceOutput),
