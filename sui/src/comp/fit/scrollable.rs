@@ -5,6 +5,8 @@ use crate::{
 	Layable,
 };
 
+use super::Crop;
+
 pub const SCROLLBAR_WIDTH: f32 = 10.0; // it's getting multiplied by scale anyway so we just savin a step
 pub const SCROLLBAR_LENGTH: f32 = SCROLLBAR_WIDTH * 4.0;
 const SCROLLBAR_BG_COLOR: raylib::color::Color = crate::comp::select_bar::color(33, 35, 38, 255);
@@ -71,7 +73,11 @@ pub struct Scrollable<L: Layable> {
 	layable: L,
 }
 impl<L: Layable> Scrollable<L> {
-	pub fn new(state: Store<ScrollableState>, mode: ScrollableMode, layable: L) -> Self {
+	/// will crop content outside boundaries
+	pub fn new(state: Store<ScrollableState>, mode: ScrollableMode, layable: L) -> Crop<Self> {
+		Crop::new(Self::new_uncropped(state, mode, layable))
+	}
+	pub fn new_uncropped(state: Store<ScrollableState>, mode: ScrollableMode, layable: L) -> Self {
 		Self {
 			state,
 			mode,

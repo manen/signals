@@ -9,3 +9,6 @@ pub use fixed_size::FixedSize;
 
 pub mod scrollable;
 pub use scrollable::Scrollable;
+
+pub mod crop;
+pub use crop::Crop;

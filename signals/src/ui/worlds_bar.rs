@@ -34,7 +34,7 @@ pub fn worlds_bar(
 				d.get_render_width(),
 				height + scrollable::SCROLLBAR_WIDTH as i32,
 			),
-			Scrollable::new(
+			Scrollable::new_uncropped(
 				scroll_state,
 				fit::scrollable::ScrollableMode::Horizontal,
 				Div::new(true, previews),
