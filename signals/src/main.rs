@@ -61,6 +61,7 @@ fn main() {
 	let dbg_scroll_state = Store::new(Default::default());
 
 	let mut inst_comp_cache = sui::core::Cached::default();
+	let inst_scroll_state = Store::new(Default::default());
 	let mut inst_comp_counter = 0; // <- change this variable for the instruction list to regenerate
 
 	let mut delta = 0.0;
@@ -146,8 +147,10 @@ fn main() {
 
 			let inst_comp = inst_comp_cache.update_with_unchecked(
 				inst_comp_counter,
-				(&game, game.i),
-				|_, (game, world_id)| ui::inst_comp(game, world_id),
+				(&game, game.i, inst_scroll_state.clone()),
+				|_, (game, world_id, inst_scroll_state)| {
+					ui::inst_comp(game, world_id, inst_scroll_state)
+				},
 			);
 			let inst_comp_w = inst_comp.size().0.max(100);
 			let inst_comp_det = sui::Details {
@@ -161,7 +164,8 @@ fn main() {
 			// handled later, when there's no other references to game
 			let events = dbg_ctx
 				.handle_input_d(&mut d)
-				.chain(worlds_bar_ctx.handle_input_d(&mut d));
+				.chain(worlds_bar_ctx.handle_input_d(&mut d))
+				.chain(inst_comp_ctx.handle_input_d(&mut d));
 
 			d.clear_background(gfx::BACKGROUND);
 

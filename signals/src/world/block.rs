@@ -160,4 +160,8 @@ impl Direction {
 			_ => None,
 		}
 	}
+
+	pub fn all() -> impl Iterator<Item = Self> {
+		[Self::Right, Self::Bottom, Self::Left, Self::Top].into_iter()
+	}
 }

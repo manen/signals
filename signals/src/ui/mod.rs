@@ -56,11 +56,15 @@ fn ingameworld_dbg_ui(i: usize, moves: &IngameWorld) -> sui::comp::Comp<'static>
 	))
 }
 
-pub fn inst_comp(game: &crate::Game, world_id: Option<usize>) -> sui::Comp<'static> {
-	let instructions = processor::world_to_instructions(game, world_id);
+pub fn inst_comp(
+	game: &crate::Game,
+	world_id: Option<usize>,
+	scroll_state: Store<ScrollableState>,
+) -> sui::Comp<'static> {
+	let insts = processor::world_to_instructions(game, world_id);
 
-	match instructions {
-		Some(instructions) => {
+	let insts = match insts {
+		Ok(instructions) => {
 			let lines = instructions
 				.into_iter()
 				.map(|inst| Text::new(format!("{inst:?}"), 16));
@@ -68,6 +72,31 @@ pub fn inst_comp(game: &crate::Game, world_id: Option<usize>) -> sui::Comp<'stat
 
 			sui::custom(Div::new(false, lines))
 		}
-		None => sui::text("world_to_instructions returned None", 16),
-	}
+		Err(err) => sui::text(format!("{err}"), 16),
+	};
+
+	let eq = game
+		.world_opt(world_id)
+		.expect("adglikhn")
+		.outputs()
+		.filter(|(id, _)| *id == 0)
+		.map(|(_, coords)| {
+			processor::world_to_instructions::world_block_to_eq(game, world_id, coords)
+		})
+		.next();
+
+	let eq = match eq {
+		Some(Ok(eq)) => sui::text(format!("{eq:#?}"), 16),
+		_ => sui::text(format!("{eq:#?}"), 16),
+	};
+	let eq = sui::page([sui::text("equation: ", 18), eq]);
+
+	sui::custom(FixedSize::fix_h(
+		600,
+		Scrollable::new(
+			scroll_state,
+			fit::scrollable::ScrollableMode::Vertical,
+			Div::new(false, [insts, eq]),
+		),
+	))
 }

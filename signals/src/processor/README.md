@@ -6,5 +6,5 @@ this isn't documentation.
 
 ## notes
 
-`input[n]` = `memory[n]` at the start of execution
+`input[n]` = result of `Instruction::SummonInput { id: n }`
 `output[n]` = `memory[n]` at the end of execution
