@@ -224,6 +224,29 @@ impl World {
 		}
 		None
 	}
+	/// returns worlds coords
+	pub fn find_output(&self, id: usize) -> Option<(i32, i32)> {
+		for (coords, c) in self.chunks() {
+			for x in 0..CHUNK_SIZE as i32 {
+				for y in 0..CHUNK_SIZE as i32 {
+					// this implementation will halt searching as soon as a matching one is found, might lead to weird behavior with
+					// duplicate ids
+					match c.at(x, y) {
+						None => panic!(
+							"a number between 0 and CHUNK_SIZE shouldn't be larger than CHUNK_SIZE"
+						),
+						Some(Block::Output(i_id)) => {
+							if *i_id == id {
+								return Some(chunk_coords_into_world_coords(*coords, (x, y)));
+							}
+						}
+						_ => continue,
+					}
+				}
+			}
+		}
+		None
+	}
 	pub fn find_foreign(&self, inst_id: usize, id: usize) -> Option<(i32, i32)> {
 		for (coords, c) in self.chunks() {
 			for x in 0..CHUNK_SIZE as i32 {

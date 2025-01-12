@@ -59,10 +59,15 @@ fn ingameworld_dbg_ui(i: usize, moves: &IngameWorld) -> sui::comp::Comp<'static>
 pub fn inst_comp(game: &crate::Game, world_id: Option<usize>) -> sui::Comp<'static> {
 	let instructions = processor::world_to_instructions(game, world_id);
 
-	let lines = instructions
-		.into_iter()
-		.map(|inst| Text::new(format!("{inst:?}"), 16));
-	let lines = lines.collect::<Vec<_>>();
+	match instructions {
+		Some(instructions) => {
+			let lines = instructions
+				.into_iter()
+				.map(|inst| Text::new(format!("{inst:?}"), 16));
+			let lines = lines.collect::<Vec<_>>();
 
-	sui::custom(Div::new(false, lines))
+			sui::custom(Div::new(false, lines))
+		}
+		None => sui::text("world_to_instructions returned None", 16),
+	}
 }

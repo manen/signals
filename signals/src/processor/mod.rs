@@ -41,6 +41,12 @@ impl Memory {
 
 					self.set(out, a || b)
 				}
+				&Instruction::Set { ptr, val } => self.set(ptr, val),
+				&Instruction::Copy { src_ptr, dst_ptr } => {
+					let val = self.get(src_ptr);
+					self.set(dst_ptr, val)
+				}
+
 				&Instruction::And { a, b, out } => {
 					let a = self.get(a);
 					let b = self.get(b);
@@ -64,6 +70,14 @@ pub enum Instruction {
 	Not {
 		ptr: usize,
 		out: usize,
+	},
+	Set {
+		ptr: usize,
+		val: bool,
+	},
+	Copy {
+		src_ptr: usize,
+		dst_ptr: usize,
 	},
 
 	// extended set
