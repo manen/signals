@@ -1,6 +1,6 @@
 use crate::{
 	game::Game,
-	world::{PushMoveTo, Signal},
+	world::{Block, PushMoveTo, Signal, World},
 };
 
 use super::Instruction;
@@ -10,19 +10,41 @@ pub fn world_to_instructions(game: &Game, world_id: Option<usize>) -> Option<Vec
 	let mut vec = vec![];
 	let world = game.world_opt(world_id)?;
 
+	// let eqs = world.outputs().map(|coords, id| output_to_eq(world, ));
+
 	// start from the outputs:
 	// go back, and we need to write this shit out backwards
 	// for example, for a simple and gate:
 
 	// output = flipped(flipped(input_0) || flipped(input_1))
 
-	let and = Equation::not(Equation::or(
+	let eq = Equation::not(Equation::or(
 		Equation::not(Equation::Input(0)),
 		Equation::not(Equation::Input(1)),
 	));
 
-	and.to_insts(0, 2, &mut vec);
+	eq.to_insts(0, 0, &mut vec);
 	Some(vec)
+}
+
+/// returns whether that given block in a world is on or off as an equation
+pub fn world_block_to_eq(
+	game: &Game,
+	world_id: Option<usize>,
+	coords: (i32, i32),
+) -> Option<Equation> {
+	fn internal(world: &World, (b_x, b_y): (i32, i32)) -> Option<Equation> {
+		let b = world.at(b_x, b_y)?;
+
+		match b {
+			&Block::Wire(_) => {
+				// only stopping for a commit
+			}
+		}
+	}
+
+	let world = game.world_opt(world_id)?;
+	internal(world, coords)
 }
 
 /// Equation represents how we get a value ingame. (like outputs)
@@ -43,10 +65,7 @@ impl Equation {
 	/// stack_top is where the empty memory starts
 	pub fn to_insts(&self, out_ptr: usize, stack_top: usize, insts: &mut Vec<Instruction>) {
 		match self {
-			&Equation::Input(id) => insts.push(Instruction::Copy {
-				src_ptr: id,
-				dst_ptr: out_ptr,
-			}),
+			&Equation::Input(id) => insts.push(Instruction::SummonInput { id, out: out_ptr }),
 			Equation::Not(n_eq) => {
 				n_eq.to_insts(out_ptr, stack_top, insts);
 				insts.push(Instruction::Not {
@@ -86,9 +105,7 @@ mod tests {
 		let mut mem = Memory::default();
 
 		let mut run = |a: bool, b: bool| -> bool {
-			mem.set(0, a);
-			mem.set(1, b);
-			mem.execute(&insts);
+			mem.execute(&insts, &[a, b]);
 
 			mem.get(0)
 		};
@@ -116,10 +133,7 @@ mod tests {
 		let mut mem = Memory::default();
 
 		let mut run = |a: bool, b: bool| -> bool {
-			mem.set(0, a);
-			mem.set(1, b);
-			mem.execute(&insts);
-
+			mem.execute(&insts, &[a, b]);
 			mem.get(0)
 		};
 

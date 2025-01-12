@@ -27,9 +27,17 @@ impl Memory {
 		self.mem[i] = f(self.mem[i]);
 	}
 
-	pub fn execute(&mut self, instructions: &[Instruction]) {
+	pub fn execute(&mut self, instructions: &[Instruction], inputs: &[bool]) {
 		for inst in instructions {
 			match inst {
+				&Instruction::SummonInput { id, out } => {
+					if let Some(val) = inputs.iter().nth(id).copied() {
+						self.set(out, val)
+					} else {
+						eprintln!("program tried to access an input that doesn't exist")
+					}
+				}
+
 				&Instruction::Not { ptr, out } => {
 					let val = self.get(ptr);
 
@@ -61,6 +69,11 @@ impl Memory {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Instruction {
 	// base set
+	SummonInput {
+		id: usize,
+		out: usize,
+	},
+
 	Or {
 		a: usize,
 		b: usize,
@@ -124,6 +137,8 @@ mod tests {
 		let mut mem = Memory::default();
 		let mut and_in_processor = |a: bool, b: bool| -> bool {
 			let instructions = [
+				Instruction::SummonInput { id: 0, out: 0 },
+				Instruction::SummonInput { id: 1, out: 1 },
 				Instruction::Not { ptr: 0, out: 0 },
 				Instruction::Not { ptr: 1, out: 1 },
 				Instruction::Or { a: 0, b: 1, out: 2 },
@@ -131,9 +146,7 @@ mod tests {
 			];
 			// 2 = 0 && 1
 
-			mem.set(0, a);
-			mem.set(1, b);
-			mem.execute(&instructions);
+			mem.execute(&instructions, &[a, b]);
 
 			mem.get(2)
 		};
@@ -157,21 +170,19 @@ mod tests {
 			// 4: output, 3 && !2
 
 			let instructions = [
+				Instruction::SummonInput { id: 0, out: 0 },
+				Instruction::SummonInput { id: 1, out: 1 },
 				Instruction::And { a: 0, b: 1, out: 2 },
 				Instruction::Or { a: 0, b: 1, out: 3 },
 				Instruction::Not { ptr: 2, out: 2 },
 				Instruction::And { a: 3, b: 2, out: 4 },
 			];
 
-			mem.set(0, a);
-			mem.set(1, b);
-			mem.execute(&instructions);
+			mem.execute(&instructions, &[a, b]);
 			let extended_set_result = mem.get(4);
 
 			let instructions = Instruction::extended_set_to_base_set(&instructions);
-			mem.set(0, a);
-			mem.set(1, b);
-			mem.execute(&instructions);
+			mem.execute(&instructions, &[a, b]);
 			let base_set_result = mem.get(4);
 
 			assert_eq!(extended_set_result, base_set_result);

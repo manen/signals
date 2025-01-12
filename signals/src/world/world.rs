@@ -224,29 +224,6 @@ impl World {
 		}
 		None
 	}
-	/// returns worlds coords
-	pub fn find_output(&self, id: usize) -> Option<(i32, i32)> {
-		for (coords, c) in self.chunks() {
-			for x in 0..CHUNK_SIZE as i32 {
-				for y in 0..CHUNK_SIZE as i32 {
-					// this implementation will halt searching as soon as a matching one is found, might lead to weird behavior with
-					// duplicate ids
-					match c.at(x, y) {
-						None => panic!(
-							"a number between 0 and CHUNK_SIZE shouldn't be larger than CHUNK_SIZE"
-						),
-						Some(Block::Output(i_id)) => {
-							if *i_id == id {
-								return Some(chunk_coords_into_world_coords(*coords, (x, y)));
-							}
-						}
-						_ => continue,
-					}
-				}
-			}
-		}
-		None
-	}
 	pub fn find_foreign(&self, inst_id: usize, id: usize) -> Option<(i32, i32)> {
 		for (coords, c) in self.chunks() {
 			for x in 0..CHUNK_SIZE as i32 {
@@ -379,6 +356,13 @@ impl World {
 			self.chunks.insert(chunk_coords, Chunk::default());
 		}
 	}
+	pub fn is_block_at(&self, x: i32, y: i32) -> bool {
+		match self.at(x, y) {
+			None => false,
+			Some(Block::Nothing) => false,
+			_ => true,
+		}
+	}
 	pub fn at(&self, x: i32, y: i32) -> Option<&Block> {
 		let (chunk_coords, (block_x, block_y)) = world_coords_into_chunk_coords(x, y);
 		self.chunks
@@ -442,6 +426,22 @@ impl World {
 		} else {
 			None
 		}
+	}
+
+	/// returns an iterator over every block there is in the world
+	pub fn blocks(&self) -> impl Iterator<Item = ((i32, i32), &Block)> {
+		self.chunks()
+			.map(|(cc, c)| {
+				c.blocks_with_coords()
+					.map(|(bc, b)| (chunk_coords_into_world_coords(*cc, bc), b))
+			})
+			.flatten()
+	}
+	pub fn outputs<'a>(&'a self) -> impl Iterator<Item = (usize, (i32, i32))> + 'a {
+		self.blocks().filter_map(|(c, b)| match b {
+			Block::Output(id) => Some((*id, c)),
+			_ => None,
+		})
 	}
 }
 impl Hash for World {

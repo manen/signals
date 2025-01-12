@@ -40,6 +40,17 @@ impl<T> Chunk<T> {
 			self.at(x, y).expect("not handling this until i have to")
 		})
 	}
+	pub fn blocks_with_coords(&self) -> impl Iterator<Item = ((i32, i32), &T)> {
+		(0..(CHUNK_SIZE * CHUNK_SIZE) as i32).map(|i| {
+			let x = i % CHUNK_SIZE as i32;
+			let y = i / CHUNK_SIZE as i32;
+
+			(
+				(x, y),
+				self.at(x, y).expect("not handling this until i have to"),
+			)
+		})
+	}
 }
 impl<T: Copy> Chunk<T> {
 	pub fn map_at(&mut self, x: i32, y: i32, f: impl FnOnce(T) -> T) {
