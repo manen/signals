@@ -4,7 +4,7 @@ pub mod worlds_bar;
 use fit::scrollable::ScrollableState;
 pub use worlds_bar::worlds_bar;
 
-use crate::game::IngameWorld;
+use crate::{game::IngameWorld, processor};
 use sui::{comp::*, core::Store};
 
 pub fn game_debug_ui(
@@ -54,4 +54,15 @@ fn ingameworld_dbg_ui(i: usize, moves: &IngameWorld) -> sui::comp::Comp<'static>
 			sui::custom(children_div),
 		],
 	))
+}
+
+pub fn inst_comp(game: &crate::Game, world_id: Option<usize>) -> sui::Comp<'static> {
+	let instructions = processor::world_to_instructions(game, world_id);
+
+	let lines = instructions
+		.into_iter()
+		.map(|inst| Text::new(format!("{inst:?}"), 16));
+	let lines = lines.collect::<Vec<_>>();
+
+	sui::custom(Div::new(false, lines))
 }

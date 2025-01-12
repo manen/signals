@@ -1,3 +1,6 @@
+pub mod world_to_instructions;
+pub use world_to_instructions::world_to_instructions;
+
 // essentially a computer. has some memory, runs instructions which change the memory
 // implementation's pretty basic and straightforward (for now)
 

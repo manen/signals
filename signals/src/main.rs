@@ -60,6 +60,9 @@ fn main() {
 
 	let dbg_scroll_state = Store::new(Default::default());
 
+	let mut inst_comp_cache = sui::core::Cached::default();
+	let mut inst_comp_counter = 0; // <- change this variable for the instruction list to regenerate
+
 	let mut delta = 0.0;
 
 	let mut g_pos = PosInfo::default();
@@ -80,6 +83,11 @@ fn main() {
 				a as i32
 			}
 		};
+
+		if rl.is_key_pressed(raylib::ffi::KeyboardKey::KEY_Q) {
+			inst_comp_counter += 1;
+			println!("triggering instruction recompute")
+		}
 
 		g_pos.scale *= 1.0 + (rl.get_mouse_wheel_move() * 0.1);
 
@@ -115,8 +123,10 @@ fn main() {
 
 		// don't be confused by the name, this code block mostly handles rendering
 		let events = {
+			let mut d = rl.begin_drawing(&thread);
+
 			let page = ui::game_debug_ui(&game, dbg_scroll_state.clone());
-			let page_ctx = sui::RootContext::new(
+			let dbg_ctx = sui::RootContext::new(
 				&page,
 				sui::Details {
 					x: 0,
@@ -126,17 +136,30 @@ fn main() {
 				1.0,
 			);
 
-			let mut d = rl.begin_drawing(&thread);
 			let worlds_bar = worlds_bar_cache.update_with_unchecked(
 				(game_retexture_counter, worlds_bar_h),
 				(&mut d, &game),
 				|(_, height), (d, game)| ui::worlds_bar(d, game, height, scroll_state.clone()),
 			);
 			worlds_bar_det.aw = worlds_bar_det.aw.min(worlds_bar.size().0);
-			let worlds_bar_ctx = sui::RootContext::new(&worlds_bar, worlds_bar_det, 1.0);
+			let worlds_bar_ctx = sui::RootContext::new(worlds_bar, worlds_bar_det, 1.0);
+
+			let inst_comp = inst_comp_cache.update_with_unchecked(
+				inst_comp_counter,
+				(&game, game.i),
+				|_, (game, world_id)| ui::inst_comp(game, world_id),
+			);
+			let inst_comp_w = inst_comp.size().0.max(100);
+			let inst_comp_det = sui::Details {
+				x: screen.aw - inst_comp_w,
+				y: 100,
+				aw: inst_comp_w,
+				ah: inst_comp_w * 2,
+			};
+			let inst_comp_ctx = sui::RootContext::new(inst_comp, inst_comp_det, 1.0);
 
 			// handled later, when there's no other references to game
-			let events = page_ctx
+			let events = dbg_ctx
 				.handle_input_d(&mut d)
 				.chain(worlds_bar_ctx.handle_input_d(&mut d));
 
@@ -145,9 +168,10 @@ fn main() {
 			gfx::render_world(&game.main, &mut d, pos_info);
 
 			tool_select.render(&mut d, tool_select_det, Some(&tool));
-
-			page_ctx.render(&mut d);
+			dbg_ctx.render(&mut d);
 			worlds_bar_ctx.render(&mut d);
+			inst_comp_ctx.render(&mut d);
+
 			events.collect::<Vec<_>>()
 		};
 

@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use raylib::prelude::{RaylibDraw, RaylibDrawHandle};
 
-use crate::world::{self, Chunk, Direction};
+use crate::world::{self, Chunk};
 use raylib::color::Color;
 
 pub const fn color(r: u8, g: u8, b: u8, a: u8) -> Color {
