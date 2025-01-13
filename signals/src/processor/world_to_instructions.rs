@@ -140,11 +140,12 @@ impl Equation {
 			Self::Input(id) => Self::Input(id),
 			Self::Not(n_eq) => {
 				let n_eq = *n_eq;
+				let n_eq = n_eq.simplify();
 
 				match n_eq {
 					Self::Const(v) => Self::Const(!v),
 					Self::Not(nn_eq) => *nn_eq, //- !!v = v
-					_ => Self::not(n_eq.simplify()),
+					_ => Self::not(n_eq),
 				}
 			}
 			Self::Or(a_eq, b_eq) => {
@@ -152,10 +153,10 @@ impl Equation {
 				let (a_eq, b_eq) = (a_eq.simplify(), b_eq.simplify());
 
 				if a_eq == Equation::Const(false) {
-					return b_eq.simplify();
+					return b_eq;
 				}
 				if b_eq == Equation::Const(false) {
-					return a_eq.simplify();
+					return a_eq;
 				}
 				Self::or(a_eq, b_eq)
 			}
