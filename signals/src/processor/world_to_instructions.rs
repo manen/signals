@@ -13,24 +13,27 @@ pub fn world_to_instructions(
 	world_id: Option<usize>,
 ) -> anyhow::Result<Vec<Instruction>> {
 	let mut vec = vec![];
-	let world = game.world_opt(world_id).with_context(|| "no such world")?;
 
-	// let eqs = world.outputs().map(|coords, id| output_to_eq(world, ));
-
-	// start from the outputs:
-	// go back, and we need to write this shit out backwards
-	// for example, for a simple and gate:
-
-	// output = flipped(flipped(input_0) || flipped(input_1))
-
-	// we still might need to work on and recognition, cause two nots make 0 nots and that can fuck with and recognition if its !(a && b)
-
-	if let Some((_, coords)) = world.outputs().filter(|(id, _)| *id == 0).next() {
-		let eq = world_block_to_eq(game, world_id, coords)?;
-		eq.to_insts(0, 1, &mut vec); // second arg is outputs count
-	}
+	let eq = world_output_to_eq(game, world_id, 0)?;
+	eq.simplify().to_insts(0, 1, &mut vec);
 
 	Ok(vec)
+}
+
+pub fn world_output_to_eq(
+	game: &Game,
+	world_id: Option<usize>,
+	id: i32,
+) -> anyhow::Result<Equation> {
+	let world = game
+		.world_opt(world_id)
+		.with_context(|| "no world with id {world_id:?}")?;
+
+	if let Some((_, coords)) = world.outputs().filter(|(id, _)| *id == 0).next() {
+		Ok(world_block_to_eq(game, world_id, coords)?)
+	} else {
+		Err(anyhow!("no output with id {id} in world {world_id:?}"))
+	}
 }
 
 /// returns whether that given block in a world is on or off as an equation
