@@ -49,34 +49,19 @@ pub fn world_block_to_eq(
 			return Ok(Equation::Const(false));
 		};
 
-		// something breaks if the wire isn't straight
-		// other than that ts works suprisingly well wth
-		// couple of stack overflows but nothing some debugging can't fix
+		// next up is a precise specification for each block because we need feature parity between realtime and computed mode
 
 		let all_directions_except = |except: Option<Direction>| {
-			let mut potential_sources = Direction::all()
+			let potential_sources = Direction::all()
 				.filter(|dir| except.map(|except| *dir != except).unwrap_or(true))
 				.map(|dir| (dir.reverse(), dir.rel()))
-				.map(|(from, (r_x, r_y))| (from, (b_x + r_x, b_y + r_y)))
-				.map(|(from, coords)| internal(&world, coords, Some(from)));
+				.map(|(from, (r_x, r_y))| (from, (b_x + r_x, b_y + r_y)));
 
-			let mut i = 0;
-			let mut next_child_eq = || {
-				let next = potential_sources.next();
-				if let Some(next) = next {
-					i += 1;
-					Ok(next?)
-				} else {
-					None.with_context(|| {
-						format!("potential_sources iterator failed to yield after {i} next calls")
-					})
-				}
-			};
-
-			Ok(Equation::or(
-				next_child_eq()?,
-				Equation::or(next_child_eq()?, next_child_eq()?),
-			))
+			let mut eq = Equation::Const(false);
+			for (from, coords) in potential_sources {
+				eq = Equation::any([eq, internal(&world, coords, Some(from))?].into_iter());
+			}
+			Ok(eq)
 		};
 		let all_directions = || {
 			let from =    from.with_context(|| "blocks that could receive signals from any direction should not be called without a from argument")?;
@@ -84,7 +69,45 @@ pub fn world_block_to_eq(
 		};
 
 		match b {
-			&Block::Wire(dir) => all_directions_except(Some(dir)),
+			&Block::Wire(base_dir) => {
+				if from.map(|from| from != base_dir).unwrap_or(false) {
+					// if from points to a block which this wire would not actually pass a signal to
+					return Ok(Equation::Const(false));
+				}
+
+				let (mut w_x, mut w_y) = (b_x, b_y);
+				// we're tracing backwards so one step in base_dir.reverse() every iteration
+
+				let mut eq = Equation::Const(false);
+				loop {
+					let back_dir = base_dir.reverse();
+					let (r_x, r_y) = back_dir.rel();
+
+					let behind = world.at(w_x, w_y);
+
+					match behind {
+						Some(&Block::Wire(behind_dir)) if base_dir == behind_dir => {
+							let left_dir = base_dir.rotate_l();
+							let right_dir = base_dir.rotate_r();
+							let (left, right) = (left_dir.rel(), right_dir.rel());
+							let left = (w_x + left.0, w_y + left.1);
+							let right = (w_x + right.0, w_y + right.1);
+
+							let left = internal(world, left, Some(left_dir.reverse()))?;
+							let right = internal(world, right, Some(right_dir.reverse()))?;
+
+							eq = Equation::any([eq, left, right].into_iter());
+
+							w_x += r_x;
+							w_y += r_y;
+						}
+						_ => {
+							let b_eq = internal(world, (w_x, w_y), Some(base_dir))?;
+							break Ok(Equation::any([eq, b_eq].into_iter()));
+						}
+					}
+				}
+			}
 			Block::Not(_) => {
 				// nots work differently in evaluated vs real time mode
 
@@ -134,6 +157,15 @@ impl Equation {
 		Equation::Not(Box::new(val))
 	}
 
+	pub fn any(iter: impl Iterator<Item = Self>) -> Self {
+		let mut eq = Equation::Const(false);
+
+		for new_eq in iter {
+			eq = Self::or(eq, new_eq)
+		}
+		eq.simplify()
+	}
+
 	/// recursively `simplif`ies (optimizes) the expression
 	pub fn simplify(self) -> Self {
 		match self {
@@ -152,6 +184,16 @@ impl Equation {
 				let (a_eq, b_eq) = (*a_eq, *b_eq);
 				let (a_eq, b_eq) = (a_eq.simplify(), b_eq.simplify());
 
+				if [&a_eq, &b_eq]
+					.into_iter()
+					.filter(|a| **a == Equation::Const(true))
+					.next()
+					.is_some()
+				{
+					// if any of them are const(true)
+					return Equation::Const(true);
+				}
+
 				if a_eq == Equation::Const(false) {
 					return b_eq;
 				}
@@ -169,11 +211,32 @@ impl Equation {
 		match self {
 			&Equation::Input(id) => insts.push(Instruction::SummonInput { id, out: out_ptr }),
 			Equation::Not(n_eq) => {
-				n_eq.to_insts(out_ptr, stack_top, insts);
-				insts.push(Instruction::Not {
-					ptr: out_ptr,
-					out: out_ptr,
-				})
+				// if this is an and block, generate an and instruction
+
+				// extract this and recognition part into its own thing, cause it looks really ugly rn in like the
+				// most important function in the whole file
+				if let Equation::Or(a_eq, b_eq) = n_eq.as_ref() {
+					if let Equation::Not(an_eq) = a_eq.as_ref() {
+						if let Equation::Not(bn_eq) = b_eq.as_ref() {
+							an_eq.to_insts(stack_top, stack_top + 2, insts);
+							bn_eq.to_insts(stack_top + 1, stack_top + 2, insts);
+							insts.push(Instruction::And {
+								a: stack_top,
+								b: stack_top + 1,
+								out: out_ptr,
+							});
+							return;
+						}
+					}
+				}
+				{
+					// base case
+					n_eq.to_insts(out_ptr, stack_top, insts);
+					insts.push(Instruction::Not {
+						ptr: out_ptr,
+						out: out_ptr,
+					})
+				}
 			}
 			Equation::Or(a_eq, b_eq) => {
 				a_eq.to_insts(stack_top, stack_top + 2, insts);
@@ -247,4 +310,31 @@ mod tests {
 		assert_eq!(run(false, true), true);
 		assert_eq!(run(true, true), false);
 	}
+
+	// #[test]
+	// fn test_generated_xor() {
+	// 	let insts = [
+	// 		Instruction::SummonInput { id: 1, out: 2 },
+	// 		Instruction::Not { ptr: 2, out: 2 },
+	// 		Instruction::SummonInput { id: 0, out: 3 },
+	// 		Instruction::Not { ptr: 3, out: 3 },
+	// 		Instruction::Or { a: 2, b: 3, out: 0 },
+	// 		Instruction::SummonInput { id: 0, out: 2 },
+	// 		Instruction::SummonInput { id: 1, out: 3 },
+	// 		Instruction::Or { a: 2, b: 3, out: 1 },
+	// 		Instruction::And { a: 0, b: 1, out: 0 },
+	// 	];
+
+	// 	let mut mem = Memory::default();
+
+	// 	let mut run = |a: bool, b: bool| -> bool {
+	// 		mem.execute(&insts, &[a, b]);
+	// 		mem.get(0)
+	// 	};
+
+	// 	assert_eq!(run(false, false), false);
+	// 	assert_eq!(run(true, false), true);
+	// 	assert_eq!(run(false, true), true);
+	// 	assert_eq!(run(true, true), false);
+	// }
 }

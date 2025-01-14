@@ -126,12 +126,20 @@ pub enum Direction {
 }
 impl Direction {
 	/// clockwise
-	pub fn rotate(self) -> Self {
+	pub fn rotate_r(self) -> Self {
 		match self {
 			Direction::Right => Direction::Bottom,
 			Direction::Bottom => Direction::Left,
 			Direction::Left => Direction::Top,
 			Direction::Top => Direction::Right,
+		}
+	}
+	pub fn rotate_l(self) -> Self {
+		match self {
+			Direction::Right => Direction::Top,
+			Direction::Bottom => Direction::Right,
+			Direction::Left => Direction::Bottom,
+			Direction::Top => Direction::Left,
 		}
 	}
 	pub fn reverse(self) -> Self {

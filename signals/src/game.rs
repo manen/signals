@@ -174,8 +174,8 @@ pub struct Game {
 impl Game {
 	pub fn tick(&mut self) {
 		let new_main_moves = self.main.tick(std::mem::take(&mut self.moves.moves));
-		self.moves.process_moves(new_main_moves, |mov| {
-			eprintln!("dropping a move returned from game.main ({mov:?})")
+		self.moves.process_moves(new_main_moves, |_mov| {
+			// eprintln!("dropping a move returned from game.main ({_mov:?})")
 		});
 
 		let mut moves = std::mem::take(&mut self.moves);

@@ -55,7 +55,7 @@ impl Tool {
 	pub fn pressed(&mut self, x: i32, y: i32, game: &mut Game) {
 		match self {
 			Self::Rotate => game.main.as_mut().map_at(x, y, |i| match i {
-				Block::Wire(dir) => Block::Wire(dir.rotate()),
+				Block::Wire(dir) => Block::Wire(dir.rotate_r()),
 				_ => i,
 			}),
 			Self::PlaceWire { start } if *start == None => *start = Some((x, y)),

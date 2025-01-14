@@ -71,11 +71,11 @@ impl Chunk<Block> {
 		let mut dir = Direction::Right;
 		for px in 0..CHUNK_SIZE {
 			for py in 0..CHUNK_SIZE {
-				dir = dir.rotate();
+				dir = dir.rotate_r();
 				s = !s;
 				chunk.0[px][py] = Block::Wire(dir);
 			}
-			dir = dir.rotate();
+			dir = dir.rotate_r();
 			s = !s;
 		}
 
