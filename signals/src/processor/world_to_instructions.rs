@@ -2,7 +2,7 @@ use anyhow::{anyhow, Context};
 
 use crate::{
 	game::Game,
-	world::{Block, Direction, PushMoveTo, Signal, World},
+	world::{Block, Direction, World},
 };
 
 use super::Instruction;
@@ -25,7 +25,7 @@ pub fn world_to_instructions(
 
 	if let Some((_, coords)) = world.outputs().filter(|(id, _)| *id == 0).next() {
 		let eq = world_block_to_eq(game, world_id, coords).expect("fail");
-		eq.to_insts(0, 0, &mut vec);
+		eq.to_insts(0, 1, &mut vec); // second arg is outputs count
 	}
 
 	Ok(vec)
@@ -211,47 +211,98 @@ impl Equation {
 		match self {
 			&Equation::Input(id) => insts.push(Instruction::SummonInput { id, out: out_ptr }),
 			Equation::Not(n_eq) => {
-				// if this is an and block, generate an and instruction
-
-				// extract this and recognition part into its own thing, cause it looks really ugly rn in like the
-				// most important function in the whole file
-				if let Equation::Or(a_eq, b_eq) = n_eq.as_ref() {
-					if let Equation::Not(an_eq) = a_eq.as_ref() {
-						if let Equation::Not(bn_eq) = b_eq.as_ref() {
-							an_eq.to_insts(stack_top, stack_top + 2, insts);
-							bn_eq.to_insts(stack_top + 1, stack_top + 2, insts);
-							insts.push(Instruction::And {
-								a: stack_top,
-								b: stack_top + 1,
-								out: out_ptr,
-							});
-							return;
-						}
-					}
+				macro_rules! base_case {
+					() => {{
+						// base case
+						n_eq.to_insts(out_ptr, stack_top, insts);
+						insts.push(Instruction::Not {
+							ptr: out_ptr,
+							out: out_ptr,
+						})
+					}};
 				}
-				{
-					// base case
-					n_eq.to_insts(out_ptr, stack_top, insts);
-					insts.push(Instruction::Not {
-						ptr: out_ptr,
-						out: out_ptr,
-					})
+
+				// if this is an and, generate an and instruction chain for however long we need to
+				if let Some(mut ands) = self.and_recognition() {
+					if let Some(and_eq) = ands.next() {
+						and_eq.to_insts(out_ptr, stack_top + 1, insts);
+					} else {
+						base_case!()
+					}
+					for and_eq in ands {
+						and_eq.to_insts(stack_top, stack_top + 1, insts);
+						insts.push(Instruction::And {
+							a: out_ptr,
+							b: stack_top,
+							out: out_ptr,
+						});
+					}
+				} else {
+					base_case!()
 				}
 			}
-			Equation::Or(a_eq, b_eq) => {
-				a_eq.to_insts(stack_top, stack_top + 2, insts);
-				b_eq.to_insts(stack_top + 1, stack_top + 2, insts);
-
-				insts.push(Instruction::Or {
-					a: stack_top,
-					b: stack_top + 1,
-					out: out_ptr,
-				})
+			Equation::Or(_, _) => {
+				let mut ors = self.collect_ors().into_iter();
+				ors.next()
+					.expect("this is impossible since this is an or, with a minimum of two ors")
+					.to_insts(out_ptr, stack_top + 1, insts);
+				for or_eq in ors {
+					or_eq.to_insts(stack_top, stack_top + 1, insts);
+					insts.push(Instruction::Or {
+						a: out_ptr,
+						b: stack_top,
+						out: out_ptr,
+					});
+				}
 			}
 			&Equation::Const(val) => {
 				insts.push(Instruction::Set { ptr: out_ptr, val });
 			}
 		}
+	}
+
+	/// if self is a an or, return every equation that if true, will turn self true \
+	/// so even like nested shits and shit like that
+	///
+	/// if self isn't or, return `vec![&self]`
+	pub fn collect_ors(&self) -> Vec<&Equation> {
+		if let Equation::Or(a_eq, b_eq) = self {
+			a_eq.collect_ors()
+				.into_iter()
+				.chain(b_eq.collect_ors())
+				.collect()
+		} else {
+			vec![self]
+		}
+	}
+	/// returns a list of equations that if all are true, self is true
+	pub fn and_recognition(&self) -> Option<impl Iterator<Item = &Equation>> {
+		if let Equation::Not(n_eq) = self {
+			if let Equation::Or(_, _) = n_eq.as_ref() {
+				let ors = n_eq.collect_ors();
+
+				let is_andable = ors
+					.iter()
+					.map(|eq| {
+						if let Equation::Not(_) = eq {
+							true
+						} else {
+							false
+						}
+					})
+					.filter(|p| !p) // filter only the ones that aren't a not
+					.next()
+					.is_none();
+
+				if is_andable {
+					return Some(ors.into_iter().map(|e| match e {
+						Equation::Not(n_eq) => n_eq.as_ref(),
+						_ => panic!("we just made sure everything in here is a not"),
+					}));
+				}
+			}
+		}
+		None
 	}
 }
 
