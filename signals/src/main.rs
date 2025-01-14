@@ -110,6 +110,14 @@ fn main() {
 			game.tick();
 		}
 
+		let (mouse_x, mouse_y) = (rl.get_mouse_x(), rl.get_mouse_y());
+		let point_x = round(
+			(mouse_x as f32 - pos_info.base.0 as f32) / world::BLOCK_SIZE as f32 / pos_info.scale,
+		);
+		let point_y = round(
+			(mouse_y as f32 - pos_info.base.1 as f32) / world::BLOCK_SIZE as f32 / pos_info.scale,
+		);
+
 		let worlds_bar_h = 400 as f32 / 1980 as f32 * screen.ah as f32;
 		let worlds_bar_h = worlds_bar_h as i32;
 		// modified so width reflects the real width
@@ -160,25 +168,22 @@ fn main() {
 			dbg_ctx.render(&mut d);
 			worlds_bar_ctx.render(&mut d);
 
+			sui::text(format!("({point_x}, {point_y})"), 32).render(
+				&mut d,
+				sui::Details {
+					x: 0,
+					y: 68,
+					..Default::default()
+				},
+				1.0,
+			);
+
 			events.collect::<Vec<_>>()
 		};
 
 		{
-			let (mouse_x, mouse_y) = (rl.get_mouse_x(), rl.get_mouse_y());
-
 			let tool_select_trig = tool_select.tick(&mut rl, tool_select_det, &mut tool);
 			if !tool_select_trig && !worlds_bar_det.is_inside(mouse_x, mouse_y) {
-				let point_x = round(
-					(mouse_x as f32 - pos_info.base.0 as f32)
-						/ world::BLOCK_SIZE as f32
-						/ pos_info.scale,
-				);
-				let point_y = round(
-					(mouse_y as f32 - pos_info.base.1 as f32)
-						/ world::BLOCK_SIZE as f32
-						/ pos_info.scale,
-				);
-
 				if rl.is_mouse_button_down(TOOL_USE) {
 					tool.down(point_x, point_y, &mut game);
 				}

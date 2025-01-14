@@ -46,6 +46,7 @@ pub fn world_block_to_eq(
 		world: &World,
 		(b_x, b_y): (i32, i32),
 		from: Option<Direction>,
+		mut circular_check: Vec<(i32, i32)>, // <- really inefficient workaround alert!!!
 	) -> anyhow::Result<Equation> {
 		let b = if let Some(b) = world.at(b_x, b_y) {
 			b
@@ -53,6 +54,23 @@ pub fn world_block_to_eq(
 			eprintln!("no such block in this world");
 			return Ok(Equation::Const(false));
 		};
+
+		if circular_check.contains(&(b_x, b_y)) {
+			// this case means we've already been to this block before, and now we're here again.
+			// this means a circular dependency, except if this is a wire pointing a direction that doesn't matter.
+			// (in which case we return const(false) anyway)
+			// yeah handling edge cases is fun
+
+			match b {
+				Block::Wire(dir) if from.map(|from| from != *dir).unwrap_or(false) => {
+					// doesn't even matter we'll return false in a couple of nanoseconds
+				}
+				_ => {
+					return Err(anyhow!("this world has a circular dependency, starting from ({b_x}, {b_y})\npath taken: {circular_check:#?}"));
+				}
+			}
+		}
+		circular_check.push((b_x, b_y));
 
 		// next up is a precise specification for each block because we need feature parity between realtime and computed mode
 
@@ -64,7 +82,13 @@ pub fn world_block_to_eq(
 
 			let mut eq = Equation::Const(false);
 			for (from, coords) in potential_sources {
-				eq = Equation::any([eq, internal(&world, coords, Some(from))?].into_iter());
+				eq = Equation::any(
+					[
+						eq,
+						internal(&world, coords, Some(from), circular_check.clone())?,
+					]
+					.into_iter(),
+				);
 			}
 			Ok(eq)
 		};
@@ -98,8 +122,18 @@ pub fn world_block_to_eq(
 							let left = (w_x + left.0, w_y + left.1);
 							let right = (w_x + right.0, w_y + right.1);
 
-							let left = internal(world, left, Some(left_dir.reverse()))?;
-							let right = internal(world, right, Some(right_dir.reverse()))?;
+							let left = internal(
+								world,
+								left,
+								Some(left_dir.reverse()),
+								circular_check.clone(),
+							)?;
+							let right = internal(
+								world,
+								right,
+								Some(right_dir.reverse()),
+								circular_check.clone(),
+							)?;
 
 							eq = Equation::any([eq, left, right].into_iter());
 
@@ -107,7 +141,12 @@ pub fn world_block_to_eq(
 							w_y += r_y;
 						}
 						_ => {
-							let b_eq = internal(world, (w_x, w_y), Some(base_dir))?;
+							let b_eq = internal(
+								world,
+								(w_x, w_y),
+								Some(base_dir),
+								circular_check.clone(),
+							)?;
 							break Ok(Equation::any([eq, b_eq].into_iter()));
 						}
 					}
@@ -122,7 +161,12 @@ pub fn world_block_to_eq(
 			Block::Junction => {
 				if let Some(from) = from {
 					let (r_x, r_y) = from.reverse().rel();
-					internal(world, (b_x + r_x, b_y + r_y), Some(from))
+					internal(
+						world,
+						(b_x + r_x, b_y + r_y),
+						Some(from),
+						circular_check.clone(),
+					)
 				} else {
 					Err(anyhow!(
 						"tried to turn junction into eq without passing from arg"
@@ -143,7 +187,7 @@ pub fn world_block_to_eq(
 	let world = game
 		.world_opt(world_id)
 		.with_context(|| "this world does not exist")?;
-	Ok(internal(world, coords, None)?.simplify())
+	Ok(internal(world, coords, None, vec![])?.simplify())
 }
 
 /// Equation represents how we get a value ingame. (like outputs)
@@ -189,23 +233,15 @@ impl Equation {
 				let (a_eq, b_eq) = (*a_eq, *b_eq);
 				let (a_eq, b_eq) = (a_eq.simplify(), b_eq.simplify());
 
-				if [&a_eq, &b_eq]
-					.into_iter()
-					.filter(|a| **a == Equation::Const(true))
-					.next()
-					.is_some()
-				{
-					// if any of them are const(true)
-					return Equation::Const(true);
+				match (a_eq, b_eq) {
+					(Equation::Const(true), _) | (_, Equation::Const(true)) => Self::Const(true), // if either is true self is true
+					(Equation::Const(false), eq) | (eq, Equation::Const(false)) => eq, // if either is false return the other one
+					(eq, Equation::Not(n_eq)) | (Equation::Not(n_eq), eq) if eq == *n_eq => {
+						Self::Const(true) // x || !x = true
+					}
+					(a_eq, b_eq) if a_eq == b_eq => a_eq, // if a and b are the same return either one
+					(a_eq, b_eq) => Self::or(a_eq, b_eq),
 				}
-
-				if a_eq == Equation::Const(false) {
-					return b_eq;
-				}
-				if b_eq == Equation::Const(false) {
-					return a_eq;
-				}
-				Self::or(a_eq, b_eq)
 			}
 			Self::Const(v) => Self::Const(v),
 		}
