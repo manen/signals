@@ -221,6 +221,11 @@ impl<L: Layable> Layable for Scrollable<L> {
 		let view = self.view(scale);
 		let view_det = self.l_det(det, scale);
 
+		self.state.with_mut_borrow(|a| {
+			a.scroll_x = a.scroll_x.min(l_w).max(0);
+			a.scroll_y = a.scroll_y.min(l_h).max(0);
+		});
+
 		// different events do different things:
 		// - pressing once starts the action
 		// - MouseHeld updates self.scroll_x or self.scroll_y

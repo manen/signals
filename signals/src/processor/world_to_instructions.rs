@@ -23,6 +23,8 @@ pub fn world_to_instructions(
 
 	// output = flipped(flipped(input_0) || flipped(input_1))
 
+	// we still might need to work on and recognition, cause two nots make 0 nots and that can fuck with and recognition if its !(a && b)
+
 	if let Some((_, coords)) = world.outputs().filter(|(id, _)| *id == 0).next() {
 		let eq = world_block_to_eq(game, world_id, coords)?;
 		eq.to_insts(0, 1, &mut vec); // second arg is outputs count
@@ -127,8 +129,8 @@ pub fn world_block_to_eq(
 			Block::Router => all_directions(),
 			Block::Input(id) => Ok(Equation::Input(*id)),
 			Block::Switch(val) => Ok(Equation::Const(*val)),
-			Block::Nothing | Block::Error(_) => Ok(Equation::Const(false)),
-			Block::Output(_) => all_directions_except(None),
+			Block::Output(_) if from.is_none() => all_directions_except(None), // start case
+			Block::Nothing | Block::Error(_) | Block::Output(_) => Ok(Equation::Const(false)),
 			Block::Foreign(_, _, _) => Err(anyhow!(
 				"foreigns are not yet implented for programification"
 			)),
