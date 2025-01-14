@@ -21,6 +21,7 @@ pub fn game_debug_ui(
 				"this is centered!!!",
 				13,
 			))),
+			inst_comp(game, game.i),
 		],
 	);
 
@@ -56,11 +57,7 @@ fn ingameworld_dbg_ui(i: usize, moves: &IngameWorld) -> sui::comp::Comp<'static>
 	))
 }
 
-pub fn inst_comp(
-	game: &crate::Game,
-	world_id: Option<usize>,
-	scroll_state: Store<ScrollableState>,
-) -> sui::Comp<'static> {
+pub fn inst_comp(game: &crate::Game, world_id: Option<usize>) -> sui::Comp<'static> {
 	let insts = processor::world_to_instructions(game, world_id);
 
 	let insts = match insts {
@@ -91,12 +88,5 @@ pub fn inst_comp(
 	};
 	let eq = sui::page([sui::text("equation: ", 18), eq]);
 
-	sui::custom(FixedSize::fix_h(
-		600,
-		Scrollable::new(
-			scroll_state,
-			fit::scrollable::ScrollableMode::Vertical,
-			Div::new(false, [insts, eq]),
-		),
-	))
+	sui::custom(Div::new(false, [insts, eq]))
 }

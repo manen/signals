@@ -58,10 +58,8 @@ fn main() {
 	let scroll_state = Store::new(Default::default());
 	let mut game_retexture_counter = 0; // <- change this variable for the worlds_bar to regenerate
 
+	let mut dbg_cache = sui::core::Cached::default();
 	let dbg_scroll_state = Store::new(Default::default());
-
-	let mut inst_comp_cache = sui::core::Cached::default();
-	let inst_scroll_state = Store::new(Default::default());
 	let mut inst_comp_counter = 0; // <- change this variable for the instruction list to regenerate
 
 	let mut delta = 0.0;
@@ -126,7 +124,11 @@ fn main() {
 		let events = {
 			let mut d = rl.begin_drawing(&thread);
 
-			let page = ui::game_debug_ui(&game, dbg_scroll_state.clone());
+			let page = dbg_cache.update_with_unchecked(
+				inst_comp_counter,
+				(&game, dbg_scroll_state.clone()),
+				|_, (game, dbg_scroll_state)| ui::game_debug_ui(game, dbg_scroll_state.clone()),
+			);
 			let dbg_ctx = sui::RootContext::new(
 				&page,
 				sui::Details {
@@ -145,27 +147,10 @@ fn main() {
 			worlds_bar_det.aw = worlds_bar_det.aw.min(worlds_bar.size().0);
 			let worlds_bar_ctx = sui::RootContext::new(worlds_bar, worlds_bar_det, 1.0);
 
-			let inst_comp = inst_comp_cache.update_with_unchecked(
-				inst_comp_counter,
-				(&game, game.i, inst_scroll_state.clone()),
-				|_, (game, world_id, inst_scroll_state)| {
-					ui::inst_comp(game, world_id, inst_scroll_state)
-				},
-			);
-			let inst_comp_w = inst_comp.size().0.max(100);
-			let inst_comp_det = sui::Details {
-				x: screen.aw - inst_comp_w,
-				y: 100,
-				aw: inst_comp_w,
-				ah: inst_comp_w * 2,
-			};
-			let inst_comp_ctx = sui::RootContext::new(inst_comp, inst_comp_det, 1.0);
-
 			// handled later, when there's no other references to game
 			let events = dbg_ctx
 				.handle_input_d(&mut d)
-				.chain(worlds_bar_ctx.handle_input_d(&mut d))
-				.chain(inst_comp_ctx.handle_input_d(&mut d));
+				.chain(worlds_bar_ctx.handle_input_d(&mut d));
 
 			d.clear_background(gfx::BACKGROUND);
 
@@ -174,7 +159,6 @@ fn main() {
 			tool_select.render(&mut d, tool_select_det, Some(&tool));
 			dbg_ctx.render(&mut d);
 			worlds_bar_ctx.render(&mut d);
-			inst_comp_ctx.render(&mut d);
 
 			events.collect::<Vec<_>>()
 		};

@@ -24,7 +24,7 @@ pub fn world_to_instructions(
 	// output = flipped(flipped(input_0) || flipped(input_1))
 
 	if let Some((_, coords)) = world.outputs().filter(|(id, _)| *id == 0).next() {
-		let eq = world_block_to_eq(game, world_id, coords).expect("fail");
+		let eq = world_block_to_eq(game, world_id, coords)?;
 		eq.to_insts(0, 1, &mut vec); // second arg is outputs count
 	}
 
