@@ -111,7 +111,7 @@ impl IngameWorld {
 				Move::Output { id, .. } => self.moves.push(Move::Foreign {
 					inst_id: i,
 					id,
-					signal: Signal::ForeignExternalPoweron,
+					signal: Signal::ExternalPoweron,
 				}),
 				mov => eprintln!("only outputs should be returned from child worlds ({mov:?})"),
 			});
@@ -143,13 +143,12 @@ impl IngameWorld {
 			match mov {
 				Move::Inside { .. } => push_unique(&mut self.moves, mov),
 				Move::Output { .. } => ret(mov),
-				Move::Foreign {
-					inst_id,
-					id,
-					signal, // we assume this isn't a ForeignExternalPoweron cause how'd that end up in new_moves
-				} => push_unique(
+				Move::Foreign { inst_id, id, .. } => push_unique(
 					&mut self.child_mut(inst_id).moves,
-					Move::Input { id, signal },
+					Move::Input {
+						id,
+						signal: Signal::ExternalPoweron,
+					},
 				),
 				Move::Input { .. } => {
 					eprintln!("unexpected input move in moves processing: {mov:?}")

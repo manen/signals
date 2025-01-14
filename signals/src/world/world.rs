@@ -6,7 +6,7 @@ use std::{collections::HashMap, hash::Hash};
 pub enum Signal {
 	#[default]
 	Default,
-	ForeignExternalPoweron,
+	ExternalPoweron,
 	DefaultIf(fn(Block) -> bool),
 }
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]

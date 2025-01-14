@@ -49,13 +49,12 @@ impl Block {
 			Self::Not(_) => return Some(Self::Not(true)),
 			Self::Switch(_) => {}
 			Self::Input(_) => {
-				fn cause(block: Block) -> bool {
-					match block {
-						Block::Input(_) => false,
-						_ => true,
+				match signal {
+					Signal::ExternalPoweron => {
+						all_directions(Signal::Default);
 					}
+					_ => (), // do nothing unless externally powered on
 				}
-				all_directions(Signal::DefaultIf(cause));
 			}
 			Self::Output(id) => push_move(PushMoveTo::OutputID(*id), signal),
 			Self::Foreign(_, inst_id, id) => match signal {
@@ -79,7 +78,7 @@ impl Block {
 						);
 					}
 				}
-				Signal::ForeignExternalPoweron => {
+				Signal::ExternalPoweron => {
 					fn cause(block: Block) -> bool {
 						match block {
 							Block::Foreign(_, _, _) => false,
