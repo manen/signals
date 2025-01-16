@@ -15,7 +15,10 @@ pub fn world_to_instructions(
 	let mut vec = vec![];
 
 	let eq = world_output_to_eq(game, world_id, 0)?;
-	eq.simplify().to_insts(0, 1, &mut vec)?;
+	eq.to_insts(0, 1, &mut vec)?;
+
+	// this can only handle one level of recursion rn sooo we might need to put this in world_output_to_eq eventually
+	// idc all i want is a proof of concept
 
 	Ok(vec)
 }
@@ -23,14 +26,14 @@ pub fn world_to_instructions(
 pub fn world_output_to_eq(
 	game: &Game,
 	world_id: Option<usize>,
-	id: i32,
+	id: usize,
 ) -> anyhow::Result<Equation> {
 	let world = game
 		.world_opt(world_id)
 		.with_context(|| "no world with id {world_id:?}")?;
 
-	if let Some((_, coords)) = world.outputs().filter(|(id, _)| *id == 0).next() {
-		Ok(world_block_to_eq(game, world_id, coords)?)
+	if let Some((_, coords)) = world.outputs().filter(|(this_id, _)| *this_id == id).next() {
+		world_block_to_eq(game, world_id, coords)
 	} else {
 		Err(anyhow!("no output with id {id} in world {world_id:?}"))
 	}
@@ -45,14 +48,32 @@ pub fn world_block_to_eq(
 	let world = game
 		.world_opt(world_id)
 		.with_context(|| "this world does not exist")?;
-	Ok(block_to_eq_internal(world, coords, None, vec![])?.simplify())
+
+	let eq = block_to_eq_internal(world, coords, None, vec![])?.simplify();
+
+	// --- this is the part that inlines all the foreigns
+	let eq = eq
+		.map_foreigns(|w_id, _, id, in_eqs| {
+			let a = world_output_to_eq(&game, w_id, id)?;
+			a.map_inputs(|id| {
+				let f_input = in_eqs
+					.iter()
+					.nth(id)
+					.cloned()
+					.unwrap_or(Equation::Const(false));
+				anyhow::Ok(f_input)
+			})
+		})?
+		.simplify();
+
+	Ok(eq)
 }
 
 fn block_to_eq_internal(
 	world: &World,
 	(b_x, b_y): (i32, i32),
 	from: Option<Direction>,
-	mut circular_check: Vec<(i32, i32)>, // <- really inefficient workaround alert!!!
+	mut circular_check: Vec<((i32, i32), Option<Direction>)>, // <- really inefficient workaround alert!!!
 ) -> anyhow::Result<Equation> {
 	let b = if let Some(b) = world.at(b_x, b_y) {
 		b
@@ -61,7 +82,7 @@ fn block_to_eq_internal(
 		return Ok(Equation::Const(false));
 	};
 
-	if circular_check.contains(&(b_x, b_y)) {
+	if circular_check.contains(&((b_x, b_y), from)) {
 		// this case means we've already been to this block before, and now we're here again.
 		// this means a circular dependency, except if this is a wire pointing a direction that doesn't matter.
 		// (in which case we return const(false) anyway)
@@ -76,7 +97,7 @@ fn block_to_eq_internal(
 			}
 		}
 	}
-	circular_check.push((b_x, b_y));
+	circular_check.push(((b_x, b_y), from));
 
 	// next up is a precise specification for each block because we need feature parity between realtime and computed mode
 
@@ -197,7 +218,7 @@ fn foreign_inputs(
 	inst_id: usize,
 	because_id: usize,
 	because_from: Option<Direction>,
-	circular_check: Vec<(i32, i32)>,
+	circular_check: Vec<((i32, i32), Option<Direction>)>,
 ) -> anyhow::Result<Vec<Equation>> {
 	let foreigns = world.find_foreigns();
 	let mut foreigns = foreigns
@@ -277,6 +298,65 @@ impl Equation {
 			eq = Self::or(eq, new_eq)
 		}
 		eq.simplify()
+	}
+	/// generates an equation that is only true if every equation in iter is true
+	pub fn all(iter: impl Iterator<Item = Self>) -> Self {
+		Self::not(Self::any(iter.map(|c_eq| Self::not(c_eq))))
+	}
+
+	pub fn map_inputs<E>(self, f: impl Fn(usize) -> Result<Self, E>) -> Result<Self, E> {
+		use std::rc::Rc;
+		fn internal<E, F: Fn(usize) -> Result<Equation, E>>(
+			eq: Equation,
+			f: Rc<F>,
+		) -> Result<Equation, E> {
+			match eq {
+				Equation::Input(id) => f(id),
+				Equation::Or(a_eq, b_eq) => Ok(Equation::or(
+					internal(*a_eq, f.clone())?,
+					internal(*b_eq, f)?,
+				)),
+				Equation::Not(n_eq) => Ok(Equation::not(internal(*n_eq, f)?)),
+				Equation::Foreign(w_id, inst_id, id, in_eqs) => Ok(Equation::Foreign(
+					w_id,
+					inst_id,
+					id,
+					in_eqs
+						.into_iter()
+						.map(|in_eq| internal(in_eq, f.clone()))
+						.collect::<Result<Vec<_>, _>>()?,
+				)),
+				Equation::Const(_) => Ok(eq),
+			}
+		}
+		internal(self, Rc::new(f))
+	}
+	pub fn map_foreigns<E>(
+		self,
+		f: impl Fn(Option<usize>, usize, usize, Vec<Equation>) -> Result<Self, E>,
+	) -> Result<Self, E> {
+		use std::rc::Rc;
+		fn internal<E, F: Fn(Option<usize>, usize, usize, Vec<Equation>) -> Result<Equation, E>>(
+			eq: Equation,
+			f: Rc<F>,
+		) -> Result<Equation, E> {
+			match eq {
+				Equation::Input(_) | Equation::Const(_) => Ok(eq),
+				Equation::Or(a_eq, b_eq) => Ok(Equation::or(
+					internal(*a_eq, f.clone())?,
+					internal(*b_eq, f.clone())?,
+				)),
+				Equation::Not(n_eq) => Ok(Equation::not(internal(*n_eq, f)?)),
+				Equation::Foreign(w_id, inst_id, id, in_eqs) => {
+					let in_eqs = in_eqs
+						.into_iter()
+						.map(|in_eq| internal(in_eq, f.clone()))
+						.collect::<Result<Vec<_>, _>>()?;
+					f(w_id, inst_id, id, in_eqs)
+				}
+			}
+		}
+		internal(self, Rc::new(f))
 	}
 
 	/// recursively `simplif`ies (optimizes) the expression
@@ -457,13 +537,14 @@ mod tests {
 
 	#[test]
 	fn equations_xor() {
-		let make_and = |a: Equation, b: Equation| -> Equation {
-			Equation::not(Equation::or(Equation::not(a), Equation::not(b)))
-		};
-
-		let xor = make_and(
-			Equation::or(Equation::Input(0), Equation::Input(1)),
-			Equation::not(make_and(Equation::Input(0), Equation::Input(1))),
+		let xor = Equation::all(
+			[
+				Equation::or(Equation::Input(0), Equation::Input(1)),
+				Equation::not(Equation::all(
+					[Equation::Input(0), Equation::Input(1)].into_iter(),
+				)),
+			]
+			.into_iter(),
 		);
 
 		let mut insts = vec![];
@@ -508,4 +589,19 @@ mod tests {
 	// 	assert_eq!(run(false, true), true);
 	// 	assert_eq!(run(true, true), false);
 	// }
+
+	#[test]
+	fn foreign_test() {
+		let inside = Equation::all([Equation::Input(0), Equation::Input(1)].into_iter());
+
+		let outside =
+			Equation::Foreign(Some(0), 0, 0, vec![Equation::Input(2), Equation::Input(3)]);
+
+		let total: Result<_, ()> = outside.map_foreigns(|_, _, _, in_eqs| {
+			inside.clone().map_inputs(|in_id| Ok(in_eqs[in_id].clone()))
+		});
+		let total = total.expect("oadigh");
+
+		panic!("{total:#?}")
+	}
 }
