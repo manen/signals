@@ -34,7 +34,8 @@ impl Memory {
 					if let Some(val) = inputs.iter().nth(id).copied() {
 						self.set(out, val)
 					} else {
-						eprintln!("program tried to access an input that doesn't exist")
+						eprintln!("program tried to access an input that doesn't exist");
+						self.set(out, false)
 					}
 				}
 
@@ -66,7 +67,7 @@ impl Memory {
 	}
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Instruction {
 	// base set
 	SummonInput {

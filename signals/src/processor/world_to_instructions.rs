@@ -13,12 +13,15 @@ pub fn world_to_instructions(
 	world_id: Option<usize>,
 ) -> anyhow::Result<Vec<Instruction>> {
 	let mut vec = vec![];
+	let world = game
+		.world_opt(world_id)
+		.with_context(|| format!("no world with id {world_id:?}"))?;
+	let outputs_len = world.outputs().count();
 
-	let eq = world_output_to_eq(game, world_id, 0)?;
-	eq.to_insts(0, 1, &mut vec)?;
-
-	// this can only handle one level of recursion rn sooo we might need to put this in world_output_to_eq eventually
-	// idc all i want is a proof of concept
+	for i in 0..outputs_len {
+		let eq = world_output_to_eq(game, world_id, i)?;
+		eq.to_insts(i, outputs_len, &mut vec)?;
+	}
 
 	Ok(vec)
 }
@@ -397,6 +400,11 @@ impl Equation {
 		}
 	}
 
+	pub fn gen_insts(&self, out_ptr: usize, stack_top: usize) -> anyhow::Result<Vec<Instruction>> {
+		let mut vec = vec![];
+		self.to_insts(out_ptr, stack_top, &mut vec)?;
+		Ok(vec)
+	}
 	/// stack_top is where the empty memory starts
 	pub fn to_insts(
 		&self,
@@ -602,6 +610,21 @@ mod tests {
 		});
 		let total = total.expect("oadigh");
 
-		panic!("{total:#?}")
+		let insts = total
+			.simplify()
+			.gen_insts(0, 4)
+			.expect("failed to gen instructions");
+
+		let mut mem = Memory::default();
+
+		let mut run = |a: bool, b: bool| -> bool {
+			mem.execute(&insts, &[false, false, a, b]);
+			mem.get(0)
+		};
+
+		assert_eq!(run(false, false), false);
+		assert_eq!(run(true, false), false);
+		assert_eq!(run(false, true), false);
+		assert_eq!(run(true, true), true);
 	}
 }
