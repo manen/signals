@@ -15,7 +15,7 @@ pub fn world_to_instructions(
 	let mut vec = vec![];
 
 	let eq = world_output_to_eq(game, world_id, 0)?;
-	eq.simplify().to_insts(0, 1, &mut vec);
+	eq.simplify().to_insts(0, 1, &mut vec)?;
 
 	Ok(vec)
 }
@@ -42,152 +42,212 @@ pub fn world_block_to_eq(
 	world_id: Option<usize>,
 	coords: (i32, i32),
 ) -> anyhow::Result<Equation> {
-	fn internal(
-		world: &World,
-		(b_x, b_y): (i32, i32),
-		from: Option<Direction>,
-		mut circular_check: Vec<(i32, i32)>, // <- really inefficient workaround alert!!!
-	) -> anyhow::Result<Equation> {
-		let b = if let Some(b) = world.at(b_x, b_y) {
-			b
-		} else {
-			eprintln!("no such block in this world");
-			return Ok(Equation::Const(false));
-		};
-
-		if circular_check.contains(&(b_x, b_y)) {
-			// this case means we've already been to this block before, and now we're here again.
-			// this means a circular dependency, except if this is a wire pointing a direction that doesn't matter.
-			// (in which case we return const(false) anyway)
-			// yeah handling edge cases is fun
-
-			match b {
-				Block::Wire(dir) if from.map(|from| from != *dir).unwrap_or(false) => {
-					// doesn't even matter we'll return false in a couple of nanoseconds
-				}
-				_ => {
-					return Err(anyhow!("this world has a circular dependency, starting from ({b_x}, {b_y})\npath taken: {circular_check:#?}"));
-				}
-			}
-		}
-		circular_check.push((b_x, b_y));
-
-		// next up is a precise specification for each block because we need feature parity between realtime and computed mode
-
-		let all_directions_except = |except: Option<Direction>| {
-			let potential_sources = Direction::all()
-				.filter(|dir| except.map(|except| *dir != except).unwrap_or(true))
-				.map(|dir| (dir.reverse(), dir.rel()))
-				.map(|(from, (r_x, r_y))| (from, (b_x + r_x, b_y + r_y)));
-
-			let mut eq = Equation::Const(false);
-			for (from, coords) in potential_sources {
-				eq = Equation::any(
-					[
-						eq,
-						internal(&world, coords, Some(from), circular_check.clone())?,
-					]
-					.into_iter(),
-				);
-			}
-			Ok(eq)
-		};
-		let all_directions = || {
-			let from =    from.with_context(|| "blocks that could receive signals from any direction should not be called without a from argument")?;
-			all_directions_except(Some(from))
-		};
-
-		match b {
-			&Block::Wire(base_dir) => {
-				if from.map(|from| from != base_dir).unwrap_or(false) {
-					// if from points to a block which this wire would not actually pass a signal to
-					return Ok(Equation::Const(false));
-				}
-
-				let (mut w_x, mut w_y) = (b_x, b_y);
-				// we're tracing backwards so one step in base_dir.reverse() every iteration
-
-				let mut eq = Equation::Const(false);
-				loop {
-					let back_dir = base_dir.reverse();
-					let (r_x, r_y) = back_dir.rel();
-
-					let behind = world.at(w_x, w_y);
-
-					match behind {
-						Some(&Block::Wire(behind_dir)) if base_dir == behind_dir => {
-							let left_dir = base_dir.rotate_l();
-							let right_dir = base_dir.rotate_r();
-							let (left, right) = (left_dir.rel(), right_dir.rel());
-							let left = (w_x + left.0, w_y + left.1);
-							let right = (w_x + right.0, w_y + right.1);
-
-							let left = internal(
-								world,
-								left,
-								Some(left_dir.reverse()),
-								circular_check.clone(),
-							)?;
-							let right = internal(
-								world,
-								right,
-								Some(right_dir.reverse()),
-								circular_check.clone(),
-							)?;
-
-							eq = Equation::any([eq, left, right].into_iter());
-
-							w_x += r_x;
-							w_y += r_y;
-						}
-						_ => {
-							let b_eq = internal(
-								world,
-								(w_x, w_y),
-								Some(base_dir),
-								circular_check.clone(),
-							)?;
-							break Ok(Equation::any([eq, b_eq].into_iter()));
-						}
-					}
-				}
-			}
-			Block::Not(_) => {
-				// nots work differently in evaluated vs real time mode
-
-				let base = all_directions()?;
-				Ok(Equation::not(base))
-			}
-			Block::Junction => {
-				if let Some(from) = from {
-					let (r_x, r_y) = from.reverse().rel();
-					internal(
-						world,
-						(b_x + r_x, b_y + r_y),
-						Some(from),
-						circular_check.clone(),
-					)
-				} else {
-					Err(anyhow!(
-						"tried to turn junction into eq without passing from arg"
-					))
-				}
-			}
-			Block::Router => all_directions(),
-			Block::Input(id) => Ok(Equation::Input(*id)),
-			Block::Switch(val) => Ok(Equation::Const(*val)),
-			Block::Output(_) if from.is_none() => all_directions_except(None), // start case
-			Block::Nothing | Block::Error(_) | Block::Output(_) => Ok(Equation::Const(false)),
-			Block::Foreign(_, _, _) => Err(anyhow!(
-				"foreigns are not yet implented for programification"
-			)),
-		}
-	}
-
 	let world = game
 		.world_opt(world_id)
 		.with_context(|| "this world does not exist")?;
-	Ok(internal(world, coords, None, vec![])?.simplify())
+	Ok(block_to_eq_internal(world, coords, None, vec![])?.simplify())
+}
+
+fn block_to_eq_internal(
+	world: &World,
+	(b_x, b_y): (i32, i32),
+	from: Option<Direction>,
+	mut circular_check: Vec<(i32, i32)>, // <- really inefficient workaround alert!!!
+) -> anyhow::Result<Equation> {
+	let b = if let Some(b) = world.at(b_x, b_y) {
+		b
+	} else {
+		eprintln!("no such block in this world");
+		return Ok(Equation::Const(false));
+	};
+
+	if circular_check.contains(&(b_x, b_y)) {
+		// this case means we've already been to this block before, and now we're here again.
+		// this means a circular dependency, except if this is a wire pointing a direction that doesn't matter.
+		// (in which case we return const(false) anyway)
+		// yeah handling edge cases is fun
+
+		match b {
+			Block::Wire(dir) if from.map(|from| from != *dir).unwrap_or(false) => {
+				// doesn't even matter we'll return false in a couple of nanoseconds
+			}
+			_ => {
+				return Err(anyhow!("this world has a circular dependency, starting from ({b_x}, {b_y})\npath taken: {circular_check:#?}"));
+			}
+		}
+	}
+	circular_check.push((b_x, b_y));
+
+	// next up is a precise specification for each block because we need feature parity between realtime and computed mode
+
+	let all_directions_except = |except: Option<Direction>| {
+		let potential_sources = Direction::all()
+			.filter(|dir| except.map(|except| *dir != except).unwrap_or(true))
+			.map(|dir| (dir.reverse(), dir.rel()))
+			.map(|(from, (r_x, r_y))| (from, (b_x + r_x, b_y + r_y)));
+
+		let mut eq = Equation::Const(false);
+		for (from, coords) in potential_sources {
+			eq = Equation::any(
+				[
+					eq,
+					block_to_eq_internal(&world, coords, Some(from), circular_check.clone())?,
+				]
+				.into_iter(),
+			);
+		}
+		Ok(eq)
+	};
+	let all_directions = || {
+		let from =    from.with_context(|| "blocks that could receive signals from any direction should not be called without a from argument")?;
+		all_directions_except(Some(from))
+	};
+
+	match b {
+		&Block::Wire(base_dir) => {
+			if from.map(|from| from != base_dir).unwrap_or(false) {
+				// if from points to a block which this wire would not actually pass a signal to
+				return Ok(Equation::Const(false));
+			}
+
+			let (mut w_x, mut w_y) = (b_x, b_y);
+			// we're tracing backwards so one step in base_dir.reverse() every iteration
+
+			let mut eq = Equation::Const(false);
+			loop {
+				let back_dir = base_dir.reverse();
+				let (r_x, r_y) = back_dir.rel();
+
+				let behind = world.at(w_x, w_y);
+
+				match behind {
+					Some(&Block::Wire(behind_dir)) if base_dir == behind_dir => {
+						let left_dir = base_dir.rotate_l();
+						let right_dir = base_dir.rotate_r();
+						let (left, right) = (left_dir.rel(), right_dir.rel());
+						let left = (w_x + left.0, w_y + left.1);
+						let right = (w_x + right.0, w_y + right.1);
+
+						let left = block_to_eq_internal(
+							world,
+							left,
+							Some(left_dir.reverse()),
+							circular_check.clone(),
+						)?;
+						let right = block_to_eq_internal(
+							world,
+							right,
+							Some(right_dir.reverse()),
+							circular_check.clone(),
+						)?;
+
+						eq = Equation::any([eq, left, right].into_iter());
+
+						w_x += r_x;
+						w_y += r_y;
+					}
+					_ => {
+						let b_eq = block_to_eq_internal(
+							world,
+							(w_x, w_y),
+							Some(base_dir),
+							circular_check.clone(),
+						)?;
+						break Ok(Equation::any([eq, b_eq].into_iter()));
+					}
+				}
+			}
+		}
+		Block::Not(_) => {
+			// nots work differently in evaluated vs real time mode
+
+			let base = all_directions()?;
+			Ok(Equation::not(base))
+		}
+		Block::Junction => {
+			if let Some(from) = from {
+				let (r_x, r_y) = from.reverse().rel();
+				block_to_eq_internal(
+					world,
+					(b_x + r_x, b_y + r_y),
+					Some(from),
+					circular_check.clone(),
+				)
+			} else {
+				Err(anyhow!(
+					"tried to turn junction into eq without passing from arg"
+				))
+			}
+		}
+		Block::Router => all_directions(),
+		Block::Input(id) => Ok(Equation::Input(*id)),
+		Block::Switch(val) => Ok(Equation::Const(*val)),
+		Block::Output(_) if from.is_none() => all_directions_except(None), // start case
+		Block::Nothing | Block::Error(_) | Block::Output(_) => Ok(Equation::Const(false)),
+		&Block::Foreign(wid, inst_id, id) => {
+			let foreign_inputs = foreign_inputs(world, inst_id, id, from, circular_check.clone())?;
+
+			Ok(Equation::Foreign(wid, inst_id, id, foreign_inputs))
+		}
+	}
+}
+
+fn foreign_inputs(
+	world: &World,
+	inst_id: usize,
+	because_id: usize,
+	because_from: Option<Direction>,
+	circular_check: Vec<(i32, i32)>,
+) -> anyhow::Result<Vec<Equation>> {
+	let foreigns = world.find_foreigns();
+	let mut foreigns = foreigns
+		.into_iter()
+		.filter(|(_, (_, this_inst_id, _))| *this_inst_id == inst_id)
+		.collect::<Vec<_>>();
+	foreigns.sort_by_key(|a| a.1 .1);
+
+	let mut vec = vec![Equation::Const(false); foreigns.len()];
+
+	for (coords, (_, _, id)) in foreigns {
+		let total_eq = {
+			let directions = Direction::all().filter(|dir| {
+				if id == because_id {
+					because_from.map(|from| *dir != from).unwrap_or(false)
+				} else {
+					true
+				}
+			});
+			let a = directions
+				.map(|dir| (dir.reverse(), dir.rel()))
+				.map(|(from, (r_x, r_y))| (from, (coords.0 + r_x, coords.1 + r_y)));
+
+			let mut eq = Equation::Const(false);
+			for (from, coords) in a {
+				if let Block::Foreign(..) = world.at(coords.0, coords.1).unwrap_or(&Block::Nothing)
+				{
+					// foreigns don't pass signals to each other
+				} else {
+					eq = Equation::any(
+						[
+							eq,
+							block_to_eq_internal(
+								&world,
+								coords,
+								Some(from),
+								circular_check.clone(),
+							)?,
+						]
+						.into_iter(),
+					);
+				}
+			}
+			eq
+		};
+
+		vec[id] = total_eq;
+	}
+
+	Ok(vec)
 }
 
 /// Equation represents how we get a value ingame. (like outputs)
@@ -197,6 +257,10 @@ pub enum Equation {
 	Or(Box<Equation>, Box<Equation>),
 	Not(Box<Equation>),
 	Const(bool),
+
+	/// Foreign is special, as it can't be turned into instructions as is. \
+	/// you need to convert it to a plain equation one way or another
+	Foreign(Option<usize>, usize, usize, Vec<Equation>), // foreign details and input equations
 }
 impl Equation {
 	pub fn or(a: Equation, b: Equation) -> Self {
@@ -244,18 +308,29 @@ impl Equation {
 				}
 			}
 			Self::Const(v) => Self::Const(v),
+			Self::Foreign(wid, inst_id, id, i_eqs) => Equation::Foreign(
+				wid,
+				inst_id,
+				id,
+				i_eqs.into_iter().map(|i_eq| i_eq.simplify()).collect(),
+			),
 		}
 	}
 
 	/// stack_top is where the empty memory starts
-	pub fn to_insts(&self, out_ptr: usize, stack_top: usize, insts: &mut Vec<Instruction>) {
+	pub fn to_insts(
+		&self,
+		out_ptr: usize,
+		stack_top: usize,
+		insts: &mut Vec<Instruction>,
+	) -> anyhow::Result<()> {
 		match self {
 			&Equation::Input(id) => insts.push(Instruction::SummonInput { id, out: out_ptr }),
 			Equation::Not(n_eq) => {
 				macro_rules! base_case {
 					() => {{
 						// base case
-						n_eq.to_insts(out_ptr, stack_top, insts);
+						n_eq.to_insts(out_ptr, stack_top, insts)?;
 						insts.push(Instruction::Not {
 							ptr: out_ptr,
 							out: out_ptr,
@@ -266,12 +341,12 @@ impl Equation {
 				// if this is an and, generate an and instruction chain for however long we need to
 				if let Some(mut ands) = self.and_recognition() {
 					if let Some(and_eq) = ands.next() {
-						and_eq.to_insts(out_ptr, stack_top + 1, insts);
+						and_eq.to_insts(out_ptr, stack_top + 1, insts)?;
 					} else {
 						base_case!()
 					}
 					for and_eq in ands {
-						and_eq.to_insts(stack_top, stack_top + 1, insts);
+						and_eq.to_insts(stack_top, stack_top + 1, insts)?;
 						insts.push(Instruction::And {
 							a: out_ptr,
 							b: stack_top,
@@ -286,9 +361,9 @@ impl Equation {
 				let mut ors = self.collect_ors().into_iter();
 				ors.next()
 					.expect("this is impossible since this is an or, with a minimum of two ors")
-					.to_insts(out_ptr, stack_top + 1, insts);
+					.to_insts(out_ptr, stack_top + 1, insts)?;
 				for or_eq in ors {
-					or_eq.to_insts(stack_top, stack_top + 1, insts);
+					or_eq.to_insts(stack_top, stack_top + 1, insts)?;
 					insts.push(Instruction::Or {
 						a: out_ptr,
 						b: stack_top,
@@ -299,7 +374,11 @@ impl Equation {
 			&Equation::Const(val) => {
 				insts.push(Instruction::Set { ptr: out_ptr, val });
 			}
+			Equation::Foreign(_, _, _, _) => {
+				return Err(anyhow!("attempted to turn an Equation::Foreign into instructions. this is impossible, as context is needed about the world inside."))
+			}
 		}
+		Ok(())
 	}
 
 	/// if self is a an or, return every equation that if true, will turn self true \
@@ -360,7 +439,7 @@ mod tests {
 		));
 
 		let mut insts = vec![];
-		and.to_insts(0, 2, &mut insts);
+		and.to_insts(0, 2, &mut insts).expect("no foreigns here");
 
 		let mut mem = Memory::default();
 
@@ -388,7 +467,7 @@ mod tests {
 		);
 
 		let mut insts = vec![];
-		xor.to_insts(0, 2, &mut insts);
+		xor.to_insts(0, 2, &mut insts).expect("no foreigns here");
 
 		let mut mem = Memory::default();
 
