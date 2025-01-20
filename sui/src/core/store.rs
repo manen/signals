@@ -5,9 +5,16 @@ use std::{
 };
 
 /// single threaded store
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
+#[derive(Debug, PartialEq, Eq, Default)]
 pub struct Store<T> {
 	rc: Rc<RefCell<T>>,
+}
+impl<T> Clone for Store<T> {
+	fn clone(&self) -> Self {
+		Self {
+			rc: self.rc.clone(),
+		}
+	}
 }
 impl<T> Store<T> {
 	pub fn new(val: T) -> Self {
