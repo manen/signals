@@ -200,6 +200,7 @@ impl Equation {
 		Ok(vec)
 	}
 
+	/// if self contains shareds, make sure to call [Self::reset_shareds] if calling to_insts again for a different program
 	pub fn to_insts(
 		&self,
 		out_ptr: usize,
@@ -262,6 +263,51 @@ impl Equation {
 			Equation::Shared(sh) => sh.to_insts(out_ptr, stack, insts)?,
 		}
 		Ok(())
+	}
+
+	pub fn reset_shareds(&self) {
+		match self {
+			Equation::Const(_) | Equation::Input(_) => (),
+			Equation::Not(n_eq) => n_eq.reset_shareds(),
+			Equation::Or(a_eq, b_eq) => {
+				a_eq.reset_shareds();
+				b_eq.reset_shareds();
+			}
+			Equation::Foreign(_, _, _, in_eqs) => {
+				for in_eq in in_eqs {
+					in_eq.reset_shareds();
+				}
+			}
+			Equation::Shared(sh) => {
+				sh.store.with_mut_borrow(|data| data.found_at = None);
+			}
+		}
+	}
+	pub fn reservations(&self) -> usize {
+		pub fn internal(eq: &Equation, map: &mut Vec<u64>) -> usize {
+			match eq {
+				Equation::Const(_) | Equation::Input(_) => 0,
+				Equation::Not(n_eq) => internal(n_eq.as_ref(), map),
+				Equation::Or(a_eq, b_eq) => {
+					internal(a_eq.as_ref(), map) + internal(b_eq.as_ref(), map)
+				}
+				Equation::Foreign(_, _, _, in_eqs) => in_eqs.iter().map(|a| internal(a, map)).sum(),
+				Equation::Shared(sh) => {
+					let mut hash = DefaultHasher::new();
+					sh.store.with_borrow(|data| data.hash(&mut hash));
+					let hash = hash.finish();
+
+					if !map.contains(&hash) {
+						map.push(hash);
+						1
+					} else {
+						0
+					}
+				}
+			}
+		}
+		let mut map = vec![];
+		internal(self, &mut map)
 	}
 
 	/// if self is a an or, return every equation that if true, will turn self true \
@@ -402,7 +448,10 @@ mod tests {
 
 		let mut insts = vec![];
 
-		let stack = Stack::with_reserved(2, 2);
+		let stack = Stack::with_reserved(
+			2,
+			Equation::any([&eq1, &eq2].into_iter().cloned()).reservations(),
+		);
 		eq1.to_insts(0, stack.clone(), &mut insts).expect("hey 1");
 		eq2.to_insts(1, stack.clone(), &mut insts).expect("hey 2");
 
