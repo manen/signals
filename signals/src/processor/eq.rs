@@ -152,9 +152,11 @@ impl Equation {
 				let n_eq = *n_eq;
 				let n_eq = n_eq.simplify();
 
+				let is_and = n_eq.and_recognition().is_some();
+
 				match n_eq {
 					Self::Const(v) => Self::Const(!v),
-					Self::Not(nn_eq) => *nn_eq, //- !!v = v
+					Self::Not(nn_eq) if !is_and => *nn_eq, //- !!v = v
 					_ => Self::not(n_eq),
 				}
 			}
