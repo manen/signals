@@ -6,7 +6,7 @@ use crate::{
 	world::{Block, Direction, World},
 };
 
-use super::Instruction;
+use super::{stack::Stack, Instruction};
 
 /// returns none if world doesn't exist
 pub fn world_to_instructions(
@@ -19,9 +19,10 @@ pub fn world_to_instructions(
 		.with_context(|| format!("no world with id {world_id:?}"))?;
 	let outputs_len = world.outputs().count();
 
+	let stack = Stack::new(outputs_len);
 	for i in 0..outputs_len {
 		let eq = world_output_to_eq(game, world_id, i)?;
-		eq.to_insts(i, outputs_len, &mut vec)?;
+		eq.to_insts(i, stack.clone(), &mut vec)?;
 	}
 
 	Ok(vec)
@@ -288,7 +289,8 @@ mod tests {
 		));
 
 		let mut insts = vec![];
-		and.to_insts(0, 2, &mut insts).expect("no foreigns here");
+		and.to_insts(0, Stack::new(2), &mut insts)
+			.expect("no foreigns here");
 
 		let mut mem = Memory::default();
 
@@ -317,7 +319,8 @@ mod tests {
 		);
 
 		let mut insts = vec![];
-		xor.to_insts(0, 2, &mut insts).expect("no foreigns here");
+		xor.to_insts(0, Stack::new(2), &mut insts)
+			.expect("no foreigns here");
 
 		let mut mem = Memory::default();
 
@@ -332,32 +335,32 @@ mod tests {
 		assert_eq!(run(true, true), false);
 	}
 
-	// #[test]
-	// fn test_generated_xor() {
-	// 	let insts = [
-	// 		Instruction::SummonInput { id: 1, out: 2 },
-	// 		Instruction::Not { ptr: 2, out: 2 },
-	// 		Instruction::SummonInput { id: 0, out: 3 },
-	// 		Instruction::Not { ptr: 3, out: 3 },
-	// 		Instruction::Or { a: 2, b: 3, out: 0 },
-	// 		Instruction::SummonInput { id: 0, out: 2 },
-	// 		Instruction::SummonInput { id: 1, out: 3 },
-	// 		Instruction::Or { a: 2, b: 3, out: 1 },
-	// 		Instruction::And { a: 0, b: 1, out: 0 },
-	// 	];
+	#[test]
+	fn test_generated_xor() {
+		let insts = [
+			Instruction::SummonInput { id: 0, out: 0 },
+			Instruction::SummonInput { id: 1, out: 2 },
+			Instruction::Or { a: 0, b: 2, out: 0 },
+			Instruction::SummonInput { id: 1, out: 1 },
+			Instruction::Not { ptr: 1, out: 1 },
+			Instruction::SummonInput { id: 0, out: 2 },
+			Instruction::Not { ptr: 2, out: 2 },
+			Instruction::Or { a: 1, b: 2, out: 1 },
+			Instruction::And { a: 0, b: 1, out: 0 },
+		];
 
-	// 	let mut mem = Memory::default();
+		let mut mem = Memory::default();
 
-	// 	let mut run = |a: bool, b: bool| -> bool {
-	// 		mem.execute(&insts, &[a, b]);
-	// 		mem.get(0)
-	// 	};
+		let mut run = |a: bool, b: bool| -> bool {
+			mem.execute(&insts, &[a, b]);
+			mem.get(0)
+		};
 
-	// 	assert_eq!(run(false, false), false);
-	// 	assert_eq!(run(true, false), true);
-	// 	assert_eq!(run(false, true), true);
-	// 	assert_eq!(run(true, true), false);
-	// }
+		assert_eq!(run(false, false), false);
+		assert_eq!(run(true, false), true);
+		assert_eq!(run(false, true), true);
+		assert_eq!(run(true, true), false);
+	}
 
 	#[test]
 	fn foreign_test() {

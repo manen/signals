@@ -1,9 +1,11 @@
 use crate::processor::Instruction;
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
+
+use super::stack::Stack;
 
 /// Equation represents how we get a value ingame. (like outputs)
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Equation {
 	Input(usize),
 	Or(Box<Equation>, Box<Equation>),
@@ -13,6 +15,8 @@ pub enum Equation {
 	/// Foreign is special, as it can't be turned into instructions as is. \
 	/// you need to convert it to a plain equation one way or another
 	Foreign(Option<usize>, usize, usize, Vec<Equation>), // foreign details and input equations
+
+	Shared(SharedStore),
 }
 impl Equation {
 	pub fn or(a: Equation, b: Equation) -> Self {
@@ -58,6 +62,13 @@ impl Equation {
 						.collect::<Result<Vec<_>, _>>()?,
 				)),
 				Equation::Const(_) => Ok(eq),
+				Equation::Shared(sh) => sh.store.clone().with_mut_borrow(|data| {
+					let replacer_eq: Equation = unsafe { std::mem::zeroed() };
+					let data_eq = std::mem::replace(&mut data.eq, replacer_eq);
+					data.eq = internal(data_eq, f.clone())?;
+
+					Ok(Equation::Shared(sh))
+				}),
 			}
 		}
 		internal(self, Rc::new(f))
@@ -85,6 +96,13 @@ impl Equation {
 						.collect::<Result<Vec<_>, _>>()?;
 					f(w_id, inst_id, id, in_eqs)
 				}
+				Equation::Shared(sh) => sh.store.clone().with_mut_borrow(|data| {
+					let replacer_eq: Equation = unsafe { std::mem::zeroed() };
+					let data_eq = std::mem::replace(&mut data.eq, replacer_eq);
+					data.eq = internal(data_eq, f.clone())?;
+
+					Ok(Equation::Shared(sh))
+				}),
 			}
 		}
 		internal(self, Rc::new(f))
@@ -125,19 +143,31 @@ impl Equation {
 				id,
 				i_eqs.into_iter().map(|i_eq| i_eq.simplify()).collect(),
 			),
+			Equation::Shared(sh) => sh.store.clone().with_mut_borrow(|data| {
+				let replacer_eq: Equation = unsafe { std::mem::zeroed() };
+				let data_eq = std::mem::replace(&mut data.eq, replacer_eq);
+				data.eq = data_eq.simplify();
+
+				Equation::Shared(sh)
+			}),
 		}
 	}
 
-	pub fn gen_insts(&self, out_ptr: usize, stack_top: usize) -> anyhow::Result<Vec<Instruction>> {
+	/// shorthand for [Self::to_insts] with less technicalities
+	pub fn gen_insts(
+		&self,
+		out_ptr: usize,
+		stack_bottom: usize,
+	) -> anyhow::Result<Vec<Instruction>> {
 		let mut vec = vec![];
-		self.to_insts(out_ptr, stack_top, &mut vec)?;
+		self.to_insts(out_ptr, Stack::new(stack_bottom), &mut vec)?;
 		Ok(vec)
 	}
-	/// stack_top is where the empty memory starts
+
 	pub fn to_insts(
 		&self,
 		out_ptr: usize,
-		stack_top: usize,
+		stack: Stack,
 		insts: &mut Vec<Instruction>,
 	) -> anyhow::Result<()> {
 		match self {
@@ -146,7 +176,7 @@ impl Equation {
 				macro_rules! base_case {
 					() => {{
 						// base case
-						n_eq.to_insts(out_ptr, stack_top, insts)?;
+						n_eq.to_insts(out_ptr, stack.clone(), insts)?;
 						insts.push(Instruction::Not {
 							ptr: out_ptr,
 							out: out_ptr,
@@ -157,15 +187,15 @@ impl Equation {
 				// if this is an and, generate an and instruction chain for however long we need to
 				if let Some(mut ands) = self.and_recognition() {
 					if let Some(and_eq) = ands.next() {
-						and_eq.to_insts(out_ptr, stack_top + 1, insts)?;
+						and_eq.to_insts(out_ptr, stack.grow(1), insts)?;
 					} else {
 						base_case!()
 					}
 					for and_eq in ands {
-						and_eq.to_insts(stack_top, stack_top + 1, insts)?;
+						and_eq.to_insts(stack.top(), stack.grow(1), insts)?;
 						insts.push(Instruction::And {
 							a: out_ptr,
-							b: stack_top,
+							b: stack.top(),
 							out: out_ptr,
 						});
 					}
@@ -177,12 +207,12 @@ impl Equation {
 				let mut ors = self.collect_ors().into_iter();
 				ors.next()
 					.expect("this is impossible since this is an or, with a minimum of two ors")
-					.to_insts(out_ptr, stack_top + 1, insts)?;
+					.to_insts(out_ptr, stack.grow(1), insts)?;
 				for or_eq in ors {
-					or_eq.to_insts(stack_top, stack_top + 1, insts)?;
+					or_eq.to_insts(stack.top(), stack.grow(1), insts)?;
 					insts.push(Instruction::Or {
 						a: out_ptr,
-						b: stack_top,
+						b: stack.top(),
 						out: out_ptr,
 					});
 				}
@@ -191,8 +221,9 @@ impl Equation {
 				insts.push(Instruction::Set { ptr: out_ptr, val });
 			}
 			Equation::Foreign(_, _, _, _) => {
-				return Err(anyhow!("attempted to turn an Equation::Foreign into instructions. this is impossible, as context is needed about the world inside."))
+				return Err(anyhow!("attempted to turn an Equation::Foreign into instructions. use Equation::map_foreigns"))
 			}
+			Equation::Shared(sh) => sh.to_insts(out_ptr, stack, insts)?,
 		}
 		Ok(())
 	}
@@ -239,5 +270,121 @@ impl Equation {
 			}
 		}
 		None
+	}
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+/// this data structure is unique to every instance of [SharedData]
+/// just contains a fake mutable reference to [SharedData]
+pub struct SharedStore {
+	store: sui::core::Store<SharedData>,
+}
+impl std::hash::Hash for SharedStore {
+	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+		// this hash implementation just calls SharedData's hash implementation.
+		// this means we need to make `Shared`s artifically unique in the optimizer
+		self.store.with_borrow(|a| a.hash(state))
+	}
+}
+impl SharedStore {
+	pub fn new(eq: Equation) -> Self {
+		Self {
+			store: sui::core::Store::new(SharedData::new(eq)),
+		}
+	}
+
+	fn to_insts(
+		&self,
+		out_ptr: usize,
+		stack: Stack,
+		insts: &mut Vec<Instruction>,
+	) -> anyhow::Result<()> {
+		self.store
+			.with_mut_borrow(|data| data.to_insts(out_ptr, stack, insts))
+	}
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+/// when optimizing, the optimizer recognizes equations that are calculated multiple times,
+/// creates one of this data type, and links it into [Equation::Shared]
+pub struct SharedData {
+	found_at: Option<usize>, // Some(pointer)
+	eq: Equation,
+}
+impl SharedData {
+	pub fn new(eq: Equation) -> Self {
+		SharedData { found_at: None, eq }
+	}
+
+	fn to_insts(
+		&mut self,
+		out_ptr: usize,
+		stack: Stack,
+		insts: &mut Vec<Instruction>,
+	) -> anyhow::Result<()> {
+		if let Some(at) = self.found_at {
+			insts.push(Instruction::Copy {
+				src_ptr: at,
+				dst_ptr: out_ptr,
+			});
+		} else {
+			let shared_out =
+				stack.check_in().with_context(|| {
+					format!("failed to check-in to the stack for {self:?}\ndid you forget to reserve memory for it?")
+				})?;
+
+			self.eq.to_insts(out_ptr, stack.clone(), insts)?;
+
+			insts.push(Instruction::Copy {
+				src_ptr: out_ptr,
+				dst_ptr: shared_out,
+			});
+			self.found_at = Some(shared_out);
+		}
+		Ok(())
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn test_shareds() {
+		let shared1 = SharedStore::new(Equation::all(
+			[Equation::Input(0), Equation::Input(2)].into_iter(),
+		));
+		let shared1 = Equation::Shared(shared1);
+
+		let shared2 = SharedStore::new(Equation::all(
+			[Equation::Input(1), Equation::Input(3)].into_iter(),
+		));
+		let shared2 = Equation::Shared(shared2);
+
+		let eq1 = Equation::all([shared1.clone(), shared2.clone()].into_iter());
+		let eq2 = Equation::any([shared1.clone(), shared2.clone()].into_iter());
+
+		let mut insts = vec![];
+
+		let stack = Stack::with_reserved(2, 2);
+		eq1.to_insts(0, stack.clone(), &mut insts).expect("hey 1");
+		eq2.to_insts(1, stack.clone(), &mut insts).expect("hey 2");
+
+		use crate::processor::Memory;
+		let mut mem = Memory::default();
+		for zero in [false, true] {
+			for one in [false, true] {
+				for two in [false, true] {
+					for three in [false, true] {
+						mem.execute(&insts, &[zero, one, two, three]);
+						dbg!(zero, one, two, three);
+						assert_eq!(mem.get(0), (zero && two) && (one && three));
+						println!("shared && shared worked");
+						assert_eq!(mem.get(1), (zero && two) || (one && three));
+						println!("shared || shared worked");
+					}
+				}
+			}
+		}
 	}
 }

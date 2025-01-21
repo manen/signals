@@ -56,8 +56,8 @@ impl Stack {
 	/// returns a pointer to said bit
 	pub fn check_in(&self) -> Option<usize> {
 		self.shared.with_mut_borrow(|shared| {
-			let reserved = shared.reserved;
-			if reserved > 0 {
+			let reserved = shared.stack_bottom;
+			if shared.reserved > 0 {
 				shared.stack_bottom += 1;
 				shared.reserved -= 1;
 
