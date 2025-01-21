@@ -283,31 +283,35 @@ impl Equation {
 			}
 		}
 	}
-	pub fn reservations(&self) -> usize {
-		pub fn internal(eq: &Equation, map: &mut Vec<u64>) -> usize {
-			match eq {
-				Equation::Const(_) | Equation::Input(_) => 0,
-				Equation::Not(n_eq) => internal(n_eq.as_ref(), map),
-				Equation::Or(a_eq, b_eq) => {
-					internal(a_eq.as_ref(), map) + internal(b_eq.as_ref(), map)
-				}
-				Equation::Foreign(_, _, _, in_eqs) => in_eqs.iter().map(|a| internal(a, map)).sum(),
-				Equation::Shared(sh) => {
-					let mut hash = DefaultHasher::new();
-					sh.store.with_borrow(|data| data.hash(&mut hash));
-					let hash = hash.finish();
+	pub fn reservations_internal(eq: &Equation, map: &mut Vec<u64>) -> usize {
+		match eq {
+			Equation::Const(_) | Equation::Input(_) => 0,
+			Equation::Not(n_eq) => Self::reservations_internal(n_eq.as_ref(), map),
+			Equation::Or(a_eq, b_eq) => {
+				Self::reservations_internal(a_eq.as_ref(), map)
+					+ Self::reservations_internal(b_eq.as_ref(), map)
+			}
+			Equation::Foreign(_, _, _, in_eqs) => in_eqs
+				.iter()
+				.map(|a| Self::reservations_internal(a, map))
+				.sum(),
+			Equation::Shared(sh) => {
+				let mut hash = DefaultHasher::new();
+				sh.store.with_borrow(|data| data.hash(&mut hash));
+				let hash = hash.finish();
 
-					if !map.contains(&hash) {
-						map.push(hash);
-						1
-					} else {
-						0
-					}
+				if !map.contains(&hash) {
+					map.push(hash);
+					1
+				} else {
+					0
 				}
 			}
 		}
+	}
+	pub fn reservations(&self) -> usize {
 		let mut map = vec![];
-		internal(self, &mut map)
+		Self::reservations_internal(self, &mut map)
 	}
 
 	/// if self is a an or, return every equation that if true, will turn self true \
@@ -359,7 +363,7 @@ impl Equation {
 /// this data structure is unique to every instance of [SharedData]
 /// just contains a fake mutable reference to [SharedData]
 pub struct SharedStore {
-	store: sui::core::Store<SharedData>,
+	pub store: sui::core::Store<SharedData>,
 }
 impl std::hash::Hash for SharedStore {
 	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
@@ -391,7 +395,7 @@ impl SharedStore {
 /// creates one of this data type, and links it into [Equation::Shared]
 pub struct SharedData {
 	found_at: Option<usize>, // Some(pointer)
-	eq: Equation,
+	pub eq: Equation,
 }
 impl SharedData {
 	pub fn new(eq: Equation) -> Self {

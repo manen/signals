@@ -6,7 +6,7 @@ use crate::{
 	world::{Block, Direction, World},
 };
 
-use super::{stack::Stack, Instruction};
+use super::{program, stack::Stack, Instruction};
 
 /// returns none if world doesn't exist
 pub fn world_to_instructions(
@@ -19,9 +19,28 @@ pub fn world_to_instructions(
 		.with_context(|| format!("no world with id {world_id:?}"))?;
 	let outputs_len = world.outputs().count();
 
-	let stack = Stack::new(outputs_len);
+	let mut program = vec![];
 	for i in 0..outputs_len {
 		let eq = world_output_to_eq(game, world_id, i)?;
+		program.push(eq.simplify());
+	}
+
+	println!("program before sharing: {program:#?}");
+	let program = program::shared_recognition(program);
+
+	let reservations = {
+		let mut reservations = 0;
+		let mut map = Default::default();
+		for eq in program.iter() {
+			let to_add = Equation::reservations_internal(eq, &mut map);
+			reservations += to_add;
+			println!("reservations + {to_add} = {reservations}");
+		}
+		reservations
+	};
+	let stack = Stack::with_reserved(outputs_len, reservations);
+
+	for (i, eq) in program.iter().enumerate() {
 		eq.to_insts(i, stack.clone(), &mut vec)?;
 	}
 
@@ -59,7 +78,13 @@ pub fn world_block_to_eq(
 	// --- this is the part that inlines all the foreigns
 	let eq = eq
 		.map_foreigns(|w_id, _, id, in_eqs| {
-			let a = world_output_to_eq(&game, w_id, id)?;
+			let a = match world_output_to_eq(&game, w_id, id) {
+				Ok(a) => a,
+				Err(err) => {
+					eprintln!("{err}\nusing Const(false) instead");
+					Equation::Const(false)
+				}
+			};
 			a.map_inputs(|id| {
 				let f_input = in_eqs
 					.iter()
