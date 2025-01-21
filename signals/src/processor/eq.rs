@@ -1,3 +1,5 @@
+use std::hash::{DefaultHasher, Hash, Hasher};
+
 use crate::processor::Instruction;
 
 use anyhow::{anyhow, Context};
@@ -106,6 +108,40 @@ impl Equation {
 			}
 		}
 		internal(self, Rc::new(f))
+	}
+
+	pub fn complexity(&self) -> i32 {
+		fn internal(eq: &Equation, map: &mut Vec<u64>) -> i32 {
+			match eq {
+				&Equation::Const(_) => 0,
+				&Equation::Input(_) => 1,
+				Equation::Not(n_eq) => internal(n_eq.as_ref(), map) + 1,
+				Equation::Or(a_eq, b_eq) => {
+					internal(a_eq.as_ref(), map) + internal(b_eq.as_ref(), map) + 2
+				}
+				Equation::Shared(sh) => {
+					// data.eq.complexity() + 1 on the first call to this shared, 1 for every call after that
+
+					let mut hash = DefaultHasher::new();
+					sh.store.with_borrow(|data| data.hash(&mut hash));
+					let hash = hash.finish();
+
+					if !map.contains(&hash) {
+						map.push(hash);
+						sh.store.with_borrow(|data| internal(&data.eq, map) + 1)
+					} else {
+						1
+					}
+				}
+				Equation::Foreign(_, _, _, inputs) => {
+					eprintln!("calling Equation::Foreign.complexity() will pretty much just have to guess about the inside world's complexity");
+					inputs.iter().map(|a| internal(a, map)).sum::<i32>() + 5
+				}
+			}
+		}
+		// contains shareds that have already been evaluated
+		let mut shared_map = Vec::<u64>::new();
+		internal(self, &mut shared_map)
 	}
 
 	/// recursively `simplif`ies (optimizes) the expression
