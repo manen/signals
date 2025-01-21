@@ -2,67 +2,36 @@
 
 this module is worlds in blocks v2, where the result of said world is instantly calculated, because it was converted to a list of instructions beforehand.
 
-this isn't documentation.
+more details are in code comments
 
 ## notes
 
 `input[n]` = result of `Instruction::SummonInput { id: n }`
 `output[n]` = `memory[n]` at the end of execution
 
-next up:
+the way it works is when executing, we only have two worry about two things:
 
-- implement foreigns for programification:
+- `Memory`: it's what it sounds like
+- `Instructions`: the list of instructions, most likely a `Vec<Instruction>`, that generates all the outputs required
 
-CHOOSE A PATH:
+the complexity is mostly when generating said instructions
 
-1. every programification will include all foreigns inside itself as if they were just in the world
-2. foreigns will not be programified, their inputs will be calculated and a special instruction will be called to execute another world
+- `Equation`: a mathematical way to represent whether any block in a given world will resolve to true or false. the only variables in an `Equation` are the inputs
 
-path 1 is probably easier to implement but has two caveats:
+## the way it works
 
-if world A depends on world B and world B is changed, both of them need to be reinstructionified \
-for highly nested worlds this will probably mean really really really long programs, taking up memory and taking long to regenerate
+`world_to_instructions` has functions that handle all aspect of the world-to-instruction pipeline, so this part probably doesn't apply to you if that's all you need.
 
-path 2 is harder to implement and requires designing and implementing a new instruction, but:
+required steps for foreigns (and processor blocks once they're implemented):
 
-worlds will only have to be reprogramified when they change \
-but memory is gonna have to be changed in order to allow another program to run (currently the compile-time stack makes this impossible in one segment of memory)
+- `Equation::map_foreigns`: recursively goes through every foreign in an equation tree and allows you to return any Equation in their place
+- `Equation::map_inputs`: same thing but for inputs. you can combine these two to expand foreigns into regular everyday Equations
 
----
+possible and recommended optimizations:
 
-go ahead and think bout this one
+- `Equation::simplify`: simplifies the equation (duh) and solves it if it's just `Equation::Const`s
+- `program::shared_recognititon`: recognizes equations that are calculated multiple times and makes it so they're calculated once and copied everywhere else they're needed
 
-path 1 is done but for high-complexity worlds we should probably do path 2 instead \
-the good thing is we don't really have to hard choose one during development cause why not do both and use both of them for their advantages
+to turn `Equation`s into instructions:
 
-but yeah we need the optimizer asap
-
-imean i tried to just add processor blocks (actually just replace foreign functionality if and when possible) but game.rs was really made for foreigns and it didn't play well with processors
-
-so maybe just do the optimizer before
-
-cause all we need for that is a recursive eq function that returns a number representing how complex that eq is \
-and we could hash eqs and for high-complexity eqs that appear in more than one places we could somehow store them and then we only have to calculate them once
-
-although i have no clue how i'd add variables to the insanely pure functional eq type \
-but yk we'll cross that bridge when we come to it
-
----
-
-go ahead and think bout this one
-
----
-
-go ahead and think bout this one
-
----
-
-go ahead and think bout this one
-
----
-
-go ahead and think bout this one
-
----
-
-go ahead and think bout this one
+- `Equation::to_insts`: pushes the list of instructions into the vec given. also does some light optimizations along the way (and recognition and such)
