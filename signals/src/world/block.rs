@@ -1,4 +1,4 @@
-use crate::world::*;
+use crate::{game::WorldId, world::*};
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default)]
 pub enum Block {
@@ -11,8 +11,8 @@ pub enum Block {
 	Not(bool),
 	Input(usize),
 	Output(usize),
-	Foreign(Option<usize>, usize, usize), // (world_id (for redundancy), inst_id, input_and_output_id)
-	Error(&'static str),                  // error contains an error.
+	Foreign(WorldId, usize, usize), // (world_id (for redundancy), inst_id, input_and_output_id)
+	Error(&'static str),            // error contains an error.
 }
 impl Block {
 	/// syntax: push_move(relative_x, relative_y, signal)

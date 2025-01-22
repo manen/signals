@@ -1,4 +1,4 @@
-use crate::{gfx, world::*};
+use crate::{game::WorldId, gfx, world::*};
 
 use std::{collections::HashMap, hash::Hash};
 
@@ -52,10 +52,115 @@ pub enum PushMoveTo {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
-pub struct World {
-	chunks: HashMap<(i32, i32), Chunk>,
+pub struct World<B = Block> {
+	chunks: HashMap<(i32, i32), Chunk<B>>,
 }
-impl World {
+impl<B> World<B> {
+	pub fn at(&self, x: i32, y: i32) -> Option<&B> {
+		let (chunk_coords, (block_x, block_y)) = world_coords_into_chunk_coords(x, y);
+		self.chunks
+			.get(&chunk_coords)
+			.map(|chunk| chunk.at(block_x, block_y))
+			.flatten()
+	}
+	pub fn set_chunk(&mut self, coords: (i32, i32), chunk: Chunk<B>) -> Option<Chunk<B>> {
+		self.chunks.insert(coords, chunk)
+	}
+	pub fn chunk(&self, coords: (i32, i32)) -> Option<&Chunk<B>> {
+		self.chunks.get(&coords)
+	}
+}
+impl<B: Default> World<B> {
+	fn ensure(&mut self, chunk_coords: (i32, i32)) {
+		if !self.chunks.contains_key(&chunk_coords) {
+			self.chunks.insert(chunk_coords, Chunk::default());
+		}
+	}
+	pub fn mut_at(&mut self, x: i32, y: i32) -> &mut B {
+		let (chunk_coords, (block_x, block_y)) = world_coords_into_chunk_coords(x, y);
+		self.ensure(chunk_coords);
+		self.chunks
+			.get_mut(&chunk_coords)
+			.unwrap_or_else(|| panic!("looks like World::ensure failed (world coords: {x} {y}, calculated chunk coords: {chunk_coords:?}, block coords: {block_x} {block_y})"))
+			.mut_at(block_x, block_y).unwrap_or_else(|| panic!("chunk doesn't have coordinates block: {block_x} {block_y} @ world: {x} {y}"))
+	}
+	pub fn chunks(&self) -> std::collections::hash_map::Iter<'_, (i32, i32), chunk::Chunk<B>> {
+		self.chunks.iter()
+	}
+	pub fn chunks_mut(
+		&mut self,
+	) -> std::collections::hash_map::IterMut<'_, (i32, i32), chunk::Chunk<B>> {
+		self.chunks.iter_mut()
+	}
+
+	/// returns: ((x, y) size in chunks, (x, y) chunk offset added to base coords to make world render the left upmost chunk at 0,0)
+	pub fn size_and_offset(&self) -> ((i32, i32), (i32, i32)) {
+		let ((x_smallest, x_biggest), (y_smallest, y_biggest)) = match self.biggest_smallest() {
+			None => return ((0, 0), (0, 0)),
+			Some(a) => a,
+		};
+
+		let x_offset = -x_smallest;
+		let y_offset = -y_smallest;
+
+		(
+			(x_biggest - x_smallest + 1, y_biggest - y_smallest + 1),
+			(x_offset, y_offset),
+		)
+	}
+	/// returns none if there are no chunks
+	pub fn biggest_smallest(&self) -> Option<((i32, i32), (i32, i32))> {
+		let (mut x_smallest, mut x_biggest) = (0, 0);
+		let (mut y_smallest, mut y_biggest) = (0, 0);
+
+		let mut did_anything = false;
+
+		for ((cx, cy), _) in self.chunks() {
+			did_anything = true;
+
+			x_smallest = x_smallest.min(*cx);
+			x_biggest = x_biggest.max(*cx);
+
+			y_smallest = y_smallest.min(*cy);
+			y_biggest = y_biggest.max(*cy);
+		}
+
+		if did_anything {
+			Some(((x_smallest, x_biggest), (y_smallest, y_biggest)))
+		} else {
+			None
+		}
+	}
+
+	/// returns an iterator over every block there is in the world
+	pub fn blocks(&self) -> impl Iterator<Item = ((i32, i32), &B)> {
+		self.chunks()
+			.map(|(cc, c)| {
+				c.blocks_with_coords()
+					.map(|(bc, b)| (chunk_coords_into_world_coords(*cc, bc), b))
+			})
+			.flatten()
+	}
+}
+impl<B: Default + Copy> World<B> {
+	pub fn map_at(&mut self, x: i32, y: i32, f: impl FnOnce(B) -> B) {
+		let (chunk_coords, (block_x, block_y)) = world_coords_into_chunk_coords(x, y);
+		self.ensure(chunk_coords);
+		self.chunks
+			.get_mut(&chunk_coords)
+			.map(|chunk| chunk.map_at(block_x, block_y, f));
+	}
+}
+impl<B: Default + PartialEq> World<B> {
+	pub fn is_block_at(&self, x: i32, y: i32) -> bool {
+		match self.at(x, y) {
+			None => false,
+			Some(a) if *a != B::default() => true,
+			_ => false,
+		}
+	}
+}
+impl World<Block> {
 	pub fn tick<D: FnMut(i32, i32, gfx::DrawType)>(
 		&mut self,
 		moves: Vec<Move>,
@@ -246,7 +351,7 @@ impl World {
 		}
 		None
 	}
-	pub fn find_foreigns<'a>(&'a self) -> Vec<((i32, i32), (Option<usize>, usize, usize))> {
+	pub fn find_foreigns<'a>(&'a self) -> Vec<((i32, i32), (WorldId, usize, usize))> {
 		let mut foreigns = vec![];
 		for (coords, c) in self.chunks() {
 			for x in 0..CHUNK_SIZE as i32 {
@@ -351,92 +456,6 @@ impl World {
 		(in_i, out_i)
 	}
 
-	fn ensure(&mut self, chunk_coords: (i32, i32)) {
-		if !self.chunks.contains_key(&chunk_coords) {
-			self.chunks.insert(chunk_coords, Chunk::default());
-		}
-	}
-	pub fn is_block_at(&self, x: i32, y: i32) -> bool {
-		match self.at(x, y) {
-			None => false,
-			Some(Block::Nothing) => false,
-			_ => true,
-		}
-	}
-	pub fn at(&self, x: i32, y: i32) -> Option<&Block> {
-		let (chunk_coords, (block_x, block_y)) = world_coords_into_chunk_coords(x, y);
-		self.chunks
-			.get(&chunk_coords)
-			.map(|chunk| chunk.at(block_x, block_y))
-			.flatten()
-	}
-	pub fn mut_at(&mut self, x: i32, y: i32) -> &mut Block {
-		let (chunk_coords, (block_x, block_y)) = world_coords_into_chunk_coords(x, y);
-		self.ensure(chunk_coords);
-		self.chunks
-			.get_mut(&chunk_coords)
-			.unwrap_or_else(|| panic!("looks like World::ensure failed (world coords: {x} {y}, calculated chunk coords: {chunk_coords:?}, block coords: {block_x} {block_y})"))
-			.mut_at(block_x, block_y).unwrap_or_else(|| panic!("chunk doesn't have coordinates block: {block_x} {block_y} @ world: {x} {y}"))
-	}
-	pub fn map_at(&mut self, x: i32, y: i32, f: impl FnOnce(Block) -> Block) {
-		let (chunk_coords, (block_x, block_y)) = world_coords_into_chunk_coords(x, y);
-		self.ensure(chunk_coords);
-		self.chunks
-			.get_mut(&chunk_coords)
-			.map(|chunk| chunk.map_at(block_x, block_y, f));
-	}
-	pub fn chunks(&self) -> std::collections::hash_map::Iter<'_, (i32, i32), chunk::Chunk> {
-		self.chunks.iter()
-	}
-
-	/// returns: ((x, y) size in chunks, (x, y) chunk offset added to base coords to make world render the left upmost chunk at 0,0)
-	pub fn size_and_offset(&self) -> ((i32, i32), (i32, i32)) {
-		let ((x_smallest, x_biggest), (y_smallest, y_biggest)) = match self.biggest_smallest() {
-			None => return ((0, 0), (0, 0)),
-			Some(a) => a,
-		};
-
-		let x_offset = -x_smallest;
-		let y_offset = -y_smallest;
-
-		(
-			(x_biggest - x_smallest + 1, y_biggest - y_smallest + 1),
-			(x_offset, y_offset),
-		)
-	}
-	/// returns none if there are no chunks
-	pub fn biggest_smallest(&self) -> Option<((i32, i32), (i32, i32))> {
-		let (mut x_smallest, mut x_biggest) = (0, 0);
-		let (mut y_smallest, mut y_biggest) = (0, 0);
-
-		let mut did_anything = false;
-
-		for ((cx, cy), _) in self.chunks() {
-			did_anything = true;
-
-			x_smallest = x_smallest.min(*cx);
-			x_biggest = x_biggest.max(*cx);
-
-			y_smallest = y_smallest.min(*cy);
-			y_biggest = y_biggest.max(*cy);
-		}
-
-		if did_anything {
-			Some(((x_smallest, x_biggest), (y_smallest, y_biggest)))
-		} else {
-			None
-		}
-	}
-
-	/// returns an iterator over every block there is in the world
-	pub fn blocks(&self) -> impl Iterator<Item = ((i32, i32), &Block)> {
-		self.chunks()
-			.map(|(cc, c)| {
-				c.blocks_with_coords()
-					.map(|(bc, b)| (chunk_coords_into_world_coords(*cc, bc), b))
-			})
-			.flatten()
-	}
 	pub fn outputs<'a>(&'a self) -> impl Iterator<Item = (usize, (i32, i32))> + 'a {
 		self.blocks().filter_map(|(c, b)| match b {
 			Block::Output(id) => Some((*id, c)),

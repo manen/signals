@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+uuid = { version = "1.12.1", features = [ "v4", "fast-rng" ] }
 anyhow = "1.0.95"
 raylib.workspace = true
 sui.workspace = true

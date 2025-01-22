@@ -5,6 +5,7 @@ mod tool;
 mod ui;
 mod world;
 
+use anyhow::Context;
 use game::Game;
 use gfx::PosInfo;
 use raylib::{
@@ -162,7 +163,9 @@ fn main() {
 
 			d.clear_background(gfx::BACKGROUND);
 
-			gfx::render_world(&game.main, &mut d, pos_info);
+			if let Some(main) = game.main() {
+				gfx::render_world(&main, &mut d, pos_info, &game.drawmap);
+			}
 
 			tool_select.render(&mut d, tool_select_det, Some(&tool));
 			dbg_ctx.render(&mut d);
@@ -197,10 +200,8 @@ fn main() {
 		}
 
 		for event_out in events {
-			let n_to_id = |n: i32| match n {
-				0 => Option::<usize>::None,
-				n => Some(n as usize - 1),
-			};
+			let world_ids = game.worlds.iter().map(|a| *a.0).collect::<Vec<_>>();
+			let n_to_id = |n: i32| world_ids[n as usize];
 
 			println!("{} {event_out:?}", rl.get_time());
 			match event_out {
@@ -224,11 +225,8 @@ fn main() {
 					id: ui::worlds_bar::FOREIGN_CLICKED,
 					n,
 				} => {
-					if let Some(id) = n_to_id(n) {
-						tool = Tool::PlaceForeign(id)
-					} else {
-						println!("can't really place a foreign to main")
-					}
+					let id = n_to_id(n);
+					tool = Tool::PlaceForeign(id)
 				}
 				_ => (),
 			}

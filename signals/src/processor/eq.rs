@@ -1,10 +1,15 @@
 use std::hash::{DefaultHasher, Hash, Hasher};
 
-use crate::processor::Instruction;
+use crate::{game::WorldId, processor::Instruction};
 
 use anyhow::{anyhow, Context};
 
 use super::stack::Stack;
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub enum ForeignRef {
+	Foreign(WorldId),
+}
 
 /// Equation represents how we get a value ingame. (like outputs)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -16,7 +21,7 @@ pub enum Equation {
 
 	/// Foreign is special, as it can't be turned into instructions as is. \
 	/// you need to convert it to a plain equation one way or another
-	Foreign(Option<usize>, usize, usize, Vec<Equation>), // foreign details and input equations
+	Foreign(ForeignRef, usize, usize, Vec<Equation>), // foreign details and input equations
 
 	Shared(SharedStore),
 }
@@ -77,10 +82,10 @@ impl Equation {
 	}
 	pub fn map_foreigns<E>(
 		self,
-		f: impl Fn(Option<usize>, usize, usize, Vec<Equation>) -> Result<Self, E>,
+		f: impl Fn(ForeignRef, usize, usize, Vec<Equation>) -> Result<Self, E>,
 	) -> Result<Self, E> {
 		use std::rc::Rc;
-		fn internal<E, F: Fn(Option<usize>, usize, usize, Vec<Equation>) -> Result<Equation, E>>(
+		fn internal<E, F: Fn(ForeignRef, usize, usize, Vec<Equation>) -> Result<Equation, E>>(
 			eq: Equation,
 			f: Rc<F>,
 		) -> Result<Equation, E> {

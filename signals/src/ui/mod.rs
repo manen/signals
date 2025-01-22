@@ -4,7 +4,10 @@ pub mod worlds_bar;
 use fit::scrollable::ScrollableState;
 pub use worlds_bar::worlds_bar;
 
-use crate::{game::IngameWorld, processor};
+use crate::{
+	game::{IngameWorld, WorldId},
+	processor,
+};
 use sui::{comp::*, core::Store};
 
 pub fn game_debug_ui(
@@ -21,7 +24,7 @@ pub fn game_debug_ui(
 				"this is centered!!!",
 				13,
 			))),
-			inst_comp(game, game.i),
+			inst_comp(game, game.main_id),
 		],
 	);
 
@@ -57,7 +60,7 @@ fn ingameworld_dbg_ui(i: usize, moves: &IngameWorld) -> sui::comp::Comp<'static>
 	))
 }
 
-pub fn inst_comp(game: &crate::Game, world_id: Option<usize>) -> sui::Comp<'static> {
+pub fn inst_comp(game: &crate::Game, world_id: WorldId) -> sui::Comp<'static> {
 	let insts = processor::world_to_instructions(game, world_id);
 
 	let insts = match insts {
@@ -73,14 +76,17 @@ pub fn inst_comp(game: &crate::Game, world_id: Option<usize>) -> sui::Comp<'stat
 	};
 
 	let eq = game
-		.world_opt(world_id)
-		.expect("adglikhn")
-		.outputs()
-		.filter(|(id, _)| *id == 0)
-		.map(|(_, coords)| {
-			processor::world_to_instructions::world_block_to_eq(game, world_id, coords)
+		.worlds
+		.at(world_id)
+		.map(|a| {
+			a.outputs()
+				.filter(|(id, _)| *id == 0)
+				.map(|(_, coords)| {
+					processor::world_to_instructions::world_block_to_eq(game, world_id, coords)
+				})
+				.next()
 		})
-		.next();
+		.flatten();
 
 	let eq = match eq {
 		Some(Ok(eq)) => sui::text(format!("{eq:#?}"), 16),

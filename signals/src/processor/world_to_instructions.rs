@@ -1,21 +1,19 @@
 use anyhow::{anyhow, Context};
 
 use crate::{
-	game::Game,
+	game::{Game, WorldId},
 	processor::eq::Equation,
 	world::{Block, Direction, World},
 };
 
-use super::{program, stack::Stack, Instruction};
+use super::{eq::ForeignRef, program, stack::Stack, Instruction};
 
 /// returns none if world doesn't exist
-pub fn world_to_instructions(
-	game: &Game,
-	world_id: Option<usize>,
-) -> anyhow::Result<Vec<Instruction>> {
+pub fn world_to_instructions(game: &Game, world_id: WorldId) -> anyhow::Result<Vec<Instruction>> {
 	let mut vec = vec![];
 	let world = game
-		.world_opt(world_id)
+		.worlds
+		.at(world_id)
 		.with_context(|| format!("no world with id {world_id:?}"))?;
 	let outputs_len = world.outputs().count();
 
@@ -47,13 +45,10 @@ pub fn world_to_instructions(
 	Ok(vec)
 }
 
-pub fn world_output_to_eq(
-	game: &Game,
-	world_id: Option<usize>,
-	id: usize,
-) -> anyhow::Result<Equation> {
+pub fn world_output_to_eq(game: &Game, world_id: WorldId, id: usize) -> anyhow::Result<Equation> {
 	let world = game
-		.world_opt(world_id)
+		.worlds
+		.at(world_id)
 		.with_context(|| "no world with id {world_id:?}")?;
 
 	if let Some((_, coords)) = world.outputs().filter(|(this_id, _)| *this_id == id).next() {
@@ -66,11 +61,12 @@ pub fn world_output_to_eq(
 /// returns whether that given block in a world is on or off as an equation
 pub fn world_block_to_eq(
 	game: &Game,
-	world_id: Option<usize>,
+	world_id: WorldId,
 	coords: (i32, i32),
 ) -> anyhow::Result<Equation> {
 	let world = game
-		.world_opt(world_id)
+		.worlds
+		.at(world_id)
 		.with_context(|| "this world does not exist")?;
 
 	let eq = block_to_eq_internal(world, coords, None, vec![])?.simplify();
@@ -78,6 +74,9 @@ pub fn world_block_to_eq(
 	// --- this is the part that inlines all the foreigns
 	let eq = eq
 		.map_foreigns(|w_id, _, id, in_eqs| {
+			let w_id = match w_id {
+				ForeignRef::Foreign(w_id) => w_id,
+			};
 			let a = match world_output_to_eq(&game, w_id, id) {
 				Ok(a) => a,
 				Err(err) => {
@@ -238,7 +237,12 @@ fn block_to_eq_internal(
 		&Block::Foreign(wid, inst_id, id) => {
 			let foreign_inputs = foreign_inputs(world, inst_id, id, from, circular_check.clone())?;
 
-			Ok(Equation::Foreign(wid, inst_id, id, foreign_inputs))
+			Ok(Equation::Foreign(
+				ForeignRef::Foreign(wid),
+				inst_id,
+				id,
+				foreign_inputs,
+			))
 		}
 	}
 }
@@ -391,8 +395,12 @@ mod tests {
 	fn foreign_test() {
 		let inside = Equation::all([Equation::Input(0), Equation::Input(1)].into_iter());
 
-		let outside =
-			Equation::Foreign(Some(0), 0, 0, vec![Equation::Input(2), Equation::Input(3)]);
+		let outside = Equation::Foreign(
+			ForeignRef::Foreign(Default::default()),
+			0,
+			0,
+			vec![Equation::Input(2), Equation::Input(3)],
+		);
 
 		let total: Result<_, ()> = outside.map_foreigns(|_, _, _, in_eqs| {
 			inside.clone().map_inputs(|in_id| Ok(in_eqs[in_id].clone()))

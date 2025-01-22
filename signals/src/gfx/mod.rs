@@ -1,8 +1,8 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, collections::HashMap};
 
 use raylib::prelude::{RaylibDraw, RaylibDrawHandle};
 
-use crate::world::{self, Chunk};
+use crate::world::{self, Chunk, World};
 use raylib::color::Color;
 
 pub const fn color(r: u8, g: u8, b: u8, a: u8) -> Color {
@@ -86,12 +86,23 @@ pub fn render_basic_world(world: &world::World, d: &mut RaylibDrawHandle, pos_in
 		false,
 	);
 }
-pub fn render_world(world: &world::RenderedWorld, d: &mut RaylibDrawHandle, pos_info: PosInfo) {
+/// ticks and renders the given world
+pub fn render_world(
+	world: &world::World,
+	d: &mut RaylibDrawHandle,
+	pos_info: PosInfo,
+	drawmap: &World<DrawType>,
+) {
 	render_any_world(
-		world.as_ref(),
+		world,
 		d,
 		pos_info,
-		|coords| Cow::Borrowed(world.drawmap_at(coords)),
+		|coords| {
+			drawmap
+				.chunk(coords)
+				.map(|a| Cow::Borrowed(a))
+				.unwrap_or_default()
+		},
 		true,
 	);
 }

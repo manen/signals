@@ -8,7 +8,6 @@ macro_rules! module {
 module!(world);
 module!(chunk);
 module!(block);
-module!(rendered_world);
 
 #[macro_export]
 macro_rules! continue_on_none {
