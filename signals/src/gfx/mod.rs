@@ -44,6 +44,26 @@ impl From<bool> for DrawType {
 		}
 	}
 }
+impl DrawType {
+	pub fn apply_new(self, new: Self) -> Self {
+		match new {
+			DrawType::Junction {
+				vertical: new_vert,
+				horizontal: new_horizontal,
+			} => match self {
+				DrawType::Junction {
+					vertical: prev_vert,
+					horizontal: prev_horizontal,
+				} => DrawType::Junction {
+					vertical: prev_vert || new_vert,
+					horizontal: prev_horizontal || new_horizontal,
+				},
+				_ => new,
+			},
+			_ => new,
+		}
+	}
+}
 pub type Drawmap = world::Chunk<DrawType>;
 
 pub const DRAWMAP_DEFAULT: Drawmap =

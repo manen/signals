@@ -161,6 +161,8 @@ impl<B: Default + PartialEq> World<B> {
 	}
 }
 impl World<Block> {
+	/// set_drawtype should handle junctions where for all axis sets it to previous_value || new_value \
+	/// just call [gfx::DrawType::apply_new]
 	pub fn tick<D: FnMut(i32, i32, gfx::DrawType)>(
 		&mut self,
 		moves: Vec<Move>,

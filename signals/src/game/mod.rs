@@ -31,7 +31,12 @@ impl Game {
 
 		if let Some(world) = self.worlds.at_mut(self.main_id) {
 			let new_main_moves = world.tick(std::mem::take(&mut self.moves.moves), |x, y, dt| {
-				*self.drawmap.mut_at(x, y) = dt
+				*self.drawmap.mut_at(x, y) = self
+					.drawmap
+					.at(x, y)
+					.copied()
+					.unwrap_or(DrawType::Off)
+					.apply_new(dt);
 			});
 			self.moves.process_moves(new_main_moves, |_mov| {
 				// eprintln!("dropping a move returned from game.main ({_mov:?})")
