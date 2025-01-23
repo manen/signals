@@ -185,15 +185,6 @@ impl IngameWorld {
 		};
 		let mut collected_foreign_inputs = Vec::<(usize, usize)>::new();
 
-		// the code that pushes foreigns into the child ingw:
-		//				push_unique(
-		//					&mut self.child_mut(inst_id).moves,
-		//					Move::Input {
-		//						id,
-		//						signal: Signal::ExternalPoweron,
-		//					},
-		//				)
-
 		for mov in new_moves {
 			match mov {
 				Move::Inside { .. } => push_unique(&mut self.moves, mov),
@@ -207,7 +198,7 @@ impl IngameWorld {
 			}
 		}
 
-		let (processorable_inst_ids) = {
+		let (processorable_inst_ids, simple_foreigns) = {
 			let mut insts = collected_foreign_inputs
 				.iter()
 				.map(|(inst_id, _)| (*inst_id))
@@ -228,7 +219,13 @@ impl IngameWorld {
 				})
 				.collect::<HashMap<_, _>>();
 
-			(processorable_inst_ids)
+			let simple_foreigns = collected_foreign_inputs
+				.iter()
+				.filter(|(inst_id, _)| processorable_inst_ids.get(inst_id).is_none())
+				.copied()
+				.collect::<Vec<_>>();
+
+			(processorable_inst_ids, simple_foreigns)
 		};
 
 		let processor_inputs = {
@@ -298,6 +295,17 @@ impl IngameWorld {
 					)
 				}
 			}
+		}
+
+		for (inst_id, id) in simple_foreigns.iter().copied() {
+			// the code that pushes foreigns into the child ingw:
+			push_unique(
+				&mut self.child_mut(inst_id).moves,
+				Move::Input {
+					id,
+					signal: Signal::ExternalPoweron,
+				},
+			)
 		}
 	}
 }
