@@ -172,6 +172,18 @@ fn main() {
 
 			if let Some(main) = game.main() {
 				gfx::render_world(&main, &mut d, pos_info, &game.drawmap);
+			} else {
+				// temporary text to differentiate a non-world from an empty world
+				use sui::{comp, core::Layable};
+				comp::Centered::new(comp::Text::new(
+					if game.worlds().count() == 0 {
+						"create a world using the + icon"
+					} else {
+						"select a world to start building"
+					},
+					32,
+				))
+				.render(&mut d, screen, 1.0);
 			}
 
 			tool_select.render(&mut d, tool_select_det, Some(&tool));
