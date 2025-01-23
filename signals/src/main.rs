@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 mod game;
 mod gfx;
 mod processor;
@@ -118,7 +120,12 @@ fn main() {
 		delta += rl.get_frame_time();
 		for _ in 0..(delta / TICK_TIME) as i32 {
 			delta -= TICK_TIME;
-			game.tick();
+			match game.tick() {
+				Ok(_) => (),
+				Err(err) => {
+					eprintln!("error while ticking game:\n{err}")
+				}
+			};
 		}
 
 		let (mouse_x, mouse_y) = (rl.get_mouse_x(), rl.get_mouse_y());

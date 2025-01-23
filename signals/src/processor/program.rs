@@ -3,7 +3,7 @@ use std::{
 	hash::{DefaultHasher, Hash, Hasher},
 };
 
-use crate::processor::eq::{SharedData, SharedStore};
+use crate::processor::eq::SharedStore;
 
 use super::eq::Equation;
 

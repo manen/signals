@@ -19,7 +19,8 @@ pub fn world_to_instructions(game: &Game, world_id: WorldId) -> anyhow::Result<V
 
 	let mut program = vec![];
 	for i in 0..outputs_len {
-		let eq = world_output_to_eq(game, world_id, i)?;
+		let eq = world_output_to_eq(game, world_id, i)
+			.with_context(|| format!("error while generating eq for output {i}"))?;
 		program.push(eq.simplify());
 	}
 
@@ -39,7 +40,8 @@ pub fn world_to_instructions(game: &Game, world_id: WorldId) -> anyhow::Result<V
 	let stack = Stack::with_reserved(outputs_len, reservations);
 
 	for (i, eq) in program.iter().enumerate() {
-		eq.to_insts(i, stack.clone(), &mut vec)?;
+		eq.to_insts(i, stack.clone(), &mut vec)
+			.with_context(|| format!("error while turning eq into insts for output {i}"))?;
 	}
 
 	Ok(vec)
@@ -141,7 +143,8 @@ fn block_to_eq_internal(
 			eq = Equation::any(
 				[
 					eq,
-					block_to_eq_internal(&world, coords, Some(from), circular_check.clone())?,
+					block_to_eq_internal(&world, coords, Some(from), circular_check.clone())
+						.with_context(|| format!("{b_x} {b_y} -> {} {}", coords.0, coords.1))?,
 				]
 				.into_iter(),
 			);

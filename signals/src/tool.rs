@@ -157,7 +157,12 @@ impl Tool {
 				};
 
 				let mut moves = std::mem::take(&mut game.moves);
-				moves.regenerate(game, main_id);
+				match moves.regenerate(game, main_id) {
+					Ok(_) => (),
+					Err(err) => {
+						eprintln!("error while regenerating world:\n{err}")
+					}
+				};
 				game.moves = moves;
 			}
 			_ => {}

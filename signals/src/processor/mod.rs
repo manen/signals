@@ -27,9 +27,6 @@ impl Memory {
 	pub fn set(&mut self, i: usize, v: bool) {
 		self.mem[i] = v;
 	}
-	pub fn map(&mut self, i: usize, f: impl FnOnce(bool) -> bool) {
-		self.mem[i] = f(self.mem[i]);
-	}
 
 	pub fn execute(&mut self, instructions: &[Instruction], inputs: &[bool]) {
 		for inst in instructions {

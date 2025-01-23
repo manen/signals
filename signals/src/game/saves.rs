@@ -1,10 +1,13 @@
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use miniz_oxide::{deflate::compress_to_vec, inflate::decompress_to_vec_with_limit};
 
 use super::Worlds;
 
 pub fn read_worlds(path: &str) -> anyhow::Result<Worlds> {
-	load_worlds(&std::fs::read(path)?)
+	load_worlds(
+		&std::fs::read(path)
+			.with_context(|| format!("couldn't read {path} in saves::read_worlds"))?,
+	)
 }
 pub fn load_worlds(bytes: &[u8]) -> anyhow::Result<Worlds> {
 	let decomp_bytes = match decompress_to_vec_with_limit(bytes, 60000) {

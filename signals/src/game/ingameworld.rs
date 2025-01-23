@@ -94,7 +94,8 @@ impl IngameWorld {
 					continue;
 				}
 
-				inst.regenerate(game, inst_world_id)?;
+				inst.regenerate(game, inst_world_id)
+					.with_context(|| "error while regenerating child")?;
 				inst_ids_already_done.push(inst_id);
 			}
 

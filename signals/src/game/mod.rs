@@ -45,7 +45,8 @@ impl Game {
 			..Default::default()
 		};
 		for uuid in wids {
-			game.generate_program_for(uuid)?;
+			game.generate_program_for(uuid)
+				.with_context(|| "in Game::from_worlds")?;
 		}
 		Ok(game)
 	}
@@ -94,8 +95,10 @@ impl Game {
 		}
 	}
 	pub fn regenerate_moves(&mut self, prev_id: WorldId) -> anyhow::Result<()> {
-		self.moves = IngameWorld::generate(self, self.main_id)?;
-		self.generate_program_for(prev_id)?;
+		self.moves = IngameWorld::generate(self, self.main_id)
+			.with_context(|| "IngameWorld::generate failed in Game::regenerate_moves")?;
+		self.generate_program_for(prev_id)
+			.with_context(|| "generate_program_for failed in Game::regenerate_moves")?;
 		Ok(())
 	}
 	pub fn generate_program_for(&mut self, wid: WorldId) -> anyhow::Result<()> {
