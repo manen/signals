@@ -5,7 +5,6 @@ mod tool;
 mod ui;
 mod world;
 
-use anyhow::Context;
 use game::Game;
 use gfx::PosInfo;
 use raylib::{
