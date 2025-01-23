@@ -1,9 +1,11 @@
+use serde::{Deserialize, Serialize};
+
 use crate::world::*;
 
 pub const CHUNK_SIZE: usize = 16;
 pub const BLOCK_SIZE: i32 = 32;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Default)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 pub struct Chunk<T = Block>([[T; CHUNK_SIZE]; CHUNK_SIZE]);
 impl<T> Chunk<T> {
 	pub const fn new(array: [[T; CHUNK_SIZE]; CHUNK_SIZE]) -> Self {

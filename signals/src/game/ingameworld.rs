@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 use crate::{
 	game::{Game, WorldId},
-	world::{Block, Move, Signal},
+	world::{Block, BlockError, Move, Signal},
 };
 use std::hash::Hash;
 
@@ -86,9 +86,7 @@ impl IngameWorld {
 					game.worlds
 						.at_mut(world_id)
 						.with_context(|| "second impossible case in IngameWorld::regenerate")?
-						.map_at(coords.0, coords.1, |_| {
-							Block::Error("here lies a foreign to this world (infinite recursion)")
-						});
+						.map_at(coords.0, coords.1, |_| Block::Error(BlockError::Recursion));
 					continue;
 				}
 
@@ -105,9 +103,7 @@ impl IngameWorld {
 						.worlds
 						.at_mut(world_id)
 						.with_context(|| "impossible case 3 in IngameWorld::regenerate()")?
-						.mut_at(coords.0, coords.1) = Block::Error(
-						"here lies a foreign that pointed to a world that doesn't exist",
-					);
+						.mut_at(coords.0, coords.1) = Block::Error(BlockError::WorldDoesntExist);
 					return Ok(()); // <- fake Ok
 				}
 			};
@@ -124,7 +120,7 @@ impl IngameWorld {
 			if id > max_id {
 				eprintln!("the world (id: {world_id:?}) contained a foreign that exceeded the maximum possible id of {max_id} for the world given ({inst_world_id:?}) by being {id}");
 				world_mut.map_at(coords.0, coords.1, |_| {
-					Block::Error("here lies a foreign that exceeded the maximum possible id for the world given")
+					Block::Error(BlockError::MaxIdExceeded)
 				});
 			} else {
 				world_mut.map_at(coords.0, coords.1, |_| {

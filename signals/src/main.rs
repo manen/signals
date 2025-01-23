@@ -27,6 +27,8 @@ pub const MOVE_RIGHT: KeyboardKey = KeyboardKey::KEY_D;
 pub const TOOL_USE: MouseButton = MouseButton::MOUSE_BUTTON_LEFT;
 pub const MOVE_AMOUNT: f32 = 5000.0;
 
+const SAVE_PATH: &str = "./signals.snsv";
+
 fn main() {
 	let (start_width, start_height) = (640, 480);
 
@@ -50,7 +52,13 @@ fn main() {
 		);
 	}
 
-	let mut game = game::Game::default();
+	let mut game = match game::saves::read_worlds(SAVE_PATH) {
+		Ok(a) => Game::from_worlds(a),
+		Err(err) => {
+			eprintln!("failed to load save, using default\n{err}");
+			Default::default()
+		}
+	};
 
 	let mut tool: tool::Tool = Default::default();
 	let tool_select = sui::SelectBar::new(tool::TOOLS);
@@ -232,4 +240,6 @@ fn main() {
 			}
 		}
 	}
+	let save = game::saves::write_worlds(&game.worlds).expect("couldn't serialize progress");
+	std::fs::write(SAVE_PATH, &save).expect("couldn't save progress to file");
 }

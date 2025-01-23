@@ -1,11 +1,13 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 
+use serde::{Deserialize, Serialize};
+
 use crate::world::World;
 
 pub type WorldId = uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct Worlds {
 	worlds: HashMap<WorldId, World>,
 }

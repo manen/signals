@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashMap};
+use std::borrow::Cow;
 
 use raylib::prelude::{RaylibDraw, RaylibDrawHandle};
 
@@ -65,9 +65,6 @@ impl DrawType {
 	}
 }
 pub type Drawmap = world::Chunk<DrawType>;
-
-pub const DRAWMAP_DEFAULT: Drawmap =
-	Drawmap::new([[DrawType::Off; world::CHUNK_SIZE]; world::CHUNK_SIZE]);
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct PosInfo {
@@ -315,6 +312,24 @@ pub fn render_block(
 				pos_info,
 				draw_misc,
 			);
+		}
+		world::Block::Error(typ) => {
+			d.draw_rectangle(
+				pos_info.base.0,
+				pos_info.base.1,
+				pos_info.scale(world::BLOCK_SIZE),
+				pos_info.scale(world::BLOCK_SIZE),
+				SWITCH_OFF,
+			);
+			if draw_misc {
+				d.draw_text(
+					&format!("{typ}"),
+					pos_info.base.0,
+					pos_info.base.1,
+					12,
+					SWITCH_ON,
+				)
+			}
 		}
 		rest => {
 			let color = if *dt == DrawType::On {

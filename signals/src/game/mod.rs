@@ -6,6 +6,8 @@ pub use worlds::*;
 mod ingameworld;
 pub use ingameworld::*;
 
+pub mod saves;
+
 use crate::{gfx::DrawType, world::World};
 
 // very proof of concept-y
@@ -22,6 +24,13 @@ pub struct Game {
 	pub moves: IngameWorld,
 }
 impl Game {
+	pub fn from_worlds(worlds: Worlds) -> Self {
+		Self {
+			worlds,
+			..Default::default()
+		}
+	}
+
 	pub fn tick(&mut self) -> anyhow::Result<()> {
 		// reset the drawmap
 		for (_, c) in self.drawmap.chunks_mut() {

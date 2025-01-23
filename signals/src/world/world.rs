@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{game::WorldId, gfx, world::*};
 
 use std::{collections::HashMap, hash::Hash};
@@ -51,7 +53,7 @@ pub enum PushMoveTo {
 	Foreign { inst_id: usize, id: usize },
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct World<B = Block> {
 	chunks: HashMap<(i32, i32), Chunk<B>>,
 }

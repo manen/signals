@@ -1,6 +1,19 @@
+use serde::{Deserialize, Serialize};
+use thiserror::Error;
+
 use crate::{game::WorldId, world::*};
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Serialize, Deserialize, Error)]
+pub enum BlockError {
+	#[error("here lies a foreign to this world (infinite recursion)")]
+	Recursion,
+	#[error("here lies a foreign that pointed to a world that doesn't exist")]
+	WorldDoesntExist,
+	#[error("here lies a foreign that exceeded the maximum possible id for the world given")]
+	MaxIdExceeded,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default, Serialize, Deserialize)]
 pub enum Block {
 	#[default]
 	Nothing,
@@ -12,7 +25,7 @@ pub enum Block {
 	Input(usize),
 	Output(usize),
 	Foreign(WorldId, usize, usize), // (world_id (for redundancy), inst_id, input_and_output_id)
-	Error(&'static str),            // error contains an error.
+	Error(BlockError),              // error contains an error.
 }
 impl Block {
 	/// syntax: push_move(relative_x, relative_y, signal)
@@ -116,7 +129,7 @@ impl Block {
 	}
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Serialize, Deserialize)]
 pub enum Direction {
 	Right,
 	Bottom,
