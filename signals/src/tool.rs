@@ -106,6 +106,8 @@ impl Tool {
 
 				// just to test if things work:
 
+				// this part is up next i don't like how foreigns can be infinitely far from each other
+
 				let mut foreigns = main
 					.find_foreigns()
 					.into_iter()

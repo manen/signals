@@ -52,9 +52,12 @@ fn main() {
 	}
 
 	let mut game = match game::saves::read_worlds(SAVE_PATH) {
-		Ok(a) => Game::from_worlds(a),
+		Ok(a) => Game::from_worlds(a).unwrap_or_else(|err| {
+			eprintln!("failed to load game from worlds:\n{err}");
+			Default::default()
+		}),
 		Err(err) => {
-			eprintln!("failed to load save, using default\n{err}");
+			eprintln!("failed to load worlds, using default\n{err}");
 			Default::default()
 		}
 	};

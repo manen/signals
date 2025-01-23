@@ -3,6 +3,7 @@ use std::collections::HashMap;
 
 use crate::{
 	game::{Game, WorldId},
+	processor,
 	world::{Block, BlockError, Move, Signal},
 };
 use std::hash::Hash;
@@ -41,6 +42,9 @@ impl IngameWorld {
 	/// regenerates itself and fixes the world if needed \
 	/// recursive
 	pub fn regenerate(&mut self, game: &mut Game, world_id: WorldId) -> anyhow::Result<()> {
+		// oh god i hate leaving comments like this but i have NO CLUE what is happening this
+		// is some true dogshit code really should've left some comments
+
 		let world = match game.worlds.at(world_id) {
 			Some(a) => a,
 			None => {
@@ -138,7 +142,7 @@ impl IngameWorld {
 			.at_mut(self.world_id)
 			.with_context(|| format!("this IngameWorld points to a nonexistent world\n{self:#?}"))?
 			.tick(std::mem::take(&mut self.moves), |_, _, _| {});
-		self.process_moves(new_moves, ret);
+		self.process_moves(new_moves, ret, &game.programs, &mut game.memory);
 		Ok(())
 	}
 	pub(crate) fn tick_children(&mut self, game: &mut Game) -> anyhow::Result<()> {
@@ -165,7 +169,13 @@ impl IngameWorld {
 		&mut self.children[inst_id]
 	}
 
-	pub(super) fn process_moves(&mut self, new_moves: Vec<Move>, mut ret: impl FnMut(Move)) {
+	pub(super) fn process_moves(
+		&mut self,
+		new_moves: Vec<Move>,
+		mut ret: impl FnMut(Move),
+		programs: &super::Programs,
+		memory: &mut processor::Memory,
+	) {
 		self.moves = Vec::with_capacity(new_moves.len());
 
 		let push_unique = |moves: &mut Vec<_>, mov: Move| {
@@ -173,20 +183,119 @@ impl IngameWorld {
 				moves.push(mov);
 			}
 		};
+		let mut collected_foreign_inputs = Vec::<(usize, usize)>::new();
+
+		// the code that pushes foreigns into the child ingw:
+		//				push_unique(
+		//					&mut self.child_mut(inst_id).moves,
+		//					Move::Input {
+		//						id,
+		//						signal: Signal::ExternalPoweron,
+		//					},
+		//				)
 
 		for mov in new_moves {
 			match mov {
 				Move::Inside { .. } => push_unique(&mut self.moves, mov),
 				Move::Output { .. } => ret(mov),
-				Move::Foreign { inst_id, id, .. } => push_unique(
-					&mut self.child_mut(inst_id).moves,
-					Move::Input {
-						id,
-						signal: Signal::ExternalPoweron,
-					},
-				),
+				Move::Foreign { inst_id, id, .. } => {
+					collected_foreign_inputs.push((inst_id, id));
+				}
 				Move::Input { .. } => {
 					eprintln!("unexpected input move in moves processing: {mov:?}")
+				}
+			}
+		}
+
+		let (processorable_inst_ids) = {
+			let mut insts = collected_foreign_inputs
+				.iter()
+				.map(|(inst_id, _)| (*inst_id))
+				.collect::<Vec<_>>();
+			insts.dedup();
+
+			let processorable_inst_ids = insts
+				.into_iter()
+				.filter_map(|inst_id| {
+					self.children
+						.iter()
+						.nth(inst_id)
+						.map(|a| (inst_id, a.world_id))
+				})
+				.filter(|(_, wid)| match programs.get(wid) {
+					Some((Some(_), _, _)) => true,
+					_ => false,
+				})
+				.collect::<HashMap<_, _>>();
+
+			(processorable_inst_ids)
+		};
+
+		let processor_inputs = {
+			// this part turns and organizes the collected foreign inputs into a HashMap<inst_id, (inputs_vec, outputs_count)>
+			let mut collected_foreign_inputs = collected_foreign_inputs
+				.into_iter()
+				.filter(|(inst_id, _)| processorable_inst_ids.get(&inst_id).is_some())
+				.collect::<Vec<_>>();
+			collected_foreign_inputs.sort_by(|(a_inst_id, a_id), (b_inst_id, b_id)| {
+				(*a_inst_id * 1000 + a_id).cmp(&(b_inst_id * 1000 + b_id))
+			});
+
+			let mut map = HashMap::<usize, Vec<bool>>::new();
+
+			for (inst_id, id) in collected_foreign_inputs.iter() {
+				if let Some(inputs) = map.get_mut(&inst_id) {
+					match inputs.iter_mut().nth(*id) {
+						Some(a) => *a = true,
+						None => eprintln!("ignoring true input for foreign {inst_id}:{id} because the generated inputs vec is too short\ncheck the part right under this line in the else block"),
+					}
+				} else {
+					let wid = processorable_inst_ids.get(inst_id).expect("impossible case, nothing in collected_foreign_inputs here that hasn't been programified");
+					let inputs_len = match programs.get(wid) {
+						Some((_, inputs_len, _)) => *inputs_len,
+						_ => panic!("this case is pretty impossible"), // im just gonna leave it like this gl
+					};
+					let mut vec = vec![false; inputs_len];
+					if let Some(b) = vec.iter_mut().nth(*id) {
+						*b = true;
+					} else {
+						eprintln!("dropped a foreign signal because for some fucking reason this shit doesn't work")
+					}
+
+					map.insert(*inst_id, vec);
+				}
+			}
+
+			map
+		};
+
+		for (inst_id, inputs) in processor_inputs.iter() {
+			let wid = match processorable_inst_ids.get(&inst_id) {
+				Some(a) => a,
+				None => continue, // <- impossible case i think
+			};
+			let (insts, _, outputs_len) = match programs.get(wid) {
+				Some((Some(a), inputs_len, outputs_len)) => (a, *inputs_len, *outputs_len),
+				None | Some((None, _, _)) => {
+					eprintln!(
+					"IMPOSSIBLE CASE we already checked if there's a program for this wid ({wid})"
+				);
+					continue;
+				}
+			};
+
+			memory.execute(&insts, &inputs);
+
+			for i in 0..outputs_len {
+				if memory.get(i) {
+					push_unique(
+						&mut self.moves,
+						Move::Foreign {
+							inst_id: *inst_id,
+							id: i,
+							signal: Signal::ExternalPoweron,
+						},
+					)
 				}
 			}
 		}
