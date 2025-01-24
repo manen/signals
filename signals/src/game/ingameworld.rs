@@ -1,5 +1,8 @@
 use anyhow::{anyhow, Context};
-use std::collections::HashMap;
+use std::{
+	collections::HashMap,
+	hash::{DefaultHasher, Hasher},
+};
 
 use crate::{
 	game::{Game, WorldId},
@@ -25,8 +28,14 @@ use std::hash::Hash;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum IngameWorldType {
-	Simulated { moves: Vec<Move> },
-	Processor { inputs: Vec<bool> },
+	Simulated {
+		moves: Vec<Move>,
+	},
+	Processor {
+		inputs: Vec<bool>,
+		prev_in_hash: u64,
+		prev_out: Vec<bool>,
+	},
 }
 impl Default for IngameWorldType {
 	fn default() -> Self {
@@ -38,7 +47,11 @@ impl IngameWorldType {
 		Self::Simulated { moves: vec![] }
 	}
 	pub const fn processor() -> Self {
-		Self::Processor { inputs: vec![] }
+		Self::Processor {
+			inputs: vec![],
+			prev_in_hash: 0,
+			prev_out: vec![],
+		}
 	}
 }
 
@@ -171,7 +184,7 @@ impl IngameWorld {
 					}
 				}
 			}
-			IngameWorldType::Processor { inputs } => {
+			IngameWorldType::Processor { inputs, .. } => {
 				if self.children.len() != 0 {
 					self.children = vec![];
 				}
@@ -213,26 +226,49 @@ impl IngameWorld {
 				});
 				self.process_moves(new_moves, ret);
 			}
-			IngameWorldType::Processor { inputs } => {
-				let program = match game.programs.get(&self.world_id) {
-					Some((Some(insts), _, out_len)) => {
-						game.memory.execute(&insts, &inputs);
-						for i in 0..*out_len {
-							if game.memory.get(i) {
-								ret(Move::Output {
-									id: i,
-									signal: Signal::Default,
-								})
-							}
-						}
-
-						*inputs = inputs.into_iter().map(|_| false).collect();
-					}
+			IngameWorldType::Processor {
+				inputs,
+				prev_in_hash,
+				prev_out,
+			} => {
+				let (insts, in_len, out_len) = match game.programs.get(&self.world_id) {
+					Some((Some(insts), in_len, out_len)) => (insts, in_len, out_len),
 					_ => {
 						self.regenerate(game, self.world_id);
+						return Ok(());
 						// regenerate will turn self into a simulated world
 					}
 				};
+
+				let mut in_hash = DefaultHasher::new();
+				inputs.hash(&mut in_hash);
+				let in_hash = in_hash.finish();
+
+				if in_hash != *prev_in_hash {
+					game.memory.execute(&insts, &inputs);
+					for i in 0..*out_len {
+						if game.memory.get(i) {
+							ret(Move::Output {
+								id: i,
+								signal: Signal::Default,
+							});
+						}
+					}
+
+					*prev_in_hash = in_hash;
+					*prev_out = game.memory[0..*out_len].iter().copied().collect();
+				} else {
+					for (i, val) in prev_out.iter().enumerate() {
+						if *val {
+							ret(Move::Output {
+								id: i,
+								signal: Signal::Default,
+							})
+						}
+					}
+				}
+
+				*inputs = inputs.into_iter().map(|_| false).collect();
 			}
 		}
 		Ok(())
@@ -314,7 +350,7 @@ impl IngameWorld {
 					}
 				}
 			}
-			IngameWorldType::Processor { inputs } => {
+			IngameWorldType::Processor { inputs, .. } => {
 				for mov in new_moves {
 					match mov {
 						Move::Input { id, signal } => {

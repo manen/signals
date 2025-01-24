@@ -1,4 +1,9 @@
 pub mod world_to_instructions;
+use std::{
+	ops::{Index, Range},
+	slice::SliceIndex,
+};
+
 pub use world_to_instructions::world_to_instructions;
 
 pub mod eq;
@@ -12,6 +17,12 @@ pub mod stack;
 // keeps the memory on the stack (not a vec or anything)
 pub struct Memory {
 	mem: [bool; 512],
+}
+impl Index<Range<usize>> for Memory {
+	type Output = [bool];
+	fn index(&self, index: Range<usize>) -> &Self::Output {
+		Index::index(&self.mem, index)
+	}
 }
 impl Default for Memory {
 	fn default() -> Self {
