@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 use crate::{
 	game::{Game, WorldId},
-	processor,
+	gfx, processor,
 	world::{Block, BlockError, Move, Signal},
 };
 use std::hash::Hash;
@@ -23,140 +23,210 @@ use std::hash::Hash;
 // this makes everything easier let's implement it
 // so long Game struct (it stayed)
 
-/// IngameWorld is a recursive structure that contains the moves (instance) of the world it's pointing to in id \
-/// this is needed to make every world have unique instances of worlds, to be contained in foreigns
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum IngameWorldType {
+	Simulated { moves: Vec<Move> },
+	Processor,
+}
+impl Default for IngameWorldType {
+	fn default() -> Self {
+		Self::simulated()
+	}
+}
+impl IngameWorldType {
+	pub const fn simulated() -> Self {
+		Self::Simulated { moves: vec![] }
+	}
+	pub const fn processor() -> Self {
+		Self::Processor
+	}
+}
+
+/// IngameWorld represents a world inside of a block, either fully simulated
+/// or calculated on demand
 #[derive(Default, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct IngameWorld {
 	pub world_id: WorldId,
-	pub moves: Vec<Move>,
+	pub typ: IngameWorldType,
 	pub children: Vec<IngameWorld>,
 }
 impl IngameWorld {
 	/// generates the ingameworld required for a World to have foreigns working \
 	/// see [IngameWorld::regenerate]
 	pub fn generate(game: &mut Game, world_id: WorldId) -> anyhow::Result<Self> {
-		let mut ingameworld = Self::default();
+		let typ = (|| {
+			if game.main_id != world_id {
+				if let Some((Some(a), _, _)) = game.programs.get(&world_id) {
+					return IngameWorldType::processor();
+				}
+			}
+			IngameWorldType::simulated()
+		})();
+
+		let mut ingameworld = Self {
+			world_id,
+			typ,
+			..Default::default()
+		};
 		ingameworld.regenerate(game, world_id)?;
 		Ok(ingameworld)
 	}
 	/// regenerates itself and fixes the world if needed \
-	/// recursive
+	/// recursive \
+	/// will not edit self.typ, make sure you have that set up correctly
 	pub fn regenerate(&mut self, game: &mut Game, world_id: WorldId) -> anyhow::Result<()> {
-		// oh god i hate leaving comments like this but i have NO CLUE what is happening this
-		// is some true dogshit code really should've left some comments
-
-		let world = match game.worlds.at(world_id) {
-			Some(a) => a,
-			None => {
-				return Err(anyhow!(
-					"could not find a world with id {world_id}\nneeded for IngameWorld::regenerate"
-				))
-			}
-		};
-		let mut foreigns = world.find_foreigns();
-		foreigns.sort_by(|(_, (_, a_inst_id, a_id)), (_, (_, b_inst_id, b_id))| {
-			(a_inst_id * 1000 + a_id).cmp(&(b_inst_id * 1000 + b_id))
-		});
-
-		let mut inst_ids_already_done =
-			Vec::with_capacity((self.children.len() as i32 - 1 as i32).max(0) as usize);
-		let mut next_id_per_inst_id: HashMap<usize, usize> = HashMap::new();
-
-		for (coords, (inst_world_id, mut inst_id, id)) in foreigns {
-			if !inst_ids_already_done.contains(&inst_id) {
-				// only happens once per inst_id
-				let inst = match self.children.iter_mut().nth(inst_id) {
-					Some(ptr) => ptr,
+		match &self.typ {
+			IngameWorldType::Simulated { moves } => {
+				let world = match game.worlds.at(world_id) {
+					Some(a) => a,
 					None => {
-						if inst_id != self.children.len() {
-							inst_id = self.children.len();
-							game.worlds
-								.at_mut(world_id)
-								.with_context(|| "impossible case in IngameWorld::regenerate")?
-								.map_at(coords.0, coords.1, |_| {
-									Block::Foreign(inst_world_id, inst_id, id)
-								})
-						}
-						self.children.push(IngameWorld {
-							world_id: inst_world_id,
-							..Default::default()
-						});
-						&mut self.children[inst_id]
+						return Err(anyhow!(
+							"could not find a world with id {world_id}\nneeded for IngameWorld::regenerate"
+						))
 					}
 				};
+				let mut foreigns = world.find_foreigns();
+				foreigns.sort_by(|(_, (_, a_inst_id, a_id)), (_, (_, b_inst_id, b_id))| {
+					(a_inst_id * 1000 + a_id).cmp(&(b_inst_id * 1000 + b_id))
+				});
 
-				if inst_world_id == world_id {
-					println!("deleting a foreign referencing the world the foreign's in (world_id: {world_id:?})");
-					game.worlds
-						.at_mut(world_id)
-						.with_context(|| "second impossible case in IngameWorld::regenerate")?
-						.map_at(coords.0, coords.1, |_| Block::Error(BlockError::Recursion));
-					continue;
-				}
+				let mut inst_ids_already_done =
+					Vec::with_capacity((self.children.len() as i32 - 1 as i32).max(0) as usize);
+				let mut next_id_per_inst_id: HashMap<usize, usize> = HashMap::new();
 
-				inst.regenerate(game, inst_world_id)
-					.with_context(|| "error while regenerating child")?;
-				inst_ids_already_done.push(inst_id);
-			}
+				for (coords, (inst_world_id, mut inst_id, id)) in foreigns {
+					if !inst_ids_already_done.contains(&inst_id) {
+						// only happens once per inst_id
+						let inst = match self.children.iter_mut().nth(inst_id) {
+							Some(ptr) => ptr,
+							None => {
+								if inst_id != self.children.len() {
+									inst_id = self.children.len();
+									game.worlds
+										.at_mut(world_id)
+										.with_context(|| {
+											"impossible case in IngameWorld::regenerate"
+										})?
+										.map_at(coords.0, coords.1, |_| {
+											Block::Foreign(inst_world_id, inst_id, id)
+										})
+								}
+								self.children
+									.push(IngameWorld::generate(game, inst_world_id)?);
+								&mut self.children[inst_id]
+							}
+						};
 
-			let inst_world = match game.worlds.at(inst_world_id) {
-				Some(a) => a,
-				None => {
-					eprintln!("deleting a foreign referencing an invalid world ({inst_world_id}) in {world_id}");
-					// this foreign has an invalid world id
-					*game
+						if inst_world_id == world_id {
+							println!("deleting a foreign referencing the world the foreign's in (world_id: {world_id:?})");
+							game.worlds
+								.at_mut(world_id)
+								.with_context(|| {
+									"second impossible case in IngameWorld::regenerate"
+								})?
+								.map_at(coords.0, coords.1, |_| {
+									Block::Error(BlockError::Recursion)
+								});
+							continue;
+						}
+
+						inst.regenerate(game, inst_world_id)
+							.with_context(|| "error while regenerating child")?;
+						inst_ids_already_done.push(inst_id);
+					}
+
+					let inst_world = match game.worlds.at(inst_world_id) {
+						Some(a) => a,
+						None => {
+							eprintln!("deleting a foreign referencing an invalid world ({inst_world_id}) in {world_id}");
+							// this foreign has an invalid world id
+							*game
+								.worlds
+								.at_mut(world_id)
+								.with_context(|| "impossible case 3 in IngameWorld::regenerate()")?
+								.mut_at(coords.0, coords.1) = Block::Error(BlockError::WorldDoesntExist);
+							return Ok(()); // <- fake Ok
+						}
+					};
+
+					let next = match next_id_per_inst_id.get(&inst_id) {
+						Some(next) => *next,
+						None => 0,
+					};
+					let max_id = inst_world.inputs_count().max(inst_world.outputs_count());
+					let world_mut = game
 						.worlds
 						.at_mut(world_id)
-						.with_context(|| "impossible case 3 in IngameWorld::regenerate()")?
-						.mut_at(coords.0, coords.1) = Block::Error(BlockError::WorldDoesntExist);
-					return Ok(()); // <- fake Ok
+						.with_context(|| "impossible case 3 IngameWorld::regenerate()")?;
+					if id > max_id {
+						eprintln!("the world (id: {world_id:?}) contained a foreign that exceeded the maximum possible id of {max_id} for the world given ({inst_world_id:?}) by being {id}");
+						world_mut.map_at(coords.0, coords.1, |_| {
+							Block::Error(BlockError::MaxIdExceeded)
+						});
+					} else {
+						world_mut.map_at(coords.0, coords.1, |_| {
+							Block::Foreign(inst_world_id, inst_id, next)
+						});
+						next_id_per_inst_id.insert(inst_id, next + 1);
+					}
 				}
-			};
-
-			let next = match next_id_per_inst_id.get(&inst_id) {
-				Some(next) => *next,
-				None => 0,
-			};
-			let max_id = inst_world.inputs_count().max(inst_world.outputs_count());
-			let world_mut = game
-				.worlds
-				.at_mut(world_id)
-				.with_context(|| "impossible case 3 IngameWorld::regenerate()")?;
-			if id > max_id {
-				eprintln!("the world (id: {world_id:?}) contained a foreign that exceeded the maximum possible id of {max_id} for the world given ({inst_world_id:?}) by being {id}");
-				world_mut.map_at(coords.0, coords.1, |_| {
-					Block::Error(BlockError::MaxIdExceeded)
-				});
-			} else {
-				world_mut.map_at(coords.0, coords.1, |_| {
-					Block::Foreign(inst_world_id, inst_id, next)
-				});
-				next_id_per_inst_id.insert(inst_id, next + 1);
 			}
+			IngameWorldType::Processor => {}
+		}
+
+		Ok(())
+	}
+
+	pub fn tick(
+		&mut self,
+		game: &mut Game,
+		ret: impl FnMut(Move),
+		set_dt: bool,
+	) -> anyhow::Result<()> {
+		match &mut self.typ {
+			IngameWorldType::Simulated { moves } => {
+				let new_moves = game.worlds.at_mut(self.world_id).with_context(|| {
+					format!("this IngameWorld points to a nonexistent world\nworld_id: {:?}\ntyp: {:?}\nchildren: {:#?}", self.world_id, "IngameWorldType::Simulated", self.children)
+				})?;
+				let new_moves = new_moves.tick(std::mem::take(moves), |x, y, dt| {
+					if set_dt {
+						*game.drawmap.mut_at(x, y) = dt;
+					}
+				});
+				self.process_moves(new_moves, ret);
+			}
+			IngameWorldType::Processor => {}
 		}
 		Ok(())
 	}
-
-	fn tick(&mut self, game: &mut Game, ret: impl FnMut(Move)) -> anyhow::Result<()> {
-		let new_moves = game
-			.worlds
-			.at_mut(self.world_id)
-			.with_context(|| format!("this IngameWorld points to a nonexistent world\n{self:#?}"))?
-			.tick(std::mem::take(&mut self.moves), |_, _, _| {});
-		self.process_moves(new_moves, ret, &game.programs, &mut game.memory);
-		Ok(())
-	}
 	pub(crate) fn tick_children(&mut self, game: &mut Game) -> anyhow::Result<()> {
-		for (i, child) in self.children.iter_mut().enumerate() {
-			child.tick(game, |m| match m {
-				Move::Output { id, .. } => self.moves.push(Move::Foreign {
-					inst_id: i,
-					id,
-					signal: Signal::ExternalPoweron,
-				}),
-				mov => eprintln!("only outputs should be returned from child worlds ({mov:?})"),
-			})?;
-			child.tick_children(game)?;
+		match &mut self.typ {
+			IngameWorldType::Simulated { moves } => {
+				for (i, child) in self.children.iter_mut().enumerate() {
+					child
+						.tick(
+							game,
+							|m| match m {
+								Move::Output { id, .. } => moves.push(Move::Foreign {
+									inst_id: i,
+									id,
+									signal: Signal::ExternalPoweron,
+								}),
+								mov => {
+									eprintln!(
+									"only outputs should be returned from child worlds ({mov:?})"
+								)
+								}
+							},
+							false,
+						)
+						.with_context(|| {
+							format!("from #{i} child of world_id: {:?}", self.world_id)
+						})?;
+					child.tick_children(game)?;
+				}
+			}
+			IngameWorldType::Processor => {}
 		}
 		Ok(())
 	}
@@ -170,143 +240,43 @@ impl IngameWorld {
 		&mut self.children[inst_id]
 	}
 
-	pub(super) fn process_moves(
-		&mut self,
-		new_moves: Vec<Move>,
-		mut ret: impl FnMut(Move),
-		programs: &super::Programs,
-		memory: &mut processor::Memory,
-	) {
-		self.moves = Vec::with_capacity(new_moves.len());
+	pub(super) fn process_moves(&mut self, new_moves: Vec<Move>, mut ret: impl FnMut(Move)) {
+		match &mut self.typ {
+			IngameWorldType::Simulated { moves } => {
+				*moves = Vec::with_capacity(new_moves.len());
 
-		let push_unique = |moves: &mut Vec<_>, mov: Move| {
-			if !moves.contains(&mov) {
-				moves.push(mov);
-			}
-		};
-		let mut collected_foreign_inputs = Vec::<(usize, usize)>::new();
-
-		for mov in new_moves {
-			match mov {
-				Move::Inside { .. } => push_unique(&mut self.moves, mov),
-				Move::Output { .. } => ret(mov),
-				Move::Foreign { inst_id, id, .. } => {
-					collected_foreign_inputs.push((inst_id, id));
-				}
-				Move::Input { .. } => {
-					eprintln!("unexpected input move in moves processing: {mov:?}")
-				}
-			}
-		}
-
-		let (processorable_inst_ids, simple_foreigns) = {
-			let mut insts = collected_foreign_inputs
-				.iter()
-				.map(|(inst_id, _)| (*inst_id))
-				.collect::<Vec<_>>();
-			insts.dedup();
-
-			let processorable_inst_ids = insts
-				.into_iter()
-				.filter_map(|inst_id| {
-					self.children
-						.iter()
-						.nth(inst_id)
-						.map(|a| (inst_id, a.world_id))
-				})
-				.filter(|(_, wid)| match programs.get(wid) {
-					Some((Some(_), _, _)) => true,
-					_ => false,
-				})
-				.collect::<HashMap<_, _>>();
-
-			let simple_foreigns = collected_foreign_inputs
-				.iter()
-				.filter(|(inst_id, _)| processorable_inst_ids.get(inst_id).is_none())
-				.copied()
-				.collect::<Vec<_>>();
-
-			(processorable_inst_ids, simple_foreigns)
-		};
-
-		let processor_inputs = {
-			// this part turns and organizes the collected foreign inputs into a HashMap<inst_id, (inputs_vec, outputs_count)>
-			let mut collected_foreign_inputs = collected_foreign_inputs
-				.into_iter()
-				.filter(|(inst_id, _)| processorable_inst_ids.get(&inst_id).is_some())
-				.collect::<Vec<_>>();
-			collected_foreign_inputs.sort_by(|(a_inst_id, a_id), (b_inst_id, b_id)| {
-				(*a_inst_id * 1000 + a_id).cmp(&(b_inst_id * 1000 + b_id))
-			});
-
-			let mut map = HashMap::<usize, Vec<bool>>::new();
-
-			for (inst_id, id) in collected_foreign_inputs.iter() {
-				if let Some(inputs) = map.get_mut(&inst_id) {
-					match inputs.iter_mut().nth(*id) {
-						Some(a) => *a = true,
-						None => eprintln!("ignoring true input for foreign {inst_id}:{id} because the generated inputs vec is too short\ncheck the part right under this line in the else block"),
+				for mov in new_moves {
+					match mov {
+						Move::Inside { .. } => self.receive_moves([mov]),
+						Move::Output { .. } => ret(mov),
+						Move::Foreign { inst_id, id, .. } => {
+							self.child_mut(inst_id).receive_moves([Move::Input {
+								id,
+								signal: Signal::ExternalPoweron,
+							}]);
+						}
+						Move::Input { .. } => {
+							eprintln!("unexpected input move in moves processing: {mov:?}")
+						}
 					}
-				} else {
-					let wid = processorable_inst_ids.get(inst_id).expect("impossible case, nothing in collected_foreign_inputs here that hasn't been programified");
-					let inputs_len = match programs.get(wid) {
-						Some((_, inputs_len, _)) => *inputs_len,
-						_ => panic!("this case is pretty impossible"), // im just gonna leave it like this gl
-					};
-					let mut vec = vec![false; inputs_len];
-					if let Some(b) = vec.iter_mut().nth(*id) {
-						*b = true;
-					} else {
-						eprintln!("dropped a foreign signal because for some fucking reason this shit doesn't work")
-					}
-
-					map.insert(*inst_id, vec);
 				}
 			}
-
-			map
-		};
-
-		for (inst_id, inputs) in processor_inputs.iter() {
-			let wid = match processorable_inst_ids.get(&inst_id) {
-				Some(a) => a,
-				None => continue, // <- impossible case i think
-			};
-			let (insts, _, outputs_len) = match programs.get(wid) {
-				Some((Some(a), inputs_len, outputs_len)) => (a, *inputs_len, *outputs_len),
-				None | Some((None, _, _)) => {
-					eprintln!(
-					"IMPOSSIBLE CASE we already checked if there's a program for this wid ({wid})"
-				);
-					continue;
-				}
-			};
-
-			memory.execute(&insts, &inputs);
-
-			for i in 0..outputs_len {
-				if memory.get(i) {
-					push_unique(
-						&mut self.moves,
-						Move::Foreign {
-							inst_id: *inst_id,
-							id: i,
-							signal: Signal::ExternalPoweron,
-						},
-					)
-				}
-			}
+			IngameWorldType::Processor => {}
 		}
-
-		for (inst_id, id) in simple_foreigns.iter().copied() {
-			// the code that pushes foreigns into the child ingw:
-			push_unique(
-				&mut self.child_mut(inst_id).moves,
-				Move::Input {
-					id,
-					signal: Signal::ExternalPoweron,
-				},
-			)
+	}
+	/// receive moves from parent or self, with dedup and everything handled inside
+	pub fn receive_moves(&mut self, new_moves: impl IntoIterator<Item = Move>) {
+		match &mut self.typ {
+			IngameWorldType::Simulated { moves } => {
+				let new_moves = new_moves.into_iter();
+				moves.reserve(new_moves.size_hint().0.max(0));
+				for mov in new_moves {
+					if !moves.contains(&mov) {
+						moves.push(mov);
+					}
+				}
+			}
+			IngameWorldType::Processor => {}
 		}
 	}
 }

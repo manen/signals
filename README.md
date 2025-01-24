@@ -10,6 +10,7 @@ release builds for windows and linux are compiled on every commit using github a
 ## todo
 
 - cache ingameworld processor runs
+- try to avoid creating and definitely avoid ticking worlds that are being processorized
 - foreign interactive overhaul:
   - overhaul `Tool::PlaceForeign`, only allow foreigns with the same `inst_id` to be next to each other
   - generate a random color based off of instructions

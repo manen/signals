@@ -5,7 +5,7 @@ use fit::scrollable::ScrollableState;
 pub use worlds_bar::worlds_bar;
 
 use crate::{
-	game::{IngameWorld, WorldId},
+	game::{IngameWorld, IngameWorldType, WorldId},
 	processor,
 };
 use sui::{comp::*, core::Store};
@@ -35,7 +35,11 @@ pub fn game_debug_ui(
 }
 
 fn ingameworld_dbg_ui(i: usize, moves: &IngameWorld) -> sui::comp::Comp<'static> {
-	let line = Text::new(format!("inst {i}: {:?}", moves.world_id), 12);
+	let typ = match moves.typ {
+		IngameWorldType::Simulated { .. } => "",
+		IngameWorldType::Processor => " proc",
+	};
+	let line = Text::new(format!("inst {i}:{} {:?}", typ, moves.world_id), 12);
 
 	let children = moves
 		.children
