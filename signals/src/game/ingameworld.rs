@@ -26,7 +26,7 @@ use std::hash::Hash;
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum IngameWorldType {
 	Simulated { moves: Vec<Move> },
-	Processor,
+	Processor { inputs: Vec<bool> },
 }
 impl Default for IngameWorldType {
 	fn default() -> Self {
@@ -38,7 +38,7 @@ impl IngameWorldType {
 		Self::Simulated { moves: vec![] }
 	}
 	pub const fn processor() -> Self {
-		Self::Processor
+		Self::Processor { inputs: vec![] }
 	}
 }
 
@@ -75,7 +75,7 @@ impl IngameWorld {
 	/// recursive \
 	/// will not edit self.typ, make sure you have that set up correctly
 	pub fn regenerate(&mut self, game: &mut Game, world_id: WorldId) -> anyhow::Result<()> {
-		match &self.typ {
+		match &mut self.typ {
 			IngameWorldType::Simulated { moves } => {
 				let world = match game.worlds.at(world_id) {
 					Some(a) => a,
@@ -171,7 +171,20 @@ impl IngameWorld {
 					}
 				}
 			}
-			IngameWorldType::Processor => {}
+			IngameWorldType::Processor { inputs } => {
+				if self.children.len() != 0 {
+					self.children = vec![];
+				}
+				if let Some((Some(_), in_len, _)) = game.programs.get(&world_id) {
+					if inputs.len() != *in_len {
+						*inputs = vec![false; *in_len];
+					}
+				} else {
+					// if there's no program for this world, turn self into a simulated
+					self.typ = IngameWorldType::simulated();
+					self.regenerate(game, world_id)?;
+				}
+			}
 		}
 
 		Ok(())
@@ -180,7 +193,7 @@ impl IngameWorld {
 	pub fn tick(
 		&mut self,
 		game: &mut Game,
-		ret: impl FnMut(Move),
+		mut ret: impl FnMut(Move),
 		set_dt: bool,
 	) -> anyhow::Result<()> {
 		match &mut self.typ {
@@ -190,12 +203,37 @@ impl IngameWorld {
 				})?;
 				let new_moves = new_moves.tick(std::mem::take(moves), |x, y, dt| {
 					if set_dt {
-						*game.drawmap.mut_at(x, y) = dt;
+						*game.drawmap.mut_at(x, y) = game
+							.drawmap
+							.at(x, y)
+							.copied()
+							.unwrap_or_default()
+							.apply_new(dt);
 					}
 				});
 				self.process_moves(new_moves, ret);
 			}
-			IngameWorldType::Processor => {}
+			IngameWorldType::Processor { inputs } => {
+				let program = match game.programs.get(&self.world_id) {
+					Some((Some(insts), _, out_len)) => {
+						game.memory.execute(&insts, &inputs);
+						for i in 0..*out_len {
+							if game.memory.get(i) {
+								ret(Move::Output {
+									id: i,
+									signal: Signal::Default,
+								})
+							}
+						}
+
+						*inputs = inputs.into_iter().map(|_| false).collect();
+					}
+					_ => {
+						self.regenerate(game, self.world_id);
+						// regenerate will turn self into a simulated world
+					}
+				};
+			}
 		}
 		Ok(())
 	}
@@ -226,7 +264,7 @@ impl IngameWorld {
 					child.tick_children(game)?;
 				}
 			}
-			IngameWorldType::Processor => {}
+			IngameWorldType::Processor { .. } => {}
 		}
 		Ok(())
 	}
@@ -261,7 +299,7 @@ impl IngameWorld {
 					}
 				}
 			}
-			IngameWorldType::Processor => {}
+			IngameWorldType::Processor { .. } => {}
 		}
 	}
 	/// receive moves from parent or self, with dedup and everything handled inside
@@ -276,7 +314,22 @@ impl IngameWorld {
 					}
 				}
 			}
-			IngameWorldType::Processor => {}
+			IngameWorldType::Processor { inputs } => {
+				for mov in new_moves {
+					match mov {
+						Move::Input { id, signal } => {
+							if inputs.len() - 1 < id {
+								inputs.resize(id + 1, false);
+							}
+							inputs[id] = true;
+						}
+						_ => eprintln!(
+							"dropping non-input move to a a processor ingameworld:\n{mov:#?}"
+						),
+					}
+				}
+				0;
+			}
 		}
 	}
 }

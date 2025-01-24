@@ -37,7 +37,7 @@ pub fn game_debug_ui(
 fn ingameworld_dbg_ui(i: usize, moves: &IngameWorld) -> sui::comp::Comp<'static> {
 	let typ = match moves.typ {
 		IngameWorldType::Simulated { .. } => "",
-		IngameWorldType::Processor => " proc",
+		IngameWorldType::Processor { .. } => " proc",
 	};
 	let line = Text::new(format!("inst {i}:{} {:?}", typ, moves.world_id), 12);
 
