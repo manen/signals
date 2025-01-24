@@ -120,10 +120,8 @@ impl Tool {
 				macro_rules! new_instance {
 					() => {
 						// create new instance
-						game.moves.children.push(IngameWorld {
-							world_id: *wid,
-							..Default::default()
-						});
+						let ing = IngameWorld::generate(game, *wid).unwrap_or_default();
+						game.moves.children.push(ing);
 						let inst_id = game.moves.children.len() - 1;
 						*main_or_return!(mut game).mut_at(x, y) = Block::Foreign(*wid, inst_id, 0);
 					};

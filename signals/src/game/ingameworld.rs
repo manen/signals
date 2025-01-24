@@ -98,7 +98,7 @@ impl IngameWorld {
 						))
 					}
 				};
-				let mut foreigns = world.find_foreigns();
+				let mut foreigns = world.find_foreigns().collect::<Vec<_>>();
 				foreigns.sort_by(|(_, (_, a_inst_id, a_id)), (_, (_, b_inst_id, b_id))| {
 					(a_inst_id * 1000 + a_id).cmp(&(b_inst_id * 1000 + b_id))
 				});

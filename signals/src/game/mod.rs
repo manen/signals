@@ -84,12 +84,36 @@ impl Game {
 		if let Err(err) = self.regenerate_moves(prev_id) {
 			eprintln!("error while regenerating moves after Game::switch_main call\n{err}")
 		}
+		if let Err(err) = self.generate_programs_for(prev_id) {
+			eprintln!(
+				"error while generating required programs after Game::switch_main call\n{err}"
+			)
+		}
 	}
 	pub fn regenerate_moves(&mut self, prev_id: WorldId) -> anyhow::Result<()> {
 		self.moves = IngameWorld::generate(self, self.main_id)
 			.with_context(|| "IngameWorld::generate failed in Game::regenerate_moves")?;
 		self.generate_program_for(prev_id)
 			.with_context(|| "generate_program_for failed in Game::regenerate_moves")?;
+		Ok(())
+	}
+	/// recursively generates the programs needed for `wid` to function
+	pub fn generate_programs_for(&mut self, wid: WorldId) -> anyhow::Result<()> {
+		let w = self.worlds.at(wid).with_context(|| {
+			format!("no world with id {wid}\nneeded to regenerate needed programs for {wid}")
+		})?;
+
+		let mut wids = w
+			.find_foreigns()
+			.map(|(coords, (wid, _, _))| wid)
+			.collect::<Vec<_>>();
+		wids.sort();
+		wids.dedup();
+
+		for child_wid in wids {
+			self.generate_program_for(child_wid)
+				.with_context(|| format!("error while updating programs for foreigns in {wid}"))?;
+		}
 		Ok(())
 	}
 	pub fn generate_program_for(&mut self, wid: WorldId) -> anyhow::Result<()> {

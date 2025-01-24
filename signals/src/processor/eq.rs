@@ -309,7 +309,9 @@ impl Equation {
 
 				if !map.contains(&hash) {
 					map.push(hash);
-					1
+					1 + sh
+						.store
+						.with_borrow(|a| Self::reservations_internal(&a.eq, map))
 				} else {
 					0
 				}

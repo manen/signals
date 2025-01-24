@@ -24,7 +24,6 @@ pub fn world_to_instructions(game: &Game, world_id: WorldId) -> anyhow::Result<V
 		program.push(eq.simplify());
 	}
 
-	println!("program before sharing: {program:#?}");
 	let program = program::shared_recognition(program);
 
 	let reservations = {
@@ -33,7 +32,6 @@ pub fn world_to_instructions(game: &Game, world_id: WorldId) -> anyhow::Result<V
 		for eq in program.iter() {
 			let to_add = Equation::reservations_internal(eq, &mut map);
 			reservations += to_add;
-			println!("reservations + {to_add} = {reservations}");
 		}
 		reservations
 	};

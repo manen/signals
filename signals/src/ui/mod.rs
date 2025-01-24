@@ -76,7 +76,7 @@ pub fn inst_comp(game: &crate::Game, world_id: WorldId) -> sui::Comp<'static> {
 
 			sui::custom(Div::new(false, lines))
 		}
-		Err(err) => sui::text(format!("{err}"), 16),
+		Err(err) => sui::text(format!("{err:#?}"), 16),
 	};
 
 	let eq = game

@@ -355,23 +355,13 @@ impl World<Block> {
 		}
 		None
 	}
-	pub fn find_foreigns<'a>(&'a self) -> Vec<((i32, i32), (WorldId, usize, usize))> {
-		let mut foreigns = vec![];
-		for (coords, c) in self.chunks() {
-			for x in 0..CHUNK_SIZE as i32 {
-				for y in 0..CHUNK_SIZE as i32 {
-					let b = c.at(x, y).expect("this is impossible in find_foreigns");
-					match b {
-						Block::Foreign(world_id, inst_id, id) => foreigns.push((
-							chunk_coords_into_world_coords(*coords, (x, y)),
-							(*world_id, *inst_id, *id),
-						)),
-						_ => continue,
-					}
-				}
-			}
-		}
-		foreigns
+	pub fn find_foreigns<'a>(
+		&'a self,
+	) -> impl Iterator<Item = ((i32, i32), (WorldId, usize, usize))> + 'a {
+		self.blocks().filter_map(|(coords, b)| match b {
+			Block::Foreign(wid, inst_id, id) => Some((coords, (*wid, *inst_id, *id))),
+			_ => None,
+		})
 	}
 
 	pub fn inputs_count(&self) -> usize {
