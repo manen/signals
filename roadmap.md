@@ -37,6 +37,15 @@ as many platforms as possible
 - so the `raylib` crate supports Windows, Linux, macOS, and web!!!
 - a web client would be huge
 
+i did a web client test and there's some differences between the platforms obviously \
+mostly just mouse input being fucked up \
+and i don't want the game to become a patchwork of `if WEB_BUILD { /* some obscure web unfucking code */ }` \
+so yeah web build stays in post-1.0
+
+to be able to do web nicely we'd need a central mouse input authority if that makes sense
+
+i'll save the web experiment in the branch `web-experiment` just in case
+
 ### backburner
 
 - `-`

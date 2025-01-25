@@ -23,18 +23,19 @@ impl<'a, T: Clone + PartialEq> SelectBar<'a, T> {
 
 	/// returns whether the select bar was used in this tick
 	pub fn tick(&self, rl: &mut RaylibHandle, det: Details, select: &mut T) -> bool {
-		let mouse = (rl.get_mouse_x(), rl.get_mouse_y());
-		let mouse = (mouse.0 - det.x, mouse.1 - det.y);
+		let mouse = common::web::cursor(rl);
+		println!("{mouse:?} {det:?}");
+
 		for (i, edet) in det.split_v(self.list.len() as i32).enumerate() {
-			if mouse.0 >= edet.x && mouse.0 <= edet.x + edet.aw // x
-			&& mouse.1 >= edet.y && mouse.1 <= edet.y + edet.ah
-			// y
-			{
+			if edet.is_inside(mouse.0, mouse.1) {
 				if rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
 					*select = self.list[i].1.clone();
 					return true;
 				}
 				if rl.is_mouse_button_down(MouseButton::MOUSE_BUTTON_LEFT) {
+					if common::web::WEB_BUILD {
+						*select = self.list[i].1.clone();
+					}
 					return true;
 				}
 			}
@@ -54,6 +55,14 @@ impl<'a, T: Clone + PartialEq> SelectBar<'a, T> {
 				} else {
 					SELECT_BAR_UNSELECTED
 				},
+			);
+
+			d.draw_text(
+				&format!("{}, {}", edet.x, edet.y),
+				edet.x,
+				edet.y + 16,
+				16,
+				SELECT_BAR_SELECTED,
 			);
 		}
 	}

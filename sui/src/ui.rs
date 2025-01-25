@@ -1,6 +1,10 @@
 use std::borrow::Cow;
 
-use raylib::{ffi::MouseButton, prelude::RaylibDrawHandle, RaylibHandle};
+use raylib::{
+	ffi::MouseButton,
+	prelude::{RaylibDraw, RaylibDrawHandle},
+	RaylibHandle,
+};
 
 use crate::{
 	comp::{self, Comp, Compatible},
@@ -27,7 +31,7 @@ pub fn text<'a, T: Into<Cow<'a, str>>>(text: T, size: i32) -> Comp<'a> {
 
 macro_rules! handle_input_impl {
 	($self:expr,$rl:expr) => {{
-		let (ptr_x, ptr_y) = ($rl.get_mouse_x(), $rl.get_mouse_y());
+		let (ptr_x, ptr_y) = common::web::cursor($rl);
 
 		let mouse_left_pressed = if $rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
 			if ptr_x as f32 > $self.det.x as f32 && ptr_y as f32 > $self.det.y as f32 {
@@ -98,6 +102,13 @@ impl<'a, L: Layable> RootContext<'a, L> {
 	}
 
 	pub fn render(&self, d: &mut RaylibDrawHandle) {
+		d.draw_text(
+			&format!("({}, {})", self.det.x, self.det.y),
+			self.det.x,
+			self.det.y,
+			12,
+			raylib::color::Color::WHITE,
+		);
 		self.layable.render(d, self.det, self.scale);
 	}
 	pub fn handle_input(&self, rl: &mut RaylibHandle) -> impl Iterator<Item = Event> {

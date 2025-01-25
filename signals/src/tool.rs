@@ -67,6 +67,9 @@ impl Tool {
 			}
 			_ => {}
 		}
+		if common::web::WEB_BUILD {
+			self.pressed(x, y, game);
+		}
 	}
 	pub fn pressed(&mut self, x: i32, y: i32, game: &mut Game) {
 		let main = main_or_return!(mut game);

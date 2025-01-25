@@ -103,11 +103,12 @@ impl Details {
 
 	pub fn split_v(&self, pieces: i32) -> impl Iterator<Item = Self> {
 		let one_w = self.aw / pieces;
+		let base_x = self.x;
 		let y = self.y;
 		let ah = self.ah;
 
 		(0..pieces).map(move |i| one_w * i).map(move |x| Self {
-			x,
+			x: base_x + x,
 			y,
 			aw: one_w,
 			ah,
@@ -115,12 +116,13 @@ impl Details {
 	}
 	pub fn split_h(&self, pieces: i32) -> impl Iterator<Item = Self> {
 		let one_h = self.ah / pieces;
+		let base_y = self.y;
 		let x = self.x;
 		let aw = self.aw;
 
 		(0..pieces).map(move |i| one_h * i).map(move |y| Self {
 			x,
-			y,
+			y: base_y + y,
 			aw,
 			ah: one_h,
 		})

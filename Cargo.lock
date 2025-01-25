@@ -136,6 +136,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "common"
+version = "0.1.0"
+dependencies = [
+ "raylib",
+]
+
+[[package]]
 name = "crossbeam-queue"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -560,6 +567,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bincode",
+ "common",
  "miniz_oxide",
  "raylib",
  "serde",
@@ -604,6 +612,7 @@ dependencies = [
 name = "sui"
 version = "0.1.0"
 dependencies = [
+ "common",
  "raylib",
 ]
 

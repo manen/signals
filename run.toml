@@ -1,0 +1,10 @@
+[build.web]
+index = "run build web build_game && run build web package"
+build_game = 'EMCC_CFLAGS="-O3 -sUSE_GLFW=3 -sGL_ENABLE_GET_PROC_ADDRESS -sWASM=1 -sALLOW_MEMORY_GROWTH=1 -sWASM_MEM_MAX=512MB -sTOTAL_MEMORY=512MB -sABORTING_MALLOC=0 -sASYNCIFY -sFORCE_FILESYSTEM=1 -sASSERTIONS=1 -sERROR_ON_UNDEFINED_SYMBOLS=0 -sEXPORTED_RUNTIME_METHODS=ccallcwrap""" cargo build --target wasm32-unknown-emscripten --release'
+package = """
+mkdir -p ./target/web
+cp ./target/wasm32-unknown-emscripten/release/signals.js ./target/web/signals.js
+cp ./target/wasm32-unknown-emscripten/release/signals.wasm ./target/web/signals.wasm
+cp ./signals/index.html ./target/web/index.html
+cp ./signals/index.css ./target/web/index.css
+"""

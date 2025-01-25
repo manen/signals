@@ -4,10 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+common.workspace = true
+sui.workspace = true
+raylib.workspace = true
 uuid = { version = "1.12.1", features = ["v4", "fast-rng", "serde"] }
 anyhow = "1.0.95"
-raylib.workspace = true
-sui.workspace = true
 serde = { version = "1.0.217", features = ["derive"] }
 bincode = "1.3.3"
 thiserror = "2.0.11"

@@ -20,6 +20,8 @@ use sui::{
 };
 use tool::Tool;
 
+use common::web::WEB_BUILD;
+
 pub const TICK_TIME: f32 = 0.03;
 pub const MOVE_UP: KeyboardKey = KeyboardKey::KEY_W;
 pub const MOVE_DOWN: KeyboardKey = KeyboardKey::KEY_S;
@@ -39,7 +41,7 @@ fn main() {
 		.resizable()
 		.build();
 
-	{
+	if !WEB_BUILD {
 		// center window on screen
 		let monitor = unsafe { raylib::ffi::GetCurrentMonitor() };
 		let raylib::ffi::Vector2 { x: m_x, y: m_y } =
@@ -128,7 +130,8 @@ fn main() {
 			};
 		}
 
-		let (mouse_x, mouse_y) = (rl.get_mouse_x(), rl.get_mouse_y());
+		let (mouse_x, mouse_y) = common::web::cursor(&mut rl);
+
 		let point_x = round(
 			(mouse_x as f32 - pos_info.base.0 as f32) / world::BLOCK_SIZE as f32 / pos_info.scale,
 		);
@@ -199,6 +202,24 @@ fn main() {
 			tool_select.render(&mut d, tool_select_det, Some(&tool));
 			dbg_ctx.render(&mut d);
 			worlds_bar_ctx.render(&mut d);
+
+			if d.is_mouse_button_down(raylib::ffi::MouseButton::MOUSE_BUTTON_LEFT) {
+				println!("clikced");
+			}
+			if WEB_BUILD {
+				use sui::{comp, core::Layable};
+				comp::Centered::new(comp::Text::new(format!("({mouse_x}, {mouse_y})"), 16)).render(
+					&mut d,
+					sui::Details {
+						x: mouse_x,
+						y: mouse_y,
+						..Default::default()
+					},
+					1.0,
+				);
+
+				d.draw_rectangle_lines(0, 0, screen.aw, screen.ah, raylib::color::Color::WHITE);
+			}
 
 			sui::text(format!("({point_x}, {point_y})"), 32).render(
 				&mut d,
