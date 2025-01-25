@@ -46,6 +46,8 @@ to be able to do web nicely we'd need a central mouse input authority if that ma
 like raylib has pressed, down, released and up \
 and we should probably build our own version of that cause pressed and released straightup don't work on the web
 
+and for some fucking reason the mouse x and y were locked to 640 by 480??? i have no clue why that makes any sense
+
 i'll save the web experiment in the branch `web-experiment` just in case
 
 ### backburner
