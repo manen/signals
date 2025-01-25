@@ -90,78 +90,42 @@ impl Tool {
 				// immediately afterwards
 			}
 			Self::PlaceForeign(wid) => {
-				let main_id = game.main_id;
-				// this part has to do suprisingly lot:
-				// - if there exists no foreign to wid, create one and link to it. (simplest case)
-				// - if there exists a foreign to wid, check if the highest id foreign to wid is the most a foreign id for that wid can be
-				//   - if there can be higher, create a reference to the already existing wid, with id highest id + 1
-				//   - if there can't be higher, create a new world with wid and id 1
+				// i want to make it so that a one block gap is okay
+				// so the area we need to scan:
+				//     x
+				//   x x x
+				// x x   x x
+				//   x x x
+				//     x
+				// i'm gonna do all this with iterators
 
-				// some part of this logic should be abstracted into Game
+				let main = match game.worlds.at_mut(game.main_id) {
+					Some(a) => a,
+					None => return,
+				};
 
-				// like a game.fix_foreigns, that does all the foreign housekeeping:
-				// - check if there are any IngameWorld's with 0 references to them, if there are delete them
-				// - .
-				// idk this part is sm harder than it seemed
+				let make_line = |dir, rng: std::ops::Range<i32>| rng.map(move |a| (dir, a));
+				let make_line = |dir| make_line(dir, 1..3);
 
-				// just to test if things work:
+				let lines = Direction::all().map(make_line).flatten();
+				let lines = lines.map(|(dir, mul)| dir.rel_mul(mul));
+				let to_scan = lines.chain([(-1, -1), (-1, 1), (1, -1), (1, 1)]);
 
-				// this part is up next i don't like how foreigns can be infinitely far from each other
-
-				let mut foreigns = main
-					.find_foreigns()
-					.into_iter()
-					.filter(|(_, (world_id, _, _))| wid == world_id)
-					.collect::<Vec<_>>();
-				foreigns.sort_by(|(_, (_, a_inst_id, a_id)), (_, (_, b_inst_id, b_id))| {
-					(a_inst_id * 1000 + a_id).cmp(&(b_inst_id * 1000 + b_id))
-				});
-
-				macro_rules! new_instance {
-					() => {
-						// create new instance
-						let ing = IngameWorld::generate(game, *wid).unwrap_or_default();
-						game.moves.children.push(ing);
-						let inst_id = game.moves.children.len() - 1;
-						*main_or_return!(mut game).mut_at(x, y) = Block::Foreign(*wid, inst_id, 0);
-					};
+				let to_scan = to_scan.map(|(rx, ry)| (x + rx, y + ry));
+				for (x, y) in to_scan {
+					*main.mut_at(x, y) = Block::Switch(true);
 				}
 
-				if if foreigns.len() > 0 {
-					let max_id = {
-						let world = match game.worlds.at(*wid) {
-							Some(a) => a,
-							None => {
-								eprintln!("cannot place world {wid} because it doesn't exist");
-								*self = Default::default();
-								return;
-							}
-						};
-						world.inputs_count().max(world.outputs_count())
-					}
-					.max(1) - 1;
-					let (_, inst_id, id) = foreigns[foreigns.len() - 1].1;
-					if id >= max_id {
-						true
-					} else {
-						*main_or_return!(mut game).mut_at(x, y) =
-							Block::Foreign(*wid, inst_id, id + 1);
-						false
-					}
-				} else {
-					true
-				} {
-					new_instance!();
-				};
+				// we have the pattern of what counts as attached to a clump, but we still need a clump detection algo cause imagine this is ingame:
 
-				let mut moves = std::mem::take(&mut game.moves);
-				match moves.regenerate(game, main_id) {
-					Ok(_) => (),
-					Err(err) => {
-						eprintln!("error while regenerating world:\n{err}")
-					}
-				};
-				game.moves = moves;
+				// foreign inst_id id
+				//         0       3
+				//         0       2
+				//         0       1
+				//         0       0
+				//
+				//                    <- and here comes the new foreign! if we don't do proper clump detection, this would gladly place
+				//                       down an inst_id 0 id 1 cause it doesn't know they're already one clump
 			}
 			_ => {}
 		};

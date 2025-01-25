@@ -164,12 +164,7 @@ impl Direction {
 	}
 
 	pub fn rel(self) -> (i32, i32) {
-		match self {
-			Self::Right => (1, 0),
-			Self::Bottom => (0, 1),
-			Self::Left => (-1, 0),
-			Self::Top => (0, -1),
-		}
+		self.rel_mul(1)
 	}
 	pub fn from_rel(rel: (i32, i32)) -> Option<Self> {
 		match rel {
@@ -178,6 +173,15 @@ impl Direction {
 			(-1, 0) => Some(Self::Left),
 			(0, -1) => Some(Self::Top),
 			_ => None,
+		}
+	}
+
+	pub fn rel_mul(self, mul: i32) -> (i32, i32) {
+		match self {
+			Self::Right => (mul, 0),
+			Self::Bottom => (0, mul),
+			Self::Left => (-mul, 0),
+			Self::Top => (0, -mul),
 		}
 	}
 
