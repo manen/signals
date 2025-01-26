@@ -1,3 +1,7 @@
+mod foreign_clump;
+
+use foreign_clump::FindClump;
+
 use crate::{
 	game::{Game, IngameWorld, WorldId},
 	world::{Block, Direction},
@@ -90,42 +94,15 @@ impl Tool {
 				// immediately afterwards
 			}
 			Self::PlaceForeign(wid) => {
-				// i want to make it so that a one block gap is okay
-				// so the area we need to scan:
-				//     x
-				//   x x x
-				// x x   x x
-				//   x x x
-				//     x
-				// i'm gonna do all this with iterators
-
 				let main = match game.worlds.at_mut(game.main_id) {
 					Some(a) => a,
 					None => return,
 				};
 
-				let make_line = |dir, rng: std::ops::Range<i32>| rng.map(move |a| (dir, a));
-				let make_line = |dir| make_line(dir, 1..3);
+				let clump = main.find_clump((x, y));
+				let clump = clump.collect::<Vec<_>>();
 
-				let lines = Direction::all().map(make_line).flatten();
-				let lines = lines.map(|(dir, mul)| dir.rel_mul(mul));
-				let to_scan = lines.chain([(-1, -1), (-1, 1), (1, -1), (1, 1)]);
-
-				let to_scan = to_scan.map(|(rx, ry)| (x + rx, y + ry));
-				for (x, y) in to_scan {
-					*main.mut_at(x, y) = Block::Switch(true);
-				}
-
-				// we have the pattern of what counts as attached to a clump, but we still need a clump detection algo cause imagine this is ingame:
-
-				// foreign inst_id id
-				//         0       3
-				//         0       2
-				//         0       1
-				//         0       0
-				//
-				//                    <- and here comes the new foreign! if we don't do proper clump detection, this would gladly place
-				//                       down an inst_id 0 id 1 cause it doesn't know they're already one clump
+				println!("{clump:#?}");
 			}
 			_ => {}
 		};
