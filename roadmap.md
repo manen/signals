@@ -7,9 +7,25 @@
 
 ### - world customization
 
-this is next up, all this is easy once we have `sui` in a state where dialogs are easy
+this is next up, but first i want to work on `sui` a little more since sure components are cool but there's still a lot to improve upon:
 
-- finally centralize all rendering
+- the event returned from `Layable::pass_event` should be able to be any type. constraints:
+  - the returned event type should be constant across a project
+  - so i'm thinking a `<T>` in clickable, that sets an `Event` associated type in Layable
+  - other layables further up the component tree will adopt `L::Event`
+  - for components with more than 1 generic Layable types, it should only work if `L1::Event` == `L2::Event` (the other option is an enum and no thank you) (although we could have some way to make `L1` and `L2` return an enum, but only as an optional extra feature)
+
+- dialog boxes
+  - the best way to do this i think is to have two ways of opening dialogues
+  - 1: a toggle enable and a floating component, allowing for small dialogs
+  - 2: a custom event return type that contains a component and a position, and a custom event type to close said dialog (and save changes ig)
+
+- functional components
+  - still a lot to think about w this one
+  - but the problem is there's absolutely no input checking to current 'functional components' (regular ass functions that return a component)
+  - and sooner or later that'll become a performance problem
+  - i'm thinking an `Arg<T>` type, that will only let you see a `&T` when the value inside updates
+  - or something like that i'm going to bed
 
 the rest:
 
