@@ -30,7 +30,7 @@ pub struct Game {
 	pub moves: IngameWorld,
 
 	memory: processor::Memory,
-	programs: Programs,
+	pub programs: Programs,
 }
 type Programs = HashMap<WorldId, (Option<Vec<processor::Instruction>>, usize, usize)>; // v: (none if errored during instgen, inputs_len, outputs_len)
 impl Game {
@@ -97,7 +97,8 @@ impl Game {
 			.with_context(|| "generate_program_for failed in Game::regenerate_moves")?;
 		Ok(())
 	}
-	/// recursively generates the programs needed for `wid` to function
+	/// recursively generates the programs needed for `wid` to function \
+	/// (actually more than we need! this will recursively generate programs for every single world inside every single world etc inside wid)
 	pub fn generate_programs_for(&mut self, wid: WorldId) -> anyhow::Result<()> {
 		let w = self.worlds.at(wid).with_context(|| {
 			format!("no world with id {wid}\nneeded to regenerate needed programs for {wid}")

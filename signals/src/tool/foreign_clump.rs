@@ -1,5 +1,9 @@
-use crate::world::{Block, Direction, World};
+use crate::{
+	game::WorldId,
+	world::{Block, Direction, World},
+};
 
+/// this is just the pattern the start coords and the foreigns inside the clump generate
 pub fn clump_pattern((start_x, start_y): (i32, i32)) -> impl Iterator<Item = (i32, i32)> {
 	// i want to make it so that a one block gap is okay
 	// so the area we need to scan:
@@ -23,6 +27,7 @@ pub fn clump_pattern((start_x, start_y): (i32, i32)) -> impl Iterator<Item = (i3
 
 /// FindClump provides World::find_clump to find foreign clumps
 pub trait FindClump {
+	/// see [Clump] and the comments in [clump_pattern]
 	fn find_clump(&self, start_coords: (i32, i32)) -> Clump;
 }
 impl FindClump for World {
@@ -45,6 +50,16 @@ pub struct Clump<'a> {
 	i: usize,
 }
 impl<'a> Clump<'a> {
+	/// turn self (iterator of coords) into iterator of (wid, inst_id, id)
+	pub fn foreign_data(self) -> impl Iterator<Item = (WorldId, usize, usize)> + 'a {
+		let world = self.world;
+		let clump = self.filter_map(|(x, y)| match world.at(x, y) {
+			Some(&Block::Foreign(wid, inst_id, id)) => Some((wid, inst_id, id)),
+			_ => None,
+		});
+		clump
+	}
+
 	fn push_unique_to_queue<I: IntoIterator<Item = (i32, i32)>>(&mut self, iter: I) {
 		let iter = iter.into_iter();
 

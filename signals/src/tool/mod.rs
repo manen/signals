@@ -1,5 +1,7 @@
 mod foreign_clump;
 
+use std::collections::{HashMap, HashSet};
+
 use foreign_clump::FindClump;
 
 use crate::{
@@ -62,12 +64,24 @@ impl Tool {
 	// }
 
 	pub fn down(&mut self, x: i32, y: i32, game: &mut Game) {
-		let main = main_or_return!(mut game);
 		match self {
 			Self::Place(block) => {
+				let main = main_or_return!(game);
+				match main.at(x, y) {
+					Some(Block::Input(_) | Block::Output(_)) => {
+						main_or_return!(mut game).io_blocks_fix();
+					}
+					Some(Block::Foreign(_, _, _)) => match game.regenerate_moves(game.main_id) {
+						Ok(a) => a,
+						Err(err) => eprintln!(
+							"failed to regenerate moves after replacing a foreign block:\n{err}"
+						),
+					},
+					_ => (),
+				}
+				let main = main_or_return!(mut game);
 				let ptr = main.mut_at(x, y);
 				*ptr = *block;
-				main.io_blocks_fix();
 			}
 			_ => {}
 		}
@@ -99,13 +113,63 @@ impl Tool {
 					None => return,
 				};
 
-				let clump = main.find_clump((x, y));
-				let clump = clump.collect::<Vec<_>>();
+				let mut clump = main
+					.find_clump((x, y))
+					.foreign_data()
+					.filter_map(|(this_wid, inst_id, id)| {
+						if this_wid == *wid {
+							Some((inst_id, id))
+						} else {
+							None
+						}
+					})
+					.collect::<Vec<_>>();
+				clump.sort_by(|(a_inst_id, a_id), (b_inst_id, b_id)| {
+					(a_inst_id * 1000 + a_id).cmp(&(b_inst_id * 1000 + b_id))
+				});
 
-				println!("{clump:#?}");
+				// println!("{clump:#?}");
+
+				let max_id = match game.programs.get(wid) {
+					Some(&(_, a, b)) => a.min(b),
+					None => return,
+				};
+
+				let (new_inst_id, new_id) = (|| {
+					// appending to an existing inst_id is easy, creating a new inst_id means assuming game.moves to be fully
+					// regenerated and checking its children.len()
+
+					let clump_len = clump.len();
+					let mut clump = clump.into_iter().peekable();
+
+					let (mut prev_inst_id, mut prev_id) =
+						clump.peek().copied().unwrap_or((usize::MAX, usize::MAX));
+
+					for (inst_id, id) in clump.chain(std::iter::once((usize::MAX, usize::MAX))) {
+						if inst_id > prev_inst_id && prev_id <= max_id {
+							// inst_id has an id without a foreign
+							//
+							// yes this is the only reason for this loop
+							return (prev_inst_id, prev_id + 1);
+						}
+
+						prev_inst_id = inst_id;
+						prev_id = id;
+					}
+
+					// no id holes to be filled, creating new inst_id
+					let new_inst_id = game.moves.children.len();
+					(new_inst_id, 0)
+				})();
+
+				*main.mut_at(x, y) = Block::Foreign(*wid, new_inst_id, new_id);
+
+				let mut taken_moves = std::mem::take(&mut game.moves);
+				taken_moves.regenerate(game, game.main_id);
+				game.moves = taken_moves;
 			}
 			_ => {}
-		};
+		}
 	}
 	pub fn released(&mut self, x: i32, y: i32, game: &mut Game) {
 		let main = main_or_return!(mut game);

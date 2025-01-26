@@ -65,17 +65,21 @@ pub struct IngameWorld {
 }
 impl IngameWorld {
 	/// generates the ingameworld required for a World to have foreigns working \
-	/// see [IngameWorld::regenerate]
+	/// see [IngameWorld::regenerate] \
+	/// will return simulated if world_id == game.main_id \
+	/// if you need an ingameworld that is surely simulated, use [IngameWorld::simulated]
 	pub fn generate(game: &mut Game, world_id: WorldId) -> anyhow::Result<Self> {
-		let typ = (|| {
-			if game.main_id != world_id {
-				if let Some((Some(a), _, _)) = game.programs.get(&world_id) {
-					return IngameWorldType::processor();
-				}
-			}
-			IngameWorldType::simulated()
-		})();
+		if game.main_id == world_id {
+			return Self::simulated(game, world_id);
+		}
 
+		let typ = {
+			if let Some((Some(a), _, _)) = game.programs.get(&world_id) {
+				IngameWorldType::processor()
+			} else {
+				IngameWorldType::simulated()
+			}
+		};
 		let mut ingameworld = Self {
 			world_id,
 			typ,
@@ -84,6 +88,16 @@ impl IngameWorld {
 		ingameworld.regenerate(game, world_id)?;
 		Ok(ingameworld)
 	}
+	pub fn simulated(game: &mut Game, world_id: WorldId) -> anyhow::Result<Self> {
+		let mut ingameworld = Self {
+			world_id,
+			typ: IngameWorldType::simulated(),
+			..Default::default()
+		};
+		ingameworld.regenerate(game, world_id)?;
+		Ok(ingameworld)
+	}
+
 	/// regenerates itself and fixes the world if needed \
 	/// recursive \
 	/// will not edit self.typ, make sure you have that set up correctly
@@ -103,29 +117,22 @@ impl IngameWorld {
 					(a_inst_id * 1000 + a_id).cmp(&(b_inst_id * 1000 + b_id))
 				});
 
-				let mut inst_ids_already_done =
-					Vec::with_capacity((self.children.len() as i32 - 1 as i32).max(0) as usize);
+				let mut inst_ids_already_done = Vec::with_capacity(self.children.len());
 				let mut next_id_per_inst_id: HashMap<usize, usize> = HashMap::new();
 
 				for (coords, (inst_world_id, mut inst_id, id)) in foreigns {
 					if !inst_ids_already_done.contains(&inst_id) {
 						// only happens once per inst_id
+
 						let inst = match self.children.iter_mut().nth(inst_id) {
 							Some(ptr) => ptr,
 							None => {
-								if inst_id != self.children.len() {
-									inst_id = self.children.len();
-									game.worlds
-										.at_mut(world_id)
-										.with_context(|| {
-											"impossible case in IngameWorld::regenerate"
-										})?
-										.map_at(coords.0, coords.1, |_| {
-											Block::Foreign(inst_world_id, inst_id, id)
-										})
-								}
-								self.children
-									.push(IngameWorld::generate(game, inst_world_id)?);
+								// generate ingameworld for inst_id
+								// since foreigns is already sorted by inst_id and id, it's a little easier
+								assert_eq!(self.children.len(), inst_id); // <- make sure just pushing it onto self.children will work
+
+								let child = IngameWorld::generate(game, inst_world_id)?;
+								self.children.push(child);
 								&mut self.children[inst_id]
 							}
 						};
@@ -305,15 +312,6 @@ impl IngameWorld {
 		Ok(())
 	}
 
-	fn child_mut(&mut self, inst_id: usize) -> &mut Self {
-		if self.children.len() as i32 - 1 <= inst_id as i32 {
-		} else {
-			self.children
-				.resize(self.children.len().max(inst_id + 1), Default::default());
-		}
-		&mut self.children[inst_id]
-	}
-
 	pub(super) fn process_moves(&mut self, new_moves: Vec<Move>, mut ret: impl FnMut(Move)) {
 		match &mut self.typ {
 			IngameWorldType::Simulated { moves } => {
@@ -324,10 +322,12 @@ impl IngameWorld {
 						Move::Inside { .. } => self.receive_moves([mov]),
 						Move::Output { .. } => ret(mov),
 						Move::Foreign { inst_id, id, .. } => {
-							self.child_mut(inst_id).receive_moves([Move::Input {
-								id,
-								signal: Signal::ExternalPoweron,
-							}]);
+							self.children.iter_mut().nth(inst_id).map(|f| {
+								f.receive_moves([Move::Input {
+									id,
+									signal: Signal::ExternalPoweron,
+								}])
+							});
 						}
 						Move::Input { .. } => {
 							eprintln!("unexpected input move in moves processing: {mov:?}")
