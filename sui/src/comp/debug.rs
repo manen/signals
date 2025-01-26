@@ -50,11 +50,3 @@ impl<L: Layable> Layable for Debug<L> {
 		self.layable.pass_event(event, det, scale)
 	}
 }
-
-/// See [Debug]
-pub trait Debuggable: Sized + Layable {
-	fn debug(self) -> Debug<Self> {
-		Debug::new(self)
-	}
-}
-impl<L: Layable> Debuggable for L {}

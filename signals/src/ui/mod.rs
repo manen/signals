@@ -8,7 +8,7 @@ use crate::{
 	game::{IngameWorld, IngameWorldType, WorldId},
 	processor,
 };
-use sui::{comp::*, core::Store};
+use sui::{comp::*, core::Store, LayableExt};
 
 pub fn game_debug_ui(
 	game: &crate::Game,
@@ -20,18 +20,12 @@ pub fn game_debug_ui(
 		false,
 		[
 			ingameworld_dbg,
-			sui::custom(sui::comp::Centered::new(sui::comp::Text::new(
-				"this is centered!!!",
-				13,
-			))),
+			sui::custom(sui::comp::Text::new("this is centered!!!", 13).centered()),
 			inst_comp(game, game.main_id),
 		],
 	);
 
-	sui::custom(FixedSize::fix_both(
-		300,
-		Scrollable::new(scroll_state, fit::scrollable::ScrollableMode::Both, page),
-	))
+	sui::custom(page.scrollable(scroll_state).fix_wh_square(300))
 }
 
 fn ingameworld_dbg_ui(i: usize, moves: &IngameWorld) -> sui::comp::Comp<'static> {

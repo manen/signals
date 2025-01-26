@@ -2,10 +2,16 @@
 
 ## todo
 
-- overhaul `Tool::PlaceForeign`, only allow foreigns with the same `inst_id` to be next to each other
+- [x] overhaul `Tool::PlaceForeign`, only allow foreigns with the same `inst_id` to be next to each other
   - (i can pretty much just rewrite it from scratch, `IngameWorld::generate` exists idk why it's all manual)
 
 ### - world customization
+
+this is next up, all this is easy once we have `sui` in a state where dialogs are easy
+
+- finally centralize all rendering
+
+the rest:
 
 - custom name, color
 - inputs & outputs custom name, inputs custom color
@@ -56,6 +62,9 @@ i'll save the web experiment in the branch `web-experiment` just in case
   - give the user some way to turn binary numbers into decimal
   - like a tool that can be used to select blocks in a row and turn their on/off value into a number on the screen
   - or something like that
+
+- `-`
+  - for some reason `x.centered().clickable()` works but `x.clickable().centered()` doesn't
 
 ## 1.0
 

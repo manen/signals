@@ -12,7 +12,7 @@ pub mod div;
 pub use div::Div;
 
 pub mod fit;
-pub use fit::{Centered, Crop, FixedSize, ScaleToFit, Scrollable};
+pub use fit::*;
 
 pub mod overlay;
 pub use overlay::Overlay;
@@ -21,7 +21,7 @@ pub mod space;
 pub use space::Space;
 
 pub mod debug;
-pub use debug::{Debug, Debuggable};
+pub use debug::Debug;
 
 use crate::Layable;
 

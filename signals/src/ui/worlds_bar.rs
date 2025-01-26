@@ -1,7 +1,7 @@
 use crate::{game::Game, ui::ingame::WorldPreview, world::World};
 use fit::scrollable::{self, ScrollableState};
 use raylib::prelude::RaylibDrawHandle;
-use sui::{comp::*, core::Store, tex::Texture, Compatible};
+use sui::{comp::*, core::Store, tex::Texture, Compatible, LayableExt};
 
 pub const SWITCH_CLICKED: &str = "worlds_bar_worlds_switch_clicked";
 pub const FOREIGN_CLICKED: &str = "worlds_bar_worlds_place_clicked";
@@ -18,27 +18,23 @@ pub fn worlds_bar(
 		.worlds()
 		.enumerate()
 		.map(|(i, w)| worlds_bar_world(d, height, i, w))
-		.chain(std::iter::once(sui::custom(FixedSize::fix_both(
-			height,
-			Clickable::new(PLUS_CLICKED, 0, Centered::new(Text::new("+", 50))),
-		))));
+		.chain(std::iter::once(sui::custom(
+			Text::new("+", 50)
+				.centered()
+				.clickable(PLUS_CLICKED, 0)
+				.fix_wh_square(height),
+		)));
 	let previews = previews.collect::<Vec<_>>();
 
-	sui::custom(Clickable::new_fallback(
-		"faszopm kivan mar",
-		6,
-		FixedSize::fix_size(
-			(
-				d.get_render_width(),
-				height + scrollable::SCROLLBAR_WIDTH as i32,
-			),
-			Scrollable::new_uncropped(
-				scroll_state,
-				fit::scrollable::ScrollableMode::Horizontal,
-				Div::new(true, previews),
-			),
-		),
-	))
+	let elem = Div::new(true, previews)
+		.scrollable_horiz(scroll_state)
+		.fix_wh(
+			d.get_render_width(),
+			height + scrollable::SCROLLBAR_WIDTH as i32,
+		)
+		.clickable_fallback("faszopm kivan mar", 6);
+
+	sui::custom(elem)
 }
 
 fn worlds_bar_world(
@@ -49,26 +45,25 @@ fn worlds_bar_world(
 ) -> sui::Comp<'static> {
 	let world_preview = ScaleToFit::fix_h(height, WorldPreview::new(w));
 
-	sui::custom(Overlay::new(
-		Texture::from_layable(d, &world_preview),
-		FixedSize::fix_both(
-			height,
-			Centered::new(sui::Div::new(
-				false,
-				[
-					sui::custom(Clickable::new(
-						FOREIGN_CLICKED,
-						i as i32,
-						Centered::new(Text::new("place", 14)),
-					)),
-					Space::new(0, 20).into_comp(),
-					sui::custom(Clickable::new(
-						SWITCH_CLICKED,
-						i as i32,
-						Text::new("switch here", 14),
-					)),
-				],
-			)),
-		),
-	))
+	let place = Text::new("place", 14)
+		.centered()
+		.clickable(FOREIGN_CLICKED, i as i32);
+	let switch = Text::new("switch here", 14).centered();
+
+	let clickables = Div::new(
+		false,
+		[
+			sui::custom(switch),
+			Space::new(0, 20).into_comp(),
+			sui::custom(place),
+		],
+	);
+
+	let elem = clickables
+		.centered()
+		.fix_wh_square(height)
+		.with_background(Texture::from_layable(d, &world_preview))
+		.clickable_fallback(SWITCH_CLICKED, i as i32);
+
+	sui::custom(elem)
 }

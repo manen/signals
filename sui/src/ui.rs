@@ -3,8 +3,12 @@ use std::borrow::Cow;
 use raylib::{ffi::MouseButton, prelude::RaylibDrawHandle, RaylibHandle};
 
 use crate::{
-	comp::{self, Comp, Compatible},
-	core::Event,
+	comp::{
+		self,
+		scrollable::{ScrollableMode, ScrollableState},
+		Comp, Compatible,
+	},
+	core::{Event, Store},
 	Details, Layable,
 };
 
@@ -108,3 +112,78 @@ impl<'a, L: Layable> RootContext<'a, L> {
 		handle_input_impl!(self, d)
 	}
 }
+
+/// LayableExt provides associated functions for most comp::*::new calls
+pub trait LayableExt: Layable + Sized {
+	/// see [comp::Centered]
+	fn centered(self) -> comp::Centered<Self> {
+		comp::Centered::new(self)
+	}
+	/// see [comp::Crop]
+	fn crop(self) -> comp::Crop<Self> {
+		comp::Crop::new(self)
+	}
+
+	/// see [comp::FixedSize]
+	fn fix_w(self, width: i32) -> comp::FixedSize<Self> {
+		comp::FixedSize::fix_w(width, self)
+	}
+	/// see [comp::FixedSize]
+	fn fix_h(self, height: i32) -> comp::FixedSize<Self> {
+		comp::FixedSize::fix_h(height, self)
+	}
+	/// see [comp::FixedSize]
+	fn fix_wh(self, width: i32, height: i32) -> comp::FixedSize<Self> {
+		comp::FixedSize::fix_size((width, height), self)
+	}
+	/// see [comp::FixedSize]
+	fn fix_wh_square(self, both: i32) -> comp::FixedSize<Self> {
+		comp::FixedSize::fix_both(both, self)
+	}
+
+	/// see [comp::ScaleToFit]
+	fn scale_h_to_fix(self, fix_width: i32) -> comp::ScaleToFit<Self> {
+		comp::ScaleToFit::fix_w(fix_width, self)
+	}
+	/// see [comp::ScaleToFit]
+	fn scale_w_to_fix(self, fix_height: i32) -> comp::ScaleToFit<Self> {
+		comp::ScaleToFit::fix_h(fix_height, self)
+	}
+
+	/// see [comp::Scrollable]
+	fn scrollable_vert(self, state: Store<ScrollableState>) -> comp::Crop<comp::Scrollable<Self>> {
+		comp::Scrollable::new(state, ScrollableMode::Vertical, self)
+	}
+	/// see [comp::Scrollable]
+	fn scrollable_horiz(self, state: Store<ScrollableState>) -> comp::Crop<comp::Scrollable<Self>> {
+		comp::Scrollable::new(state, ScrollableMode::Horizontal, self)
+	}
+	/// see [comp::Scrollable]
+	fn scrollable(self, state: Store<ScrollableState>) -> comp::Crop<comp::Scrollable<Self>> {
+		comp::Scrollable::new(state, ScrollableMode::Both, self)
+	}
+
+	/// see [comp::Clickable]
+	fn clickable(self, id: &'static str, n: i32) -> comp::Clickable<Self> {
+		comp::Clickable::new(id, n, self)
+	}
+	/// see [comp::Clickable]
+	fn clickable_fallback(self, id: &'static str, n: i32) -> comp::Clickable<Self> {
+		comp::Clickable::new_fallback(id, n, self)
+	}
+
+	/// see [comp::Debug]
+	fn debug(self) -> comp::Debug<Self> {
+		comp::Debug::new(self)
+	}
+
+	/// see [comp::Overlay]
+	fn overlay<L1: Layable>(self, foreground: L1) -> comp::Overlay<L1, Self> {
+		comp::Overlay::new(self, foreground)
+	}
+	/// see [comp::Overlay]
+	fn with_background<L1: Layable>(self, background: L1) -> comp::Overlay<Self, L1> {
+		comp::Overlay::new(background, self)
+	}
+}
+impl<L: Layable> LayableExt for L {}

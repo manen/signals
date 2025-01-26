@@ -2,7 +2,7 @@ pub mod core;
 pub use core::{Details, DynamicLayable, Layable};
 
 pub mod comp;
-pub use comp::{Comp, Compatible, Debuggable, Div, SelectBar, Text};
+pub use comp::{Comp, Compatible, Div, SelectBar, Text};
 
 pub mod tex;
 
