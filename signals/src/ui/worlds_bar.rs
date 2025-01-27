@@ -59,7 +59,7 @@ fn worlds_bar(
 		.chain(std::iter::once(sui::custom(
 			Text::new("+", 50)
 				.centered()
-				.clickable(SignalsEvent::NewWorld)
+				.clickable(|| SignalsEvent::NewWorld)
 				.fix_wh_square(height),
 		)));
 	let previews = previews.collect::<Vec<_>>();
@@ -70,7 +70,7 @@ fn worlds_bar(
 			d.get_render_width(),
 			height + scrollable::SCROLLBAR_WIDTH as i32,
 		)
-		.clickable_fallback(SignalsEvent::WorldsBarFallback);
+		.clickable_fallback(|| SignalsEvent::WorldsBarFallback);
 
 	sui::custom(elem)
 }
@@ -85,7 +85,7 @@ fn worlds_bar_world(
 
 	let place = Text::new("place", 14)
 		.centered()
-		.clickable(SignalsEvent::PlaceWorld(wid));
+		.clickable(move || SignalsEvent::PlaceWorld(wid));
 	let switch = Text::new("switch here", 14).centered();
 
 	let clickables = Div::new(
@@ -101,7 +101,7 @@ fn worlds_bar_world(
 		.centered()
 		.fix_wh_square(height)
 		.with_background(Texture::from_layable(d, &world_preview))
-		.clickable_fallback(SignalsEvent::SwitchToWorld(wid));
+		.clickable_fallback(move || SignalsEvent::SwitchToWorld(wid));
 
 	sui::custom(elem)
 }

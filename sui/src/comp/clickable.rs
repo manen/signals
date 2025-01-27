@@ -1,29 +1,38 @@
 use crate::{core::Event, Layable};
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 /// while this technically does work with any Layable, to implement Compatible C needs to be Comp
-pub struct Clickable<C, T>
+pub struct Clickable<C, F, T>
 where
 	T: Clone + 'static,
+	F: Fn() -> T,
 	C: Layable,
 {
 	comp: C,
-	ret: T,
+	gen_ret: F,
 	/// if true, it will check if self.comp bubbles anything back and only respond if it doesn't
 	fallback: bool,
 }
-impl<C: Layable, T: Clone> Clickable<C, T> {
-	pub fn new(ret: T, comp: C) -> Self {
+impl<C: Layable + std::fmt::Debug, T: Clone, F: Fn() -> T> std::fmt::Debug for Clickable<C, F, T> {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.debug_struct("Clickable")
+			.field("comp", &self.comp)
+			.field("fallback", &self.fallback)
+			.finish()
+	}
+}
+impl<C: Layable, T: Clone, F: Fn() -> T> Clickable<C, F, T> {
+	pub fn new(gen_ret: F, comp: C) -> Self {
 		Clickable {
 			comp,
-			ret,
+			gen_ret,
 			fallback: false,
 		}
 	}
-	pub fn new_fallback(ret: T, comp: C) -> Self {
+	pub fn new_fallback(gen_ret: F, comp: C) -> Self {
 		Clickable {
 			comp,
-			ret,
+			gen_ret,
 			fallback: true,
 		}
 	}
@@ -32,7 +41,7 @@ impl<C: Layable, T: Clone> Clickable<C, T> {
 		self.comp
 	}
 }
-impl<T: Clone, C: Layable> Layable for Clickable<C, T> {
+impl<T: Clone, C: Layable, F: Fn() -> T> Layable for Clickable<C, F, T> {
 	fn size(&self) -> (i32, i32) {
 		self.comp.size()
 	}
@@ -49,7 +58,7 @@ impl<T: Clone, C: Layable> Layable for Clickable<C, T> {
 	) -> Option<crate::core::ReturnEvent> {
 		let respond = || match event {
 			Event::MouseClick { x, y } if det.mul_size(scale).is_inside(x, y) => {
-				Some(Event::ret(self.ret.clone()))
+				Some(Event::ret((self.gen_ret)()))
 			}
 			_ => None,
 		};
