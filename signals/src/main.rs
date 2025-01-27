@@ -19,6 +19,7 @@ use sui::{
 	Layable,
 };
 use tool::Tool;
+use ui::worlds_bar;
 
 pub const TICK_TIME: f32 = 0.03;
 pub const MOVE_UP: KeyboardKey = KeyboardKey::KEY_W;
@@ -67,9 +68,7 @@ fn main() {
 	let mut tool: tool::Tool = Default::default();
 	let tool_select = sui::SelectBar::new(tool::TOOLS);
 
-	let mut worlds_bar_cache = sui::core::Cached::default();
-	let scroll_state = Store::new(Default::default());
-	let mut game_retexture_counter = 0; // <- change this variable for the worlds_bar to regenerate
+	let mut worlds_bar = worlds_bar::WorldsBar::default();
 
 	let mut dbg_cache = sui::core::Cached::default();
 	let dbg_scroll_state = Store::new(Default::default());
@@ -165,13 +164,9 @@ fn main() {
 				1.0,
 			);
 
-			let worlds_bar = worlds_bar_cache.update_with_unchecked(
-				(game_retexture_counter, worlds_bar_h),
-				(&mut d, &game),
-				|(_, height), (d, game)| ui::worlds_bar(d, game, height, scroll_state.clone()),
-			);
-			worlds_bar_det.aw = worlds_bar_det.aw.min(worlds_bar.size().0);
-			let worlds_bar_ctx = sui::RootContext::new(worlds_bar, worlds_bar_det, 1.0);
+			let worlds_bar_comp = worlds_bar.update(&mut d, &game, worlds_bar_h);
+			worlds_bar_det.aw = worlds_bar_det.aw.min(worlds_bar_comp.size().0);
+			let worlds_bar_ctx = worlds_bar.root_context(worlds_bar_det, 1.0);
 
 			// handled later, when there's no other references to game
 			let events = dbg_ctx
@@ -240,7 +235,7 @@ fn main() {
 				} => {
 					let id = game.push();
 					game.switch_main(id);
-					game_retexture_counter += 1;
+					worlds_bar.clear_cache();
 				}
 				Event::Named {
 					id: ui::worlds_bar::SWITCH_CLICKED,
@@ -248,7 +243,7 @@ fn main() {
 				} => {
 					let id = n_to_id(n);
 					game.switch_main(id);
-					game_retexture_counter += 1;
+					worlds_bar.clear_cache();
 				}
 				Event::Named {
 					id: ui::worlds_bar::FOREIGN_CLICKED,

@@ -120,4 +120,24 @@ impl<T> Cached<T> {
 			panic!("self.val is none, even though we just checked if it's none and set it to some if it is")
 		}
 	}
+
+	pub fn borrow(&self) -> Option<&T> {
+		self.val.as_ref()
+	}
 }
+
+// --
+
+// use crate::{Comp, Compatible};
+
+// /// Arg represents an argument to a functional component, caching its component output and skipping
+// /// regenerating if the argument stayed the same
+// pub struct Arg<T> {
+// 	cache: Cached<Comp<'static>>,
+// 	_a: std::marker::PhantomData<T>,
+// }
+// impl<T> Arg<T> {
+// 	pub fn with_borrow<C: Compatible<'static>>(&self, f: impl FnOnce(T) -> C) -> &Comp<'static> {
+// 		self.cache.update(args, f)
+// 	}
+// }

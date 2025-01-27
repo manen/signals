@@ -2,7 +2,6 @@ pub mod ingame;
 
 pub mod worlds_bar;
 use fit::scrollable::ScrollableState;
-pub use worlds_bar::worlds_bar;
 
 use crate::{
 	game::{IngameWorld, IngameWorldType, WorldId},

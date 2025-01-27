@@ -1,13 +1,51 @@
 use crate::{game::Game, ui::ingame::WorldPreview, world::World};
 use fit::scrollable::{self, ScrollableState};
 use raylib::prelude::RaylibDrawHandle;
-use sui::{comp::*, core::Store, tex::Texture, Compatible, LayableExt};
+use sui::{
+	comp::*,
+	core::{Cached, Store},
+	tex::Texture,
+	Compatible, Details, LayableExt, RootContext,
+};
 
 pub const SWITCH_CLICKED: &str = "worlds_bar_worlds_switch_clicked";
 pub const FOREIGN_CLICKED: &str = "worlds_bar_worlds_place_clicked";
 pub const PLUS_CLICKED: &str = "worlds_bar_worlds_plus_clicked";
 
-pub fn worlds_bar(
+#[derive(Default)]
+pub struct WorldsBar {
+	comp: Cached<Comp<'static>>,
+	scroll_state: Store<ScrollableState>,
+}
+impl WorldsBar {
+	pub fn new(d: &mut RaylibDrawHandle, game: &Game, height: i32) -> Self {
+		let mut s = Self {
+			comp: Default::default(),
+			scroll_state: Default::default(),
+		};
+		s.update(d, game, height);
+		s
+	}
+
+	pub fn update(&mut self, d: &mut RaylibDrawHandle, game: &Game, height: i32) -> &Comp<'static> {
+		self.comp.update_with_unchecked(height, d, |height, d| {
+			worlds_bar(d, game, height, self.scroll_state.clone())
+		})
+	}
+	pub fn clear_cache(&mut self) {
+		self.comp = Default::default();
+	}
+
+	pub fn root_context(&self, det: Details, scale: f32) -> RootContext<Comp<'static>> {
+		match self.comp.borrow() {
+			Some(comp) => RootContext::new(comp, det, scale),
+			None => panic!("attempted to get RootContext from uninitialized WorldsBar"),
+		}
+	}
+}
+// eventually abstract all this into a CustomComp trait if i feel like it
+
+fn worlds_bar(
 	d: &mut RaylibDrawHandle,
 	game: &Game,
 	height: i32,
