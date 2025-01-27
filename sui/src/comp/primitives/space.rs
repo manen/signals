@@ -25,3 +25,87 @@ impl Layable for Space {
 		None
 	}
 }
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct MarginValues {
+	r: i32,
+	l: i32,
+	t: i32,
+	b: i32,
+}
+
+#[derive(Clone, Debug)]
+pub struct Margin<L: Layable> {
+	layable: L,
+	values: MarginValues,
+}
+impl<L: Layable> Margin<L> {
+	pub fn new(values: MarginValues, layable: L) -> Self {
+		Self { layable, values }
+	}
+
+	pub fn vertical(margin_v: i32, layable: L) -> Self {
+		Self::new(
+			MarginValues {
+				r: margin_v,
+				l: margin_v,
+				t: 0,
+				b: 0,
+			},
+			layable,
+		)
+	}
+	pub fn horizontal(margin_h: i32, layable: L) -> Self {
+		Self::new(
+			MarginValues {
+				r: 0,
+				l: 0,
+				t: margin_h,
+				b: margin_h,
+			},
+			layable,
+		)
+	}
+	pub fn all(margin: i32, layable: L) -> Self {
+		Self::new(
+			MarginValues {
+				r: margin,
+				l: margin,
+				t: margin,
+				b: margin,
+			},
+			layable,
+		)
+	}
+
+	fn l_det(&self, det: crate::Details, scale: f32) -> crate::Details {
+		crate::Details {
+			x: det.x + ((self.values.l as f32) * scale) as i32,
+			y: det.y + ((self.values.t as f32) * scale) as i32,
+			aw: det.aw - ((self.values.r as f32) * scale) as i32,
+			ah: det.ah - ((self.values.b as f32) * scale) as i32,
+		}
+	}
+}
+impl<L: Layable> Layable for Margin<L> {
+	fn size(&self) -> (i32, i32) {
+		let (lw, lh) = self.layable.size();
+
+		(
+			lw + self.values.r + self.values.l,
+			lh + self.values.t + self.values.b,
+		)
+	}
+	fn render(&self, d: &mut raylib::prelude::RaylibDrawHandle, det: crate::Details, scale: f32) {
+		self.layable.render(d, self.l_det(det, scale), scale)
+	}
+	fn pass_event(
+		&self,
+		event: crate::core::Event,
+		det: crate::Details,
+		scale: f32,
+	) -> Option<crate::core::ReturnEvent> {
+		self.layable
+			.pass_event(event, self.l_det(det, scale), scale)
+	}
+}

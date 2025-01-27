@@ -4,10 +4,8 @@ use raylib::{
 	RaylibHandle,
 };
 
+use crate::color;
 use raylib::color::Color;
-pub const fn color(r: u8, g: u8, b: u8, a: u8) -> Color {
-	Color { r, g, b, a }
-}
 pub const SELECT_BAR_SELECTED: Color = color(240, 240, 240, 255);
 pub const SELECT_BAR_UNSELECTED: Color = color(160, 160, 160, 255);
 

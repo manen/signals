@@ -5,10 +5,17 @@ use crate::{
 };
 use raylib::prelude::RaylibDrawHandle;
 
-pub trait DivComponents {
+pub trait DivComponents: Sized {
 	type L: Layable;
 
 	fn iter_components(&self) -> impl Iterator<Item = &Self::L>;
+
+	fn to_div(self) -> Div<Self> {
+		Div::new(false, self)
+	}
+	fn to_div_vert(self) -> Div<Self> {
+		Div::new(true, self)
+	}
 }
 impl<const N: usize, L: Layable> DivComponents for [L; N] {
 	type L = L;

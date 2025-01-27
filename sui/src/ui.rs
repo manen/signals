@@ -150,6 +150,11 @@ pub trait LayableExt: Layable + Sized {
 		comp::ScaleToFit::fix_h(fix_height, self)
 	}
 
+	/// see [comp::Margin]
+	fn margin(self, margin: i32) -> comp::Margin<Self> {
+		comp::Margin::all(margin, self)
+	}
+
 	/// see [comp::Scrollable]
 	fn scrollable_vert(self, state: Store<ScrollableState>) -> comp::Crop<comp::Scrollable<Self>> {
 		comp::Scrollable::new(state, ScrollableMode::Vertical, self)

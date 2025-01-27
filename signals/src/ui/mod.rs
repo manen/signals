@@ -3,6 +3,8 @@ pub mod ingame;
 pub mod worlds_bar;
 use fit::scrollable::ScrollableState;
 
+use sui::comp::div::DivComponents;
+
 use crate::{
 	game::{IngameWorld, IngameWorldType, WorldId},
 	processor,
@@ -78,23 +80,14 @@ fn ingameworld_dbg_ui(i: usize, moves: &IngameWorld) -> sui::comp::Comp<'static>
 		.children
 		.iter()
 		.enumerate()
-		.map(|(i, child)| ingameworld_dbg_ui(i, child));
-	let children_div = Div::new(
-		true,
-		[
-			Space::new(10, 0).into_comp(),
-			sui::page(children.collect::<Vec<_>>()),
-		],
-	);
+		.map(|(i, child)| ingameworld_dbg_ui(i, child).margin(2));
+	let children_div = children.collect::<Vec<_>>().to_div();
 
-	sui::custom(Div::new(
-		false,
-		[
-			line.into_comp(),
-			Space::new(0, 5).into_comp(),
-			sui::custom(children_div),
-		],
-	))
+	sui::custom(
+		[sui::custom(line.into_comp()), sui::custom(children_div)]
+			.to_div()
+			.margin(2),
+	)
 }
 
 pub fn inst_comp(game: &crate::Game, world_id: WorldId) -> sui::Comp<'static> {

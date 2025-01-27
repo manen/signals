@@ -73,9 +73,14 @@ fn main() {
 	let mut g_pos = PosInfo::default();
 
 	fn frame_dialog(comp: sui::Comp<'static>) -> sui::Comp<'static> {
-		let comp = comp.with_background(sui::comp::Color::new(raylib::color::Color::new(
-			40, 40, 40, 255,
-		)));
+		use sui::comp;
+		let comp = comp
+			.margin(5)
+			.with_background(comp::Color::new(sui::color(13, 13, 13, 255)))
+			.margin(1)
+			.with_background(comp::Color::new(sui::color(255, 255, 255, 255)))
+			.margin(2);
+
 		sui::custom(comp)
 	}
 	let mut dialog_handler = sui::dialog::Handler::new(frame_dialog);

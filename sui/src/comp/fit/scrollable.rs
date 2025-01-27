@@ -9,9 +9,8 @@ use super::Crop;
 
 pub const SCROLLBAR_WIDTH: f32 = 10.0; // it's getting multiplied by scale anyway so we just savin a step
 pub const SCROLLBAR_LENGTH: f32 = SCROLLBAR_WIDTH * 4.0;
-const SCROLLBAR_BG_COLOR: raylib::color::Color = crate::comp::select_bar::color(33, 35, 38, 255);
-const SCROLLBAR_HANDLE_COLOR: raylib::color::Color =
-	crate::comp::select_bar::color(106, 113, 122, 255);
+const SCROLLBAR_BG_COLOR: raylib::color::Color = crate::color(33, 35, 38, 255);
+const SCROLLBAR_HANDLE_COLOR: raylib::color::Color = crate::color(106, 113, 122, 255);
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ScrollableMode {
