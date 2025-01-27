@@ -7,7 +7,7 @@ pub struct Space {
 	h: i32,
 }
 impl Space {
-	pub fn new(w: i32, h: i32) -> Self {
+	pub const fn new(w: i32, h: i32) -> Self {
 		Self { w, h }
 	}
 }

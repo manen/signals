@@ -34,6 +34,11 @@ pub enum Comp<'a> {
 	Space(Space),
 	Dynamic(crate::core::DynamicLayable<'a>),
 }
+impl Default for Comp<'static> {
+	fn default() -> Self {
+		Self::Space(Space::new(0, 0))
+	}
+}
 impl<'a> Comp<'a> {
 	pub fn new<C: Compatible<'a>>(c: C) -> Self {
 		c.into_comp()

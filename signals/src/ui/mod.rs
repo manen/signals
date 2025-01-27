@@ -9,12 +9,45 @@ use crate::{
 };
 use sui::{comp::*, core::Store, LayableExt};
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 pub enum SignalsEvent {
+	DialogCommand(sui::dialog::Command),
 	NewWorld,
 	SwitchToWorld(WorldId),
 	PlaceWorld(WorldId),
 	WorldsBarFallback,
+}
+
+fn spawn_dialog() -> sui::comp::Comp<'static> {
+	let dialog_content = Div::new(
+		false,
+		[
+			sui::custom(Text::new("this is a dialog!!! yippie", 16).centered()),
+			sui::custom(Space::new(30, 30)),
+			sui::custom(
+				Text::new("close", 12)
+					.clickable(SignalsEvent::DialogCommand(sui::dialog::Command::Close)),
+			),
+		],
+	);
+	let dialog_content = sui::custom(dialog_content);
+
+	let comp = Text::new("summon dialog", 24)
+		.centered()
+		.clickable(SignalsEvent::DialogCommand(sui::dialog::Command::Open(
+			sui::dialog::Instance {
+				comp: dialog_content,
+				det: sui::Details {
+					x: 400,
+					y: 600,
+					aw: 100,
+					ah: 100,
+				},
+				scale: 1.0,
+			},
+		)));
+
+	sui::custom(comp)
 }
 
 pub fn game_debug_ui(
@@ -26,6 +59,7 @@ pub fn game_debug_ui(
 	let page = Div::new(
 		false,
 		[
+			spawn_dialog(),
 			ingameworld_dbg,
 			sui::custom(sui::comp::Text::new("this is centered!!!", 13).centered()),
 			inst_comp(game, game.main_id),

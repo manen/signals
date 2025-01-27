@@ -72,6 +72,8 @@ fn main() {
 
 	let mut g_pos = PosInfo::default();
 
+	let mut dialog_handler = sui::dialog::Handler::default();
+
 	while !rl.window_should_close() {
 		let screen = sui::Details::window(rl.get_render_width(), unsafe {
 			raylib::ffi::GetRenderHeight()
@@ -162,10 +164,13 @@ fn main() {
 			worlds_bar_det.aw = worlds_bar_det.aw.min(worlds_bar_comp.size().0);
 			let worlds_bar_ctx = worlds_bar.root_context(worlds_bar_det, 1.0);
 
+			let dialog_ctx = dialog_handler.root_context();
+
 			// handled later, when there's no other references to game
 			let events = dbg_ctx
 				.handle_input_d(&mut d)
-				.chain(worlds_bar_ctx.handle_input_d(&mut d));
+				.chain(worlds_bar_ctx.handle_input_d(&mut d))
+				.chain(dialog_ctx.handle_input_d(&mut d));
 
 			d.clear_background(gfx::BACKGROUND);
 
@@ -188,6 +193,8 @@ fn main() {
 			tool_select.render(&mut d, tool_select_det, Some(&tool));
 			dbg_ctx.render(&mut d);
 			worlds_bar_ctx.render(&mut d);
+
+			dialog_ctx.render(&mut d);
 
 			sui::text(format!("({point_x}, {point_y})"), 32).render(
 				&mut d,
@@ -222,6 +229,10 @@ fn main() {
 
 			println!("{} {event_out:?}", rl.get_time());
 			match event_out {
+				Some(SignalsEvent::DialogCommand(command)) => {
+					println!("running dialog command: {command:?}");
+					dialog_handler.run(command);
+				}
 				Some(SignalsEvent::NewWorld) => {
 					let wid = game.push();
 					game.switch_main(wid);
