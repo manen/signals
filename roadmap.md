@@ -17,10 +17,10 @@ this is next up, but first i want to work on `sui` a little more since sure comp
 
   - hey this ended up being solved with `ReturnEvent`, that you can `take::<T>() -> Option<T>`
 
-- [ ] dialog boxes
+- [x] dialog boxes
   - the best way to do this i think is to have two ways of opening dialogues
   - [ ] 1: a toggle enable and a floating component, allowing for small dialogs
-  - [ ] 2: a custom event return type that contains a component and a position, and a custom event type to close said dialog (and save changes ig)
+  - [x] 2: a custom event return type that contains a component and a position, and a custom event type to close said dialog (and save changes ig)
 
 - functional components
   - still a lot to think about w this one
@@ -30,6 +30,12 @@ this is next up, but first i want to work on `sui` a little more since sure comp
   - or something like that i'm going to bed
 
 the rest:
+
+- [ ] make `WorldsBar` cache world previews individually
+- [ ] `...` button in the corner of world previews opening a dialog
+- [ ] component that just aligns the component inside to the end of the det (to position the button)
+
+- [ ] a lot of components that have to do with state probably shouldn't rush making them (text input, color picker)
 
 - custom name, color
 - inputs & outputs custom name, inputs custom color
