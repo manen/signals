@@ -169,14 +169,14 @@ pub trait LayableExt: Layable + Sized {
 	}
 
 	/// see [comp::Clickable]
-	fn clickable<T: Clone + 'static, F: Fn() -> T>(
+	fn clickable<T: Clone + 'static, F: Fn((i32, i32)) -> T>(
 		self,
 		gen_ret: F,
 	) -> comp::Clickable<Self, F, T> {
 		comp::Clickable::new(gen_ret, self)
 	}
 	/// see [comp::Clickable]
-	fn clickable_fallback<T: Clone + 'static, F: Fn() -> T>(
+	fn clickable_fallback<T: Clone + 'static, F: Fn((i32, i32)) -> T>(
 		self,
 		gen_ret: F,
 	) -> comp::Clickable<Self, F, T> {

@@ -21,31 +21,32 @@ pub enum SignalsEvent {
 }
 
 fn spawn_dialog() -> sui::comp::Comp<'static> {
-	let comp = Text::new("summon dialog", 24).centered().clickable(|| {
-		let dialog_content =
-			Div::new(
+	let comp = Text::new("summon dialog", 24)
+		.centered()
+		.clickable(|(x, y)| {
+			let dialog_content = Div::new(
 				false,
 				[
 					sui::custom(Text::new("this is a dialog!!! yippie", 16).centered()),
 					sui::custom(Space::new(30, 30)),
-					sui::custom(Text::new("close", 12).clickable(move || {
+					sui::custom(Text::new("close", 12).clickable(move |_| {
 						SignalsEvent::DialogCommand(sui::dialog::Command::Close)
 					})),
 				],
 			);
-		let dialog_content = sui::custom(dialog_content);
+			let dialog_content = sui::custom(dialog_content);
 
-		SignalsEvent::DialogCommand(sui::dialog::Command::Open(sui::dialog::Instance {
-			comp: dialog_content,
-			det: sui::Details {
-				x: 400,
-				y: 600,
-				aw: 1000, // fuck it
-				ah: 1000,
-			},
-			scale: 1.0,
-		}))
-	});
+			SignalsEvent::DialogCommand(sui::dialog::Command::Open(sui::dialog::Instance {
+				comp: dialog_content,
+				det: sui::Details {
+					x,
+					y,
+					aw: 1000, // fuck it
+					ah: 1000,
+				},
+				scale: 1.0,
+			}))
+		});
 
 	sui::custom(comp)
 }
