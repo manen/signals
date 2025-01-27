@@ -39,7 +39,7 @@ impl<L: Layable> Layable for Centered<L> {
 		event: Event,
 		det: crate::Details,
 		scale: f32,
-	) -> Option<crate::core::Event> {
+	) -> Option<crate::core::ReturnEvent> {
 		self.layable
 			.pass_event(event, self.l_det(det, scale), scale)
 	}

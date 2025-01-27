@@ -71,10 +71,6 @@ impl<'a> Clump<'a> {
 		}
 	}
 
-	fn add_pattern_to_queue(&mut self, base_coords: (i32, i32)) {
-		let pattern = clump_pattern(base_coords);
-		self.push_unique_to_queue(pattern);
-	}
 	fn next_foreign_in_queue(&mut self) -> Option<(i32, i32)> {
 		loop {
 			let top = self.queue.iter().nth(self.i).copied()?;

@@ -6,13 +6,21 @@ use std::fmt::Debug;
 mod store;
 pub use store::{Cached, Store};
 
+mod event;
+pub use event::{Event, ReturnEvent};
+
 pub trait Layable {
 	fn size(&self) -> (i32, i32);
 	fn render(&self, d: &mut RaylibDrawHandle, det: Details, scale: f32);
 
 	/// this function is called by the parent of this component \
 	/// return events to be bubbled back \
-	fn pass_event(&self, event: Event, det: Details, scale: f32) -> Option<Event>;
+	fn pass_event(
+		&self,
+		event: Event,
+		det: Details,
+		scale: f32,
+	) -> Option<crate::core::ReturnEvent>;
 }
 impl<L: Layable> Layable for &L {
 	fn size(&self) -> (i32, i32) {
@@ -21,34 +29,14 @@ impl<L: Layable> Layable for &L {
 	fn render(&self, d: &mut RaylibDrawHandle, det: Details, scale: f32) {
 		L::render(self, d, det, scale)
 	}
-	fn pass_event(&self, event: Event, det: Details, scale: f32) -> Option<Event> {
+	fn pass_event(
+		&self,
+		event: Event,
+		det: Details,
+		scale: f32,
+	) -> Option<crate::core::ReturnEvent> {
 		L::pass_event(self, event, det, scale)
 	}
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub enum Event {
-	// these all use window coords
-	MouseClick {
-		x: i32,
-		y: i32,
-	},
-	MouseHeld {
-		x: i32,
-		y: i32,
-	},
-	MouseRelease {
-		x: i32,
-		y: i32,
-	},
-
-	/// use these to bubble
-	Named {
-		/// id is meant to be a general identifier of what this event's about
-		id: &'static str,
-		/// n could be anything you want, probably most useful as an array index
-		n: i32,
-	},
 }
 
 #[derive(Copy, Clone, Debug, Default)]

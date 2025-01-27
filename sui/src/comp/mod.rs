@@ -66,7 +66,7 @@ impl<'a> Layable for Comp<'a> {
 		event: crate::core::Event,
 		det: crate::Details,
 		scale: f32,
-	) -> Option<crate::core::Event> {
+	) -> Option<crate::core::ReturnEvent> {
 		match self {
 			Self::Page(a) => a.pass_event(event, det, scale),
 			Self::Text(a) => a.pass_event(event, det, scale),

@@ -58,7 +58,7 @@ impl<'a> Layable for WorldPreview<'a> {
 		_: sui::core::Event,
 		_: sui::core::Details,
 		_: f32,
-	) -> Option<sui::core::Event> {
+	) -> Option<sui::core::ReturnEvent> {
 		None
 	}
 }

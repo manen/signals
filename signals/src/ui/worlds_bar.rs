@@ -1,4 +1,8 @@
-use crate::{game::Game, ui::ingame::WorldPreview, world::World};
+use crate::{
+	game::{Game, WorldId},
+	ui::{ingame::WorldPreview, SignalsEvent},
+	world::World,
+};
 use fit::scrollable::{self, ScrollableState};
 use raylib::prelude::RaylibDrawHandle;
 use sui::{
@@ -7,10 +11,6 @@ use sui::{
 	tex::Texture,
 	Compatible, Details, LayableExt, RootContext,
 };
-
-pub const SWITCH_CLICKED: &str = "worlds_bar_worlds_switch_clicked";
-pub const FOREIGN_CLICKED: &str = "worlds_bar_worlds_place_clicked";
-pub const PLUS_CLICKED: &str = "worlds_bar_worlds_plus_clicked";
 
 #[derive(Default)]
 pub struct WorldsBar {
@@ -53,13 +53,13 @@ fn worlds_bar(
 ) -> sui::Comp<'static> {
 	println!("recreating world_bar");
 	let previews = game
-		.worlds()
-		.enumerate()
-		.map(|(i, w)| worlds_bar_world(d, height, i, w))
+		.worlds
+		.iter()
+		.map(|(wid, w)| worlds_bar_world(d, height, *wid, w))
 		.chain(std::iter::once(sui::custom(
 			Text::new("+", 50)
 				.centered()
-				.clickable(PLUS_CLICKED, 0)
+				.clickable(SignalsEvent::NewWorld)
 				.fix_wh_square(height),
 		)));
 	let previews = previews.collect::<Vec<_>>();
@@ -70,7 +70,7 @@ fn worlds_bar(
 			d.get_render_width(),
 			height + scrollable::SCROLLBAR_WIDTH as i32,
 		)
-		.clickable_fallback("faszopm kivan mar", 6);
+		.clickable_fallback(SignalsEvent::WorldsBarFallback);
 
 	sui::custom(elem)
 }
@@ -78,14 +78,14 @@ fn worlds_bar(
 fn worlds_bar_world(
 	d: &mut RaylibDrawHandle,
 	height: i32,
-	i: usize,
+	wid: WorldId,
 	w: &World,
 ) -> sui::Comp<'static> {
 	let world_preview = ScaleToFit::fix_h(height, WorldPreview::new(w));
 
 	let place = Text::new("place", 14)
 		.centered()
-		.clickable(FOREIGN_CLICKED, i as i32);
+		.clickable(SignalsEvent::PlaceWorld(wid));
 	let switch = Text::new("switch here", 14).centered();
 
 	let clickables = Div::new(
@@ -101,7 +101,7 @@ fn worlds_bar_world(
 		.centered()
 		.fix_wh_square(height)
 		.with_background(Texture::from_layable(d, &world_preview))
-		.clickable_fallback(SWITCH_CLICKED, i as i32);
+		.clickable_fallback(SignalsEvent::SwitchToWorld(wid));
 
 	sui::custom(elem)
 }

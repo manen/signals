@@ -57,7 +57,8 @@ impl Game {
 			*c = Default::default();
 		}
 
-		if let Some(world) = self.worlds.at_mut(self.main_id) {
+		if let Some(_) = self.worlds.at_mut(self.main_id) {
+			// test if the world exists
 			let mut taken_moves = std::mem::take(&mut self.moves);
 			taken_moves.tick(
 				self,
@@ -65,7 +66,7 @@ impl Game {
 					// eprintln!("dropping a move returned from game.main ({_mov:?})")
 				},
 				true,
-			);
+			)?;
 
 			taken_moves.tick_children(self)?;
 			self.moves = taken_moves;
@@ -106,7 +107,7 @@ impl Game {
 
 		let mut wids = w
 			.find_foreigns()
-			.map(|(coords, (wid, _, _))| wid)
+			.map(|(_, (wid, _, _))| wid)
 			.collect::<Vec<_>>();
 		wids.sort();
 		wids.dedup();

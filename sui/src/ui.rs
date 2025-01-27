@@ -8,7 +8,7 @@ use crate::{
 		scrollable::{ScrollableMode, ScrollableState},
 		Comp, Compatible,
 	},
-	core::{Event, Store},
+	core::{Event, ReturnEvent, Store},
 	Details, Layable,
 };
 
@@ -104,11 +104,11 @@ impl<'a, L: Layable> RootContext<'a, L> {
 	pub fn render(&self, d: &mut RaylibDrawHandle) {
 		self.layable.render(d, self.det, self.scale);
 	}
-	pub fn handle_input(&self, rl: &mut RaylibHandle) -> impl Iterator<Item = Event> {
+	pub fn handle_input(&self, rl: &mut RaylibHandle) -> impl Iterator<Item = ReturnEvent> {
 		handle_input_impl!(self, rl)
 	}
 	/// duplcate of [Self::handle_input] with a different raylib handle
-	pub fn handle_input_d(&self, d: &mut RaylibDrawHandle) -> impl Iterator<Item = Event> {
+	pub fn handle_input_d(&self, d: &mut RaylibDrawHandle) -> impl Iterator<Item = ReturnEvent> {
 		handle_input_impl!(self, d)
 	}
 }
@@ -164,12 +164,12 @@ pub trait LayableExt: Layable + Sized {
 	}
 
 	/// see [comp::Clickable]
-	fn clickable(self, id: &'static str, n: i32) -> comp::Clickable<Self> {
-		comp::Clickable::new(id, n, self)
+	fn clickable<T: Clone + 'static>(self, ret: T) -> comp::Clickable<Self, T> {
+		comp::Clickable::new(ret, self)
 	}
 	/// see [comp::Clickable]
-	fn clickable_fallback(self, id: &'static str, n: i32) -> comp::Clickable<Self> {
-		comp::Clickable::new_fallback(id, n, self)
+	fn clickable_fallback<T: Clone + 'static>(self, ret: T) -> comp::Clickable<Self, T> {
+		comp::Clickable::new_fallback(ret, self)
 	}
 
 	/// see [comp::Debug]

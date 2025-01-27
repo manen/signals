@@ -214,7 +214,7 @@ impl<L: Layable> Layable for Scrollable<L> {
 		event: crate::core::Event,
 		det: crate::Details,
 		scale: f32,
-	) -> Option<crate::core::Event> {
+	) -> Option<crate::core::ReturnEvent> {
 		let (mul_x, mul_y) = self.mode.multipliers_f32();
 		let (l_w, l_h) = self.layable.size();
 
@@ -304,7 +304,6 @@ impl<L: Layable> Layable for Scrollable<L> {
 					s.action = ScrollbarAction::None;
 				})
 			}
-			_ => (),
 		}
 
 		view.pass_event(event, view_det, scale)
@@ -353,7 +352,7 @@ impl<L: Layable> Layable for View<L> {
 		event: crate::core::Event,
 		det: crate::Details,
 		scale: f32,
-	) -> Option<crate::core::Event> {
+	) -> Option<crate::core::ReturnEvent> {
 		self.layable
 			.pass_event(event, self.l_det(det, scale), scale)
 	}

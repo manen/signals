@@ -9,16 +9,18 @@
 
 this is next up, but first i want to work on `sui` a little more since sure components are cool but there's still a lot to improve upon:
 
-- the event returned from `Layable::pass_event` should be able to be any type. constraints:
+- [x] the event returned from `Layable::pass_event` should be able to be any type. constraints:
   - the returned event type should be constant across a project
   - so i'm thinking a `<T>` in clickable, that sets an `Event` associated type in Layable
   - other layables further up the component tree will adopt `L::Event`
   - for components with more than 1 generic Layable types, it should only work if `L1::Event` == `L2::Event` (the other option is an enum and no thank you) (although we could have some way to make `L1` and `L2` return an enum, but only as an optional extra feature)
 
-- dialog boxes
+  - hey this ended up being solved with `ReturnEvent`, that you can `take::<T>() -> Option<T>`
+
+- [ ] dialog boxes
   - the best way to do this i think is to have two ways of opening dialogues
-  - 1: a toggle enable and a floating component, allowing for small dialogs
-  - 2: a custom event return type that contains a component and a position, and a custom event type to close said dialog (and save changes ig)
+  - [ ] 1: a toggle enable and a floating component, allowing for small dialogs
+  - [ ] 2: a custom event return type that contains a component and a position, and a custom event type to close said dialog (and save changes ig)
 
 - functional components
   - still a lot to think about w this one
@@ -64,7 +66,7 @@ mostly just mouse input being fucked up \
 and i don't want the game to become a patchwork of `if WEB_BUILD { /* some obscure web unfucking code */ }` \
 so yeah web build stays in post-1.0
 
-to be able to do web nicely we'd need a central mouse input authority if that makes sense \
+to be able to do web nicely we'd need a central mouse input authority if that makes sense `note: using sui types in game rendering code might make this easier` \
 like raylib has pressed, down, released and up \
 and we should probably build our own version of that cause pressed and released straightup don't work on the web
 

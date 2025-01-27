@@ -24,6 +24,7 @@ pub struct Stack {
 	short_term: usize,
 }
 impl Stack {
+	#[allow(unused)]
 	pub fn new(start_ptr: usize) -> Self {
 		Self::with_reserved(start_ptr, 0)
 	}
@@ -49,6 +50,7 @@ impl Stack {
 		}
 	}
 
+	#[allow(unused)]
 	pub fn reserve(&self, by: usize) {
 		self.shared.with_mut_borrow(|shared| shared.reserved += by)
 	}

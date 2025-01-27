@@ -46,7 +46,7 @@ impl<L: Layable> Layable for Debug<L> {
 		event: crate::core::Event,
 		det: crate::Details,
 		scale: f32,
-	) -> Option<crate::core::Event> {
+	) -> Option<crate::core::ReturnEvent> {
 		self.layable.pass_event(event, det, scale)
 	}
 }

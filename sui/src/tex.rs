@@ -107,7 +107,12 @@ impl Layable for Texture {
 			Color::new(255, 255, 255, 255),
 		);
 	}
-	fn pass_event(&self, _: crate::core::Event, _: Details, _: f32) -> Option<crate::core::Event> {
+	fn pass_event(
+		&self,
+		_: crate::core::Event,
+		_: Details,
+		_: f32,
+	) -> Option<crate::core::ReturnEvent> {
 		None
 	}
 }

@@ -1,11 +1,9 @@
 mod foreign_clump;
 
-use std::collections::{HashMap, HashSet};
-
 use foreign_clump::FindClump;
 
 use crate::{
-	game::{Game, IngameWorld, WorldId},
+	game::{Game, WorldId},
 	world::{Block, Direction},
 };
 
@@ -139,7 +137,6 @@ impl Tool {
 					// appending to an existing inst_id is easy, creating a new inst_id means assuming game.moves to be fully
 					// regenerated and checking its children.len()
 
-					let clump_len = clump.len();
 					let mut clump = clump.into_iter().peekable();
 
 					let (mut prev_inst_id, mut prev_id) =
@@ -165,7 +162,12 @@ impl Tool {
 				*main.mut_at(x, y) = Block::Foreign(*wid, new_inst_id, new_id);
 
 				let mut taken_moves = std::mem::take(&mut game.moves);
-				taken_moves.regenerate(game, game.main_id);
+				match taken_moves.regenerate(game, game.main_id) {
+					Ok(a) => a,
+					Err(err) => {
+						eprintln!("failed to regenerate world after placing a foreign\n{err}")
+					}
+				};
 				game.moves = taken_moves;
 			}
 			_ => {}

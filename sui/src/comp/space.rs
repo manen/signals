@@ -21,7 +21,7 @@ impl Layable for Space {
 		_: crate::core::Event,
 		_: crate::Details,
 		_: f32,
-	) -> Option<crate::core::Event> {
+	) -> Option<crate::core::ReturnEvent> {
 		None
 	}
 }

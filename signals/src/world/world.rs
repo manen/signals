@@ -65,6 +65,7 @@ impl<B> World<B> {
 			.map(|chunk| chunk.at(block_x, block_y))
 			.flatten()
 	}
+	#[allow(unused)]
 	pub fn set_chunk(&mut self, coords: (i32, i32), chunk: Chunk<B>) -> Option<Chunk<B>> {
 		self.chunks.insert(coords, chunk)
 	}
@@ -154,6 +155,7 @@ impl<B: Default + Copy> World<B> {
 	}
 }
 impl<B: Default + PartialEq> World<B> {
+	#[allow(unused)]
 	pub fn is_block_at(&self, x: i32, y: i32) -> bool {
 		match self.at(x, y) {
 			None => false,

@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 mod game;
 mod gfx;
 mod processor;
@@ -13,13 +11,9 @@ use raylib::{
 	ffi::{KeyboardKey, MouseButton},
 	prelude::RaylibDraw,
 };
-use sui::{
-	comp::fit::scrollable,
-	core::{Event, Store},
-	Layable,
-};
+use sui::{comp::fit::scrollable, core::Store, Layable};
 use tool::Tool;
-use ui::worlds_bar;
+use ui::{worlds_bar, SignalsEvent};
 
 pub const TICK_TIME: f32 = 0.03;
 pub const MOVE_UP: KeyboardKey = KeyboardKey::KEY_W;
@@ -224,35 +218,22 @@ fn main() {
 		}
 
 		for event_out in events {
-			let world_ids = game.worlds.iter().map(|a| *a.0).collect::<Vec<_>>();
-			let n_to_id = |n: i32| world_ids[n as usize];
+			let event_out = event_out.take();
 
 			println!("{} {event_out:?}", rl.get_time());
 			match event_out {
-				Event::Named {
-					id: ui::worlds_bar::PLUS_CLICKED,
-					..
-				} => {
-					let id = game.push();
-					game.switch_main(id);
+				Some(SignalsEvent::NewWorld) => {
+					let wid = game.push();
+					game.switch_main(wid);
 					worlds_bar.clear_cache();
 				}
-				Event::Named {
-					id: ui::worlds_bar::SWITCH_CLICKED,
-					n,
-				} => {
-					let id = n_to_id(n);
-					game.switch_main(id);
+				Some(SignalsEvent::SwitchToWorld(wid)) => {
+					game.switch_main(wid);
 					worlds_bar.clear_cache();
 				}
-				Event::Named {
-					id: ui::worlds_bar::FOREIGN_CLICKED,
-					n,
-				} => {
-					let id = n_to_id(n);
-					tool = Tool::PlaceForeign(id)
-				}
-				_ => (),
+				Some(SignalsEvent::PlaceWorld(wid)) => tool = Tool::PlaceForeign(wid),
+				Some(SignalsEvent::WorldsBarFallback) => {}
+				None => eprintln!("ui returned invalid returnevent"),
 			}
 		}
 	}

@@ -11,7 +11,8 @@ pub struct DynamicLayable<'a> {
 
 	size: fn(*const u8) -> (i32, i32),
 	render: fn(*const u8, d: &mut RaylibDrawHandle, det: Details, scale: f32),
-	pass_event: fn(*const u8, event: Event, det: Details, scale: f32) -> Option<Event>,
+	pass_event:
+		fn(*const u8, event: Event, det: Details, scale: f32) -> Option<crate::core::ReturnEvent>,
 
 	drop: fn(*mut u8),
 	clone: Option<fn(*const u8, std::alloc::Layout) -> *mut u8>,
@@ -88,7 +89,7 @@ impl<'a> DynamicLayable<'a> {
 			event: Event,
 			det: Details,
 			scale: f32,
-		) -> Option<Event> {
+		) -> Option<crate::core::ReturnEvent> {
 			L::pass_event(unsafe { &*(ptr as *const L) }, event, det, scale)
 		}
 
@@ -185,7 +186,12 @@ impl<'a> Layable for DynamicLayable<'a> {
 	fn render(&self, d: &mut RaylibDrawHandle, det: Details, scale: f32) {
 		(self.render)(self.ptr, d, det, scale)
 	}
-	fn pass_event(&self, event: Event, det: Details, scale: f32) -> Option<Event> {
+	fn pass_event(
+		&self,
+		event: Event,
+		det: Details,
+		scale: f32,
+	) -> Option<crate::core::ReturnEvent> {
 		(self.pass_event)(self.ptr, event, det, scale)
 	}
 }
@@ -271,15 +277,14 @@ mod dynamiclayable_tests {
 		test_pair(l, d);
 	}
 	fn test_pair<A: Layable, B: Layable>(a: A, b: B) {
-		let test_event = Event::Named {
-			id: "testing",
-			n: 16,
-		};
+		let test_event = Event::MouseClick { x: 3, y: 4 };
 
 		assert_eq!(a.size(), b.size());
 		assert_eq!(
-			a.pass_event(test_event, Default::default(), 1.0),
+			a.pass_event(test_event, Default::default(), 1.0)
+				.map(|ret| ret.take::<Event>()),
 			b.pass_event(test_event, Default::default(), 1.0)
+				.map(|ret| ret.take())
 		);
 	}
 
@@ -312,8 +317,13 @@ mod dynamiclayable_tests {
 				(200, 200)
 			}
 			fn render(&self, _: &mut RaylibDrawHandle, _: Details, _: f32) {}
-			fn pass_event(&self, event: Event, _: Details, _: f32) -> Option<Event> {
-				Some(event)
+			fn pass_event(
+				&self,
+				event: Event,
+				_: Details,
+				_: f32,
+			) -> Option<crate::core::ReturnEvent> {
+				Some(Event::ret(event))
 			}
 		}
 		impl Drop for Dummy {
@@ -337,8 +347,13 @@ mod dynamiclayable_tests {
 				(200, 200)
 			}
 			fn render(&self, _: &mut RaylibDrawHandle, _: Details, _: f32) {}
-			fn pass_event(&self, event: Event, _: Details, _: f32) -> Option<Event> {
-				Some(event)
+			fn pass_event(
+				&self,
+				event: Event,
+				_: Details,
+				_: f32,
+			) -> Option<crate::core::ReturnEvent> {
+				Some(Event::ret(event))
 			}
 		}
 
@@ -363,8 +378,13 @@ mod dynamiclayable_tests {
 				(200, 200)
 			}
 			fn render(&self, _: &mut RaylibDrawHandle, _: Details, _: f32) {}
-			fn pass_event(&self, event: Event, _: Details, _: f32) -> Option<Event> {
-				Some(event)
+			fn pass_event(
+				&self,
+				event: Event,
+				_: Details,
+				_: f32,
+			) -> Option<crate::core::ReturnEvent> {
+				Some(Event::ret(event))
 			}
 		}
 

@@ -49,7 +49,7 @@ impl<L: Layable> Layable for ScaleToFit<L> {
 		event: crate::core::Event,
 		det: crate::Details,
 		scale: f32,
-	) -> Option<crate::core::Event> {
+	) -> Option<crate::core::ReturnEvent> {
 		self.layable
 			.pass_event(event, det, scale * self.scale(None))
 	}
@@ -70,11 +70,11 @@ mod scaletofit_tests {
 			}
 			fn pass_event(
 				&self,
-				event: crate::core::Event,
+				_event: crate::core::Event,
 				_: crate::Details,
 				_: f32,
-			) -> Option<crate::core::Event> {
-				Some(event)
+			) -> Option<crate::core::ReturnEvent> {
+				None
 			}
 		}
 		{

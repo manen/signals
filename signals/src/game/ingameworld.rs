@@ -6,7 +6,6 @@ use std::{
 
 use crate::{
 	game::{Game, WorldId},
-	gfx, processor,
 	world::{Block, BlockError, Move, Signal},
 };
 use std::hash::Hash;
@@ -74,7 +73,7 @@ impl IngameWorld {
 		}
 
 		let typ = {
-			if let Some((Some(a), _, _)) = game.programs.get(&world_id) {
+			if let Some((Some(_), _, _)) = game.programs.get(&world_id) {
 				IngameWorldType::processor()
 			} else {
 				IngameWorldType::simulated()
@@ -103,7 +102,7 @@ impl IngameWorld {
 	/// will not edit self.typ, make sure you have that set up correctly
 	pub fn regenerate(&mut self, game: &mut Game, world_id: WorldId) -> anyhow::Result<()> {
 		match &mut self.typ {
-			IngameWorldType::Simulated { moves } => {
+			IngameWorldType::Simulated { .. } => {
 				let world = match game.worlds.at(world_id) {
 					Some(a) => a,
 					None => {
@@ -117,10 +116,51 @@ impl IngameWorld {
 					(a_inst_id * 1000 + a_id).cmp(&(b_inst_id * 1000 + b_id))
 				});
 
+				// yeah so we have to make sure there's no holes in the inst_ids
+
+				let mut replaced_inst_ids = HashMap::<usize, usize>::new();
+
+				let mut prev_inst_id: i32 = -1;
+				for (coords, (f_wid, inst_id, id)) in foreigns.iter().copied() {
+					if let Some(new_inst_id) = replaced_inst_ids.get(&inst_id) {
+						if let Some(a) = game.worlds.at_mut(f_wid) {
+							*a.mut_at(coords.0, coords.1) =
+								Block::Foreign(f_wid, *new_inst_id as usize, id);
+						}
+						continue;
+					}
+					if prev_inst_id == inst_id as i32 {
+						continue;
+					}
+					if inst_id as i32 == prev_inst_id + 1 {
+						prev_inst_id = inst_id as i32;
+						continue;
+					}
+					if inst_id as i32 > prev_inst_id + 1 {
+						prev_inst_id += 1;
+						replaced_inst_ids.insert(inst_id, prev_inst_id as usize);
+						if let Some(a) = game.worlds.at_mut(f_wid) {
+							*a.mut_at(coords.0, coords.1) =
+								Block::Foreign(f_wid, prev_inst_id as usize, id);
+						}
+					}
+				}
+
+				let foreigns = foreigns.into_iter().map(|(coords, (f_wid, inst_id, id))| {
+					(
+						coords,
+						(
+							f_wid,
+							replaced_inst_ids.get(&inst_id).copied().unwrap_or(inst_id),
+							id,
+						),
+					)
+				});
+
 				let mut inst_ids_already_done = Vec::with_capacity(self.children.len());
 				let mut next_id_per_inst_id: HashMap<usize, usize> = HashMap::new();
 
-				for (coords, (inst_world_id, mut inst_id, id)) in foreigns {
+				for (coords, (inst_world_id, inst_id, id)) in foreigns {
 					if !inst_ids_already_done.contains(&inst_id) {
 						// only happens once per inst_id
 
@@ -238,10 +278,12 @@ impl IngameWorld {
 				prev_in_hash,
 				prev_out,
 			} => {
-				let (insts, in_len, out_len) = match game.programs.get(&self.world_id) {
+				let (insts, _, out_len) = match game.programs.get(&self.world_id) {
 					Some((Some(insts), in_len, out_len)) => (insts, in_len, out_len),
 					_ => {
-						self.regenerate(game, self.world_id);
+						self.regenerate(game, self.world_id).with_context(|| {
+							format!("while regenerating ingameworld for {}", self.world_id)
+						})?;
 						return Ok(());
 						// regenerate will turn self into a simulated world
 					}
@@ -353,7 +395,7 @@ impl IngameWorld {
 			IngameWorldType::Processor { inputs, .. } => {
 				for mov in new_moves {
 					match mov {
-						Move::Input { id, signal } => {
+						Move::Input { id, .. } => {
 							if inputs.len() - 1 < id {
 								inputs.resize(id + 1, false);
 							}

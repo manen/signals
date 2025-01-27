@@ -318,6 +318,7 @@ impl Equation {
 			}
 		}
 	}
+	#[allow(unused)]
 	pub fn reservations(&self) -> usize {
 		let mut map = vec![];
 		Self::reservations_internal(self, &mut map)

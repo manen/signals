@@ -57,7 +57,7 @@ impl<L: Layable> Layable for FixedSize<L> {
 		event: crate::core::Event,
 		det: crate::Details,
 		scale: f32,
-	) -> Option<crate::core::Event> {
+	) -> Option<crate::core::ReturnEvent> {
 		self.layable.pass_event(event, self.l_det(det), scale)
 	}
 }

@@ -42,7 +42,7 @@ impl<A: Layable, B: Layable> Layable for Overlay<A, B> {
 		event: crate::core::Event,
 		det: crate::Details,
 		scale: f32,
-	) -> Option<crate::core::Event> {
+	) -> Option<crate::core::ReturnEvent> {
 		let l_det = self.l_det(det);
 		if let Some(ret) = self.foreground.pass_event(event, l_det, scale) {
 			Some(ret)

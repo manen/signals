@@ -1,8 +1,5 @@
 pub mod world_to_instructions;
-use std::{
-	ops::{Index, Range},
-	slice::SliceIndex,
-};
+use std::ops::{Index, Range};
 
 pub use world_to_instructions::world_to_instructions;
 
@@ -114,6 +111,7 @@ pub enum Instruction {
 	},
 }
 impl Instruction {
+	#[allow(unused)] // cause it's nice to know
 	pub fn extended_set_to_base_set<'a>(
 		iter: impl IntoIterator<Item = &'a Instruction>,
 	) -> Vec<Instruction> {

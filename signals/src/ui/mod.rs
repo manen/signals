@@ -9,6 +9,14 @@ use crate::{
 };
 use sui::{comp::*, core::Store, LayableExt};
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum SignalsEvent {
+	NewWorld,
+	SwitchToWorld(WorldId),
+	PlaceWorld(WorldId),
+	WorldsBarFallback,
+}
+
 pub fn game_debug_ui(
 	game: &crate::Game,
 	scroll_state: Store<ScrollableState>,
