@@ -2,9 +2,6 @@ mod select_bar;
 
 pub use select_bar::SelectBar;
 
-pub mod text;
-pub use text::Text;
-
 pub mod clickable;
 pub use clickable::Clickable;
 
@@ -17,8 +14,8 @@ pub use fit::*;
 pub mod overlay;
 pub use overlay::Overlay;
 
-pub mod space;
-pub use space::Space;
+pub mod primitives;
+pub use primitives::*;
 
 pub mod debug;
 pub use debug::Debug;
