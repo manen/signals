@@ -11,7 +11,7 @@ use raylib::{
 	ffi::{KeyboardKey, MouseButton},
 	prelude::RaylibDraw,
 };
-use sui::{comp::fit::scrollable, core::Store, Layable};
+use sui::{comp::fit::scrollable, core::Store, Layable, LayableExt};
 use tool::Tool;
 use ui::{worlds_bar, SignalsEvent};
 
@@ -72,7 +72,13 @@ fn main() {
 
 	let mut g_pos = PosInfo::default();
 
-	let mut dialog_handler = sui::dialog::Handler::default();
+	fn frame_dialog(comp: sui::Comp<'static>) -> sui::Comp<'static> {
+		let comp = comp.with_background(sui::comp::Color::new(raylib::color::Color::new(
+			40, 40, 40, 255,
+		)));
+		sui::custom(comp)
+	}
+	let mut dialog_handler = sui::dialog::Handler::new(frame_dialog);
 
 	while !rl.window_should_close() {
 		let screen = sui::Details::window(rl.get_render_width(), unsafe {

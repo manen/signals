@@ -29,6 +29,7 @@ pub enum Comp<'a> {
 	Page(Div<Vec<Comp<'a>>>),
 	Text(Text<'a>),
 	Space(Space),
+	Color(Color),
 	Dynamic(crate::core::DynamicLayable<'a>),
 }
 impl Default for Comp<'static> {
@@ -51,6 +52,7 @@ impl<'a> Layable for Comp<'a> {
 			Self::Page(a) => a.size(),
 			Self::Text(a) => a.size(),
 			Self::Space(a) => a.size(),
+			Self::Color(a) => a.size(),
 			Self::Dynamic(d) => d.size(),
 		}
 	}
@@ -59,6 +61,7 @@ impl<'a> Layable for Comp<'a> {
 			Self::Page(a) => Layable::render(a, d, det, scale),
 			Self::Text(a) => a.render(d, det, scale),
 			Self::Space(a) => a.render(d, det, scale),
+			Self::Color(a) => a.render(d, det, scale),
 			Self::Dynamic(dl) => dl.render(d, det, scale),
 		}
 	}
@@ -73,6 +76,7 @@ impl<'a> Layable for Comp<'a> {
 			Self::Page(a) => a.pass_event(event, det, scale),
 			Self::Text(a) => a.pass_event(event, det, scale),
 			Self::Space(a) => a.pass_event(event, det, scale),
+			Self::Color(a) => a.pass_event(event, det, scale),
 			Self::Dynamic(dl) => dl.pass_event(event, det, scale),
 		}
 	}
@@ -109,4 +113,5 @@ macro_rules! compatible_impl {
 compatible_impl!(Page, Div<Vec<Comp<'a>>>);
 compatible_impl!(Text, Text<'a>);
 compatible_impl!(Space, Space);
+compatible_impl!(Color, Color);
 compatible_impl!(Dynamic, crate::DynamicLayable<'a>);

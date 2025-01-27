@@ -38,8 +38,8 @@ fn spawn_dialog() -> sui::comp::Comp<'static> {
 			det: sui::Details {
 				x: 400,
 				y: 600,
-				aw: 100,
-				ah: 100,
+				aw: 1000, // fuck it
+				ah: 1000,
 			},
 			scale: 1.0,
 		}))
