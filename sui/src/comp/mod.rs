@@ -11,11 +11,14 @@ pub use div::Div;
 pub mod fit;
 pub use fit::*;
 
-pub mod overlay;
-pub use overlay::Overlay;
-
 pub mod primitives;
 pub use primitives::*;
+
+pub mod align;
+pub use align::*;
+
+pub mod overlay;
+pub use overlay::Overlay;
 
 pub mod debug;
 pub use debug::Debug;

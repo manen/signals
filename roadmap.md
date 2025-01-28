@@ -31,7 +31,7 @@ this is next up, but first i want to work on `sui` a little more since sure comp
 
 the rest:
 
-- [ ] make `WorldsBar` cache world previews individually
+- [ ] ~~make `WorldsBar` cache world previews individually~~ this is stupid i want to make another worlds bar with categories why'd i refine the old one
 - [ ] `...` button in the corner of world previews opening a dialog
 - [ ] component that just aligns the component inside to the end of the det (to position the button)
 
