@@ -11,7 +11,11 @@ use raylib::{
 	ffi::{KeyboardKey, MouseButton},
 	prelude::RaylibDraw,
 };
-use sui::{comp::fit::scrollable, core::Store, Layable, LayableExt};
+use sui::{
+	comp::{div::DivComponents, fit::scrollable},
+	core::Store,
+	Layable, LayableExt,
+};
 use tool::Tool;
 use ui::{worlds_bar, SignalsEvent};
 
@@ -79,6 +83,7 @@ fn main() {
 			.with_background(comp::Color::new(sui::color(13, 13, 13, 255)))
 			.margin(1)
 			.with_background(comp::Color::new(sui::color(255, 255, 255, 255)))
+			.clickable_fallback(|_| SignalsEvent::DialogFallback)
 			.margin(2);
 
 		sui::custom(comp)
@@ -178,10 +183,19 @@ fn main() {
 			let dialog_ctx = dialog_handler.root_context();
 
 			// handled later, when there's no other references to game
-			let events = dbg_ctx
-				.handle_input_d(&mut d)
-				.chain(worlds_bar_ctx.handle_input_d(&mut d))
-				.chain(dialog_ctx.handle_input_d(&mut d));
+			// let events = dbg_ctx
+			// 	.handle_input_d(&mut d)
+			// 	.chain(worlds_bar_ctx.handle_input_d(&mut d))
+			// 	.chain(dialog_ctx.handle_input_d(&mut d));
+			let events = dialog_ctx.handle_input_d(&mut d).collect::<Vec<_>>();
+			let events = if events.len() == 0 {
+				worlds_bar_ctx
+					.handle_input_d(&mut d)
+					.chain(dbg_ctx.handle_input_d(&mut d))
+					.collect()
+			} else {
+				events
+			};
 
 			d.clear_background(gfx::BACKGROUND);
 
@@ -217,7 +231,7 @@ fn main() {
 				1.0,
 			);
 
-			events.collect::<Vec<_>>()
+			events
 		};
 
 		{
@@ -241,7 +255,6 @@ fn main() {
 			println!("{} {event_out:?}", rl.get_time());
 			match event_out {
 				Some(SignalsEvent::DialogCommand(command)) => {
-					println!("running dialog command: {command:?}");
 					dialog_handler.run(command);
 				}
 				Some(SignalsEvent::NewWorld) => {
@@ -254,7 +267,7 @@ fn main() {
 					worlds_bar.clear_cache();
 				}
 				Some(SignalsEvent::PlaceWorld(wid)) => tool = Tool::PlaceForeign(wid),
-				Some(SignalsEvent::WorldsBarFallback) => {}
+				Some(SignalsEvent::WorldsBarFallback) | Some(SignalsEvent::DialogFallback) => {}
 				None => eprintln!("ui returned invalid returnevent"),
 			}
 		}

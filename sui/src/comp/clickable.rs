@@ -59,7 +59,7 @@ impl<T: Clone, C: Layable, F: Fn((i32, i32)) -> T> Layable for Clickable<C, F, T
 		scale: f32,
 	) -> Option<crate::core::ReturnEvent> {
 		let respond = || match event {
-			Event::MouseClick { x, y } if det.mul_size(scale).is_inside(x, y) => {
+			Event::MouseClick { x, y } if det.is_inside(x, y) => {
 				Some(Event::ret((self.gen_ret)((x, y))))
 			}
 			_ => None,

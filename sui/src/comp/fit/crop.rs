@@ -1,4 +1,4 @@
-use crate::Layable;
+use crate::{core::Event, Layable};
 
 #[derive(Clone, Debug)]
 pub struct Crop<L: Layable> {
@@ -27,7 +27,7 @@ impl<L: Layable> Layable for Crop<L> {
 	}
 	fn pass_event(
 		&self,
-		event: crate::core::Event,
+		event: Event,
 		det: crate::Details,
 		scale: f32,
 	) -> Option<crate::core::ReturnEvent> {

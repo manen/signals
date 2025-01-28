@@ -1,4 +1,4 @@
-use crate::{Comp, Details, RootContext};
+use crate::{Comp, Details, Layable, RootContext};
 
 const DEFAULT_COMP: Comp = Comp::Space(crate::comp::Space::new(0, 0));
 
@@ -32,7 +32,12 @@ impl Handler {
 	}
 	pub fn root_context(&self) -> RootContext<Comp<'static>> {
 		match &self.inst {
-			Some(Instance { comp, det, scale }) => RootContext::new(comp, *det, *scale),
+			Some(Instance { comp, at, scale }) => {
+				let (x, y) = *at;
+				let (aw, ah) = comp.size();
+				let det = crate::Details { x, y, aw, ah };
+				RootContext::new(comp, det, *scale)
+			}
 			None => RootContext::new(&DEFAULT_COMP, Default::default(), 1.0),
 		}
 	}
@@ -41,18 +46,18 @@ impl Handler {
 #[derive(Clone, Debug)]
 pub struct Instance {
 	pub comp: Comp<'static>,
-	pub det: Details,
+	pub at: (i32, i32),
 	pub scale: f32,
 }
 impl Instance {
 	pub fn with_framer(self, f: fn(Comp<'static>) -> Comp<'static>) -> Self {
 		let Instance {
 			mut comp,
-			det,
+			at,
 			scale,
 		} = self;
 		comp = f(comp);
-		return Instance { comp, det, scale };
+		return Instance { comp, at, scale };
 	}
 }
 
