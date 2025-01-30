@@ -1,4 +1,7 @@
-use crate::{core::Event, Layable};
+use crate::{
+	core::{Event, MouseEvent},
+	Layable,
+};
 
 #[derive(Clone)]
 /// while this technically does work with any Layable, to implement Compatible C needs to be Comp
@@ -59,19 +62,21 @@ impl<T: Clone, C: Layable, F: Fn((i32, i32)) -> T> Layable for Clickable<C, F, T
 		scale: f32,
 	) -> Option<crate::core::ReturnEvent> {
 		let respond = || match event {
-			Event::MouseEvent(m_event) => {
-				let (x, y) = m_event.at();
+			Event::MouseEvent(MouseEvent::MouseClick { x, y }) => {
 				if det.is_inside(x, y) {
 					Some(Event::ret((self.gen_ret)((x, y))))
 				} else {
 					None
 				}
 			}
-			Event::KeyboardEvent(_, _) => self.comp.pass_event(event, det, scale),
+			_ => None,
 		};
 
 		if !self.fallback {
-			respond()
+			match respond() {
+				Some(a) => Some(a),
+				None => self.comp.pass_event(event, det, scale),
+			}
 		} else {
 			if let Some(comp_resp) = self.comp.pass_event(event, det, scale) {
 				Some(comp_resp)

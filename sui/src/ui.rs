@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, ops::DerefMut};
 
 use raylib::{ffi::MouseButton, prelude::RaylibDrawHandle, RaylibHandle};
 
@@ -30,70 +30,6 @@ pub fn text<'a, T: Into<Cow<'a, str>>>(text: T, size: i32) -> Comp<'a> {
 	comp::Text::new(text, size).into_comp()
 }
 
-macro_rules! handle_input_impl {
-	($self:expr,$rl:expr,$focus:expr) => {{
-		use crate::core::KeyboardEvent;
-		use crate::core::MouseEvent;
-
-		let (ptr_x, ptr_y) = ($rl.get_mouse_x(), $rl.get_mouse_y());
-
-		let mouse_events = if ptr_x as f32 > $self.det.x as f32 && ptr_y as f32 > $self.det.y as f32
-		{
-			let mouse_left_pressed = if $rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT)
-			{
-				$self.layable.pass_event(
-					Event::MouseEvent(MouseEvent::MouseClick { x: ptr_x, y: ptr_y }),
-					$self.det,
-					$self.scale,
-				)
-			} else {
-				None
-			};
-			let mouse_left_down = if $rl.is_mouse_button_down(MouseButton::MOUSE_BUTTON_LEFT) {
-				$self.layable.pass_event(
-					Event::MouseEvent(MouseEvent::MouseHeld { x: ptr_x, y: ptr_y }),
-					$self.det,
-					$self.scale,
-				)
-			} else {
-				None
-			};
-			let mouse_left_released =
-				if $rl.is_mouse_button_released(MouseButton::MOUSE_BUTTON_LEFT) {
-					$self.layable.pass_event(
-						Event::MouseEvent(MouseEvent::MouseRelease { x: ptr_x, y: ptr_y }),
-						$self.det,
-						$self.scale,
-					)
-				} else {
-					None
-				};
-
-			let mouse_left_pressed = mouse_left_pressed.into_iter();
-
-			mouse_left_pressed
-				.chain(mouse_left_down)
-				.chain(mouse_left_released)
-		} else {
-			None.into_iter().chain(None).chain(None)
-		};
-
-		let keyboard_events = {
-			let key = $rl.get_char_pressed();
-			key.map(|key| {
-				$self.layable.pass_event(
-					Event::KeyboardEvent($focus.get(), KeyboardEvent::CharPressed(key)),
-					$self.det,
-					$self.scale,
-				)
-			})
-			.flatten()
-		};
-
-		mouse_events.chain(keyboard_events)
-	}};
-}
-
 /// `RootContext` contains everything needed to calculate Details and scales, for both rendering
 /// and events. this is so there's no way [Layable::render] and [Layable::pass_event]
 /// could work with different data.
@@ -114,20 +50,71 @@ impl<'a, L: Layable> RootContext<'a, L> {
 	pub fn render(&self, d: &mut RaylibDrawHandle) {
 		self.layable.render(d, self.det, self.scale);
 	}
-	pub fn handle_input(
-		&self,
-		rl: &mut RaylibHandle,
+	pub fn handle_input<'b, H: DerefMut<Target = RaylibHandle>>(
+		&'b self,
+		rl: &mut H,
 		focus: &FocusHandler,
-	) -> impl Iterator<Item = ReturnEvent> {
-		handle_input_impl!(self, rl, focus)
-	}
-	/// duplcate of [Self::handle_input] with a different raylib handle
-	pub fn handle_input_d(
-		&self,
-		d: &mut RaylibDrawHandle,
-		focus: &FocusHandler,
-	) -> impl Iterator<Item = ReturnEvent> {
-		handle_input_impl!(self, d, focus)
+	) -> impl Iterator<Item = ReturnEvent> + 'b {
+		use crate::core::KeyboardEvent;
+		use crate::core::MouseEvent;
+
+		let (ptr_x, ptr_y) = (rl.get_mouse_x(), rl.get_mouse_y());
+
+		let mouse_events = if ptr_x as f32 > self.det.x as f32 && ptr_y as f32 > self.det.y as f32 {
+			let mouse_left_pressed = if rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
+				Some(Event::MouseEvent(MouseEvent::MouseClick {
+					x: ptr_x,
+					y: ptr_y,
+				}))
+			} else {
+				None
+			};
+			let mouse_left_down = if rl.is_mouse_button_down(MouseButton::MOUSE_BUTTON_LEFT) {
+				Some(Event::MouseEvent(MouseEvent::MouseHeld {
+					x: ptr_x,
+					y: ptr_y,
+				}))
+			} else {
+				None
+			};
+			let mouse_left_released = if rl.is_mouse_button_released(MouseButton::MOUSE_BUTTON_LEFT)
+			{
+				Some(Event::MouseEvent(MouseEvent::MouseRelease {
+					x: ptr_x,
+					y: ptr_y,
+				}))
+			} else {
+				None
+			};
+
+			let mouse_left_pressed = mouse_left_pressed.into_iter();
+
+			mouse_left_pressed
+				.chain(mouse_left_down)
+				.chain(mouse_left_released)
+		} else {
+			None.into_iter().chain(None).chain(None)
+		};
+
+		let keyboard_events = {
+			let key = rl.get_char_pressed();
+			key.map(|key| {
+				Some(Event::KeyboardEvent(
+					focus.get(),
+					KeyboardEvent::CharPressed(key),
+				))
+			})
+			.flatten()
+		};
+
+		mouse_events
+			.chain(keyboard_events)
+			.map(|event| {
+				println!("dispatching {event:?}");
+				event
+			})
+			.map(|event| self.layable.pass_event(event, self.det, self.scale))
+			.filter_map(|a| a)
 	}
 }
 
