@@ -132,10 +132,8 @@ impl<D: DivComponents> Layable for Div<D> {
 		scale: f32,
 	) -> Option<crate::core::ReturnEvent> {
 		match event {
-			Event::MouseClick {
-				x: mouse_x,
-				y: mouse_y,
-			} => {
+			Event::MouseEvent(m_event) => {
+				let (mouse_x, mouse_y) = m_event.at();
 				let (self_w, self_h) = self.size();
 
 				let (mut x, mut y) = (det.x, det.y);
@@ -168,7 +166,14 @@ impl<D: DivComponents> Layable for Div<D> {
 				}
 				None
 			}
-			_ => None,
+			Event::KeyboardEvent(_, _) => {
+				for c in self.components.iter_components() {
+					if let Some(ret) = c.pass_event(event, det, scale) {
+						return Some(ret);
+					}
+				}
+				None
+			}
 		}
 	}
 }

@@ -40,7 +40,7 @@ impl<T> Store<T> {
 }
 impl<T: Copy> Store<T> {
 	/// copies the value and returns it
-	pub fn take(&self) -> T {
+	pub fn get(&self) -> T {
 		self.with_borrow(|a| *a)
 	}
 }
@@ -62,11 +62,11 @@ mod tests {
 	fn test_store_with_i32() {
 		let store = Store::new(16);
 
-		let num = store.take();
+		let num = store.get();
 		assert_eq!(num, 16);
 
 		store.with_mut_borrow(|a| *a = 13);
-		let num = store.take();
+		let num = store.get();
 		assert_eq!(num, 13);
 	}
 }

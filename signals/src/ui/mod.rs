@@ -3,7 +3,10 @@ pub mod ingame;
 pub mod worlds_bar;
 use fit::scrollable::ScrollableState;
 
-use sui::comp::div::DivComponents;
+use sui::{
+	comp::div::DivComponents,
+	form::{Typable, UniqueId},
+};
 
 use crate::{
 	game::{IngameWorld, IngameWorldType, WorldId},
@@ -14,7 +17,9 @@ use sui::{comp::*, core::Store, LayableExt};
 #[derive(Clone, Debug)]
 pub enum SignalsEvent {
 	DialogCommand(sui::dialog::Command),
+	FocusCommand(sui::form::FocusCommand),
 	DialogFallback,
+
 	NewWorld,
 	SwitchToWorld(WorldId),
 	PlaceWorld(WorldId),
@@ -22,26 +27,44 @@ pub enum SignalsEvent {
 }
 
 fn spawn_dialog() -> sui::comp::Comp<'static> {
-	let comp = Text::new("summon dialog", 24)
-		.clickable(|(x, y)| {
-			let dialog_content = Div::new(
+	let create_dialog = |(x, y)| {
+		let typable = Typable::new(
+			Store::new(sui::form::typable::TypableData {
+				uid: UniqueId::null(),
+				..Default::default()
+			}),
+			16,
+		);
+
+		let dialog_content =
+			Div::new(
 				false,
 				[
-					sui::custom(Text::new("this is a dialog!!! yippie", 16).centered()),
+					sui::custom(Margin::new(
+						sui::comp::space::MarginValues {
+							b: 3,
+							..Default::default()
+						},
+						Text::new("this is a dialog!!! yippie", 16).centered(),
+					)),
+					sui::custom(typable),
 					sui::custom(Space::new(30, 30)),
 					sui::custom(Text::new("close", 12).clickable(move |_| {
 						SignalsEvent::DialogCommand(sui::dialog::Command::Close)
 					})),
 				],
 			);
-			let dialog_content = sui::custom(dialog_content);
+		let dialog_content = sui::custom(dialog_content);
 
-			SignalsEvent::DialogCommand(sui::dialog::Command::Open(sui::dialog::Instance {
-				comp: dialog_content,
-				at: (x, y),
-				scale: 1.0,
-			}))
-		})
+		SignalsEvent::DialogCommand(sui::dialog::Command::Open(sui::dialog::Instance {
+			comp: dialog_content,
+			at: (x, y),
+			scale: 1.0,
+		}))
+	};
+
+	let comp = Text::new("summon dialog", 24)
+		.clickable(create_dialog)
 		.to_right();
 
 	sui::custom(comp)

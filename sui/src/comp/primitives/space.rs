@@ -26,12 +26,12 @@ impl Layable for Space {
 	}
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct MarginValues {
-	r: i32,
-	l: i32,
-	t: i32,
-	b: i32,
+	pub r: i32,
+	pub l: i32,
+	pub t: i32,
+	pub b: i32,
 }
 
 #[derive(Clone, Debug)]

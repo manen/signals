@@ -11,11 +11,7 @@ use raylib::{
 	ffi::{KeyboardKey, MouseButton},
 	prelude::RaylibDraw,
 };
-use sui::{
-	comp::{div::DivComponents, fit::scrollable},
-	core::Store,
-	Layable, LayableExt,
-};
+use sui::{comp::fit::scrollable, core::Store, Layable, LayableExt};
 use tool::Tool;
 use ui::{worlds_bar, SignalsEvent};
 
@@ -93,7 +89,9 @@ fn main() {
 
 		sui::custom(comp)
 	}
+
 	let mut dialog_handler = sui::dialog::Handler::new(frame_dialog);
+	let mut focus_handler = sui::form::focus_handler();
 
 	while !rl.window_should_close() {
 		let screen = sui::Details::window(rl.get_render_width(), unsafe {
@@ -192,11 +190,13 @@ fn main() {
 			// 	.handle_input_d(&mut d)
 			// 	.chain(worlds_bar_ctx.handle_input_d(&mut d))
 			// 	.chain(dialog_ctx.handle_input_d(&mut d));
-			let events = dialog_ctx.handle_input_d(&mut d).collect::<Vec<_>>();
+			let events = dialog_ctx
+				.handle_input_d(&mut d, &focus_handler)
+				.collect::<Vec<_>>();
 			let events = if events.len() == 0 {
 				worlds_bar_ctx
-					.handle_input_d(&mut d)
-					.chain(dbg_ctx.handle_input_d(&mut d))
+					.handle_input_d(&mut d, &focus_handler)
+					.chain(dbg_ctx.handle_input_d(&mut d, &focus_handler))
 					.collect()
 			} else {
 				events
@@ -261,6 +261,9 @@ fn main() {
 			match event_out {
 				Some(SignalsEvent::DialogCommand(command)) => {
 					dialog_handler.run(command);
+				}
+				Some(SignalsEvent::FocusCommand(command)) => {
+					command.apply(&mut focus_handler);
 				}
 				Some(SignalsEvent::NewWorld) => {
 					let wid = game.push();

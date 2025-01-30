@@ -8,6 +8,8 @@ pub mod dialog;
 
 pub mod tex;
 
+pub mod form;
+
 pub mod ui;
 pub use ui::*;
 

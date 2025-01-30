@@ -277,7 +277,8 @@ mod dynamiclayable_tests {
 		test_pair(l, d);
 	}
 	fn test_pair<A: Layable, B: Layable>(a: A, b: B) {
-		let test_event = Event::MouseClick { x: 3, y: 4 };
+		let test_event =
+			Event::MouseEvent(crate::core::event::MouseEvent::MouseClick { x: 3, y: 4 });
 
 		assert_eq!(a.size(), b.size());
 		assert_eq!(

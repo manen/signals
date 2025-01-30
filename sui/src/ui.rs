@@ -9,6 +9,7 @@ use crate::{
 		Comp, Compatible,
 	},
 	core::{Event, ReturnEvent, Store},
+	form::FocusHandler,
 	Details, Layable,
 };
 
@@ -30,57 +31,66 @@ pub fn text<'a, T: Into<Cow<'a, str>>>(text: T, size: i32) -> Comp<'a> {
 }
 
 macro_rules! handle_input_impl {
-	($self:expr,$rl:expr) => {{
+	($self:expr,$rl:expr,$focus:expr) => {{
+		use crate::core::KeyboardEvent;
+		use crate::core::MouseEvent;
+
 		let (ptr_x, ptr_y) = ($rl.get_mouse_x(), $rl.get_mouse_y());
 
-		let mouse_left_pressed = if $rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
-			if ptr_x as f32 > $self.det.x as f32 && ptr_y as f32 > $self.det.y as f32 {
+		let mouse_events = if ptr_x as f32 > $self.det.x as f32 && ptr_y as f32 > $self.det.y as f32
+		{
+			let mouse_left_pressed = if $rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT)
+			{
 				$self.layable.pass_event(
-					Event::MouseClick { x: ptr_x, y: ptr_y },
+					Event::MouseEvent(MouseEvent::MouseClick { x: ptr_x, y: ptr_y }),
 					$self.det,
 					$self.scale,
 				)
 			} else {
 				None
-			}
-		} else {
-			None
-		};
-		let mouse_left_down = if $rl.is_mouse_button_down(MouseButton::MOUSE_BUTTON_LEFT) {
-			if ptr_x as f32 > $self.det.x as f32 && ptr_y as f32 > $self.det.y as f32 {
+			};
+			let mouse_left_down = if $rl.is_mouse_button_down(MouseButton::MOUSE_BUTTON_LEFT) {
 				$self.layable.pass_event(
-					Event::MouseHeld { x: ptr_x, y: ptr_y },
+					Event::MouseEvent(MouseEvent::MouseHeld { x: ptr_x, y: ptr_y }),
 					$self.det,
 					$self.scale,
 				)
 			} else {
 				None
-			}
-		} else {
-			None
-		};
-		let mouse_left_released = if $rl.is_mouse_button_released(MouseButton::MOUSE_BUTTON_LEFT) {
-			if ptr_x as f32 > $self.det.x as f32 && ptr_y as f32 > $self.det.y as f32 {
-				$self.layable.pass_event(
-					Event::MouseRelease { x: ptr_x, y: ptr_y },
-					$self.det,
-					$self.scale,
-				)
-			} else {
-				None
-			}
-		} else {
-			None
-		}
-		.into_iter();
+			};
+			let mouse_left_released =
+				if $rl.is_mouse_button_released(MouseButton::MOUSE_BUTTON_LEFT) {
+					$self.layable.pass_event(
+						Event::MouseEvent(MouseEvent::MouseRelease { x: ptr_x, y: ptr_y }),
+						$self.det,
+						$self.scale,
+					)
+				} else {
+					None
+				};
 
-		let mouse_left_pressed = mouse_left_pressed.into_iter();
-		let mouse_left_down = mouse_left_down.into_iter();
-		let mouse_left_released = mouse_left_released.into_iter();
+			let mouse_left_pressed = mouse_left_pressed.into_iter();
 
-		mouse_left_pressed
-			.chain(mouse_left_down)
-			.chain(mouse_left_released)
+			mouse_left_pressed
+				.chain(mouse_left_down)
+				.chain(mouse_left_released)
+		} else {
+			None.into_iter().chain(None).chain(None)
+		};
+
+		let keyboard_events = {
+			let key = $rl.get_char_pressed();
+			key.map(|key| {
+				$self.layable.pass_event(
+					Event::KeyboardEvent($focus.get(), KeyboardEvent::CharPressed(key)),
+					$self.det,
+					$self.scale,
+				)
+			})
+			.flatten()
+		};
+
+		mouse_events.chain(keyboard_events)
 	}};
 }
 
@@ -104,12 +114,20 @@ impl<'a, L: Layable> RootContext<'a, L> {
 	pub fn render(&self, d: &mut RaylibDrawHandle) {
 		self.layable.render(d, self.det, self.scale);
 	}
-	pub fn handle_input(&self, rl: &mut RaylibHandle) -> impl Iterator<Item = ReturnEvent> {
-		handle_input_impl!(self, rl)
+	pub fn handle_input(
+		&self,
+		rl: &mut RaylibHandle,
+		focus: &FocusHandler,
+	) -> impl Iterator<Item = ReturnEvent> {
+		handle_input_impl!(self, rl, focus)
 	}
 	/// duplcate of [Self::handle_input] with a different raylib handle
-	pub fn handle_input_d(&self, d: &mut RaylibDrawHandle) -> impl Iterator<Item = ReturnEvent> {
-		handle_input_impl!(self, d)
+	pub fn handle_input_d(
+		&self,
+		d: &mut RaylibDrawHandle,
+		focus: &FocusHandler,
+	) -> impl Iterator<Item = ReturnEvent> {
+		handle_input_impl!(self, d, focus)
 	}
 }
 

@@ -1,7 +1,7 @@
 use raylib::prelude::RaylibDraw;
 
 use crate::{
-	core::{Event, Store},
+	core::{Event, MouseEvent, Store},
 	Layable,
 };
 
@@ -230,10 +230,10 @@ impl<L: Layable> Layable for Scrollable<L> {
 		// - MouseHeld updates self.scroll_x or self.scroll_y
 		// - release stops the action
 		match event {
-			Event::MouseClick {
+			Event::MouseEvent(MouseEvent::MouseClick {
 				x: mouse_x,
 				y: mouse_y,
-			} => {
+			}) => {
 				self.for_each_scrollbar(Some((l_w, l_h)), view_det, scale, |_, handle, bottom| {
 					let handle_det = crate::Details {
 						x: handle.0,
@@ -259,10 +259,10 @@ impl<L: Layable> Layable for Scrollable<L> {
 					}
 				});
 			}
-			Event::MouseHeld {
+			Event::MouseEvent(MouseEvent::MouseHeld {
 				x: mouse_x,
 				y: mouse_y,
-			} => {
+			}) => {
 				self.state.with_mut_borrow(|s| match s.action {
 					ScrollbarAction::ScrollingXFrom {
 						before,
@@ -295,14 +295,15 @@ impl<L: Layable> Layable for Scrollable<L> {
 							.max(0);
 					}
 					_ => (), // no action has been started
-				})
+				});
 			}
-			Event::MouseRelease { .. } => {
+			Event::MouseEvent(MouseEvent::MouseRelease { .. }) => {
 				// expects everything to be handled in Event::MouseHeld
 				self.state.with_mut_borrow(|s| {
 					s.action = ScrollbarAction::None;
-				})
+				});
 			}
+			_ => (),
 		}
 
 		view.pass_event(event, view_det, scale)
