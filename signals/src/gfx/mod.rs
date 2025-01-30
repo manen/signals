@@ -18,6 +18,15 @@ pub const NOT_ON: Color = color(82, 81, 80, 255);
 pub const NOT_OFF: Color = color(255, 255, 255, 255);
 pub const REST_ON: Color = color(150, 150, 150, 255);
 
+// pub const WIRE_ON: Color = color(207, 109, 173, 255);
+// pub const WIRE_OFF: Color = color(105, 38, 81, 255);
+// pub const SWITCH_ON: Color = color(255, 161, 236, 255);
+// pub const SWITCH_OFF: Color = color(232, 90, 203, 255);
+// pub const NOT_BASE: Color = color(212, 8, 103, 255);
+// pub const NOT_ON: Color = color(237, 109, 126, 255);
+// pub const NOT_OFF: Color = color(255, 74, 116, 255);
+// pub const REST_ON: Color = color(224, 4, 147, 255);
+
 pub const DEBUG_WIRES: bool = false;
 pub const DEBUG_CHUNKS: bool = false;
 pub const DEBUG_NOT: bool = false;

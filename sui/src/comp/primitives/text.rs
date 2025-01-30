@@ -11,6 +11,7 @@ use crate::Layable;
 pub const BOUNDS_DEBUG: bool = false;
 pub const SPACING: f32 = 1.0; // idk idc
 pub const DEFAULT_COLOR: Color = Color::WHITE;
+// pub const DEFAULT_COLOR: Color = crate::color(195, 36, 209, 255);
 
 /// Font is currently a placeholder for if fonts were ever to be implemented,
 /// currently font has one variant and it'll render using the default font

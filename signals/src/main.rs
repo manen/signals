@@ -77,6 +77,11 @@ fn main() {
 	let mut g_pos = PosInfo::default();
 
 	fn frame_dialog(comp: sui::Comp<'static>) -> sui::Comp<'static> {
+		// bogi edition
+		// .with_background(comp::Color::new(sui::color(242, 109, 133, 255)))
+		// .margin(6)
+		// .with_background(comp::Color::new(sui::color(242, 61, 93, 255)))
+
 		use sui::comp;
 		let comp = comp
 			.margin(5)

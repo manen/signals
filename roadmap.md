@@ -33,7 +33,33 @@ the rest:
 
 - [ ] ~~make `WorldsBar` cache world previews individually~~ this is stupid i want to make another worlds bar with categories why'd i refine the old one
 - [ ] `...` button in the corner of world previews opening a dialog
-- [ ] component that just aligns the component inside to the end of the det (to position the button)
+- [x] component that just aligns the component inside to the end of the det (to position the button)
+
+#### - forms
+
+- form lifecycle: probably the text and shit stored in a sui `Store`, when a button is clicked we dispatch an event with the content
+  - for dialogs, we should make a return event variant that's just multiple return events (form finish, dialog close) and flatten it somehow
+
+- focus for keyboard input:
+
+- [ ] option 1
+  - in the keyboardevent passed to the component, there will be a value containing a unique identifier for the component that requested focus/was clicked on the last
+  - typeables that receive an event with a path identifier will ignore the event and return None
+  - every single component everywhere will have to be sent this event to know if it was the correct one, once we found the match we can return tho
+
+  - the unique id is just a random number generaterated on click, stored in a sui store.
+
+- [ ] option 2
+  - pass a bit-packed path identifier along with every event, the click will return an event to set focus to the path
+  - and from then on every keyboardevent will pass the saved path along with it and the event handlers will just have to
+  - decode it and pass it along to the correct child
+
+  - the questions:
+    - how do i implement anything like this safely
+    - isn't it gonna be slow as hell?
+    - why would i do this how would i even pass the path along? do we bitshift it but then we'd need a null padding to know if we hit the end or not also this shit has a fixed capacity??? how would i even do that
+
+---
 
 - [ ] a lot of components that have to do with state probably shouldn't rush making them (text input, color picker)
 
