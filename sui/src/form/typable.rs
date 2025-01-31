@@ -5,6 +5,8 @@ use crate::{
 
 use super::UniqueId;
 
+pub const BACKSPACE: char = '\x08';
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct TypableData {
 	pub uid: UniqueId,
@@ -56,8 +58,12 @@ impl Layable for Typable {
 			Event::KeyboardEvent(this_uiq, KeyboardEvent::CharPressed(key))
 				if this_uiq == self_uiq =>
 			{
-				println!("key: {key}");
-				self.store.with_mut_borrow(|data| data.text.push(key));
+				self.store.with_mut_borrow(|data| match key {
+					BACKSPACE => {
+						data.text.pop();
+					}
+					_ => data.text.push(key),
+				});
 				None
 			}
 			_ => None,

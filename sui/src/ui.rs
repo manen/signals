@@ -1,6 +1,10 @@
 use std::{borrow::Cow, ops::DerefMut};
 
-use raylib::{ffi::MouseButton, prelude::RaylibDrawHandle, RaylibHandle};
+use raylib::{
+	ffi::{KeyboardKey, MouseButton},
+	prelude::RaylibDrawHandle,
+	RaylibHandle,
+};
 
 use crate::{
 	comp::{
@@ -98,6 +102,18 @@ impl<'a, L: Layable> RootContext<'a, L> {
 
 		let keyboard_events = {
 			let key = rl.get_char_pressed();
+			let key = match key {
+				Some(a) => Some(a),
+				None => {
+					if rl.is_key_pressed(KeyboardKey::KEY_BACKSPACE) {
+						Some(crate::form::typable::BACKSPACE)
+					} else if rl.is_key_pressed(KeyboardKey::KEY_ENTER) {
+						Some('\n')
+					} else {
+						None
+					}
+				}
+			};
 			key.map(|key| {
 				Some(Event::KeyboardEvent(
 					focus.get(),

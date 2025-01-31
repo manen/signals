@@ -190,7 +190,6 @@ fn main() {
 			// 	.handle_input_d(&mut d)
 			// 	.chain(worlds_bar_ctx.handle_input_d(&mut d))
 			// 	.chain(dialog_ctx.handle_input_d(&mut d));
-			println!("start event dispatching");
 			let events = dialog_ctx
 				.handle_input(&mut d, &focus_handler)
 				.collect::<Vec<_>>();
