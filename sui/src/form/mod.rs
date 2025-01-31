@@ -1,6 +1,9 @@
 pub mod typable;
 pub use typable::Typable;
 
+pub mod textbox;
+pub use textbox::textbox;
+
 use crate::core::Store;
 
 pub type FocusHandler = Store<UniqueId>;

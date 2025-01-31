@@ -5,7 +5,7 @@ use fit::scrollable::ScrollableState;
 
 use sui::{
 	comp::div::DivComponents,
-	form::{Typable, UniqueId},
+	form::{typable::TypableData, UniqueId},
 };
 
 use crate::{
@@ -25,13 +25,19 @@ pub enum SignalsEvent {
 	PlaceWorld(WorldId),
 	WorldsBarFallback,
 }
+impl From<sui::form::FocusCommand> for SignalsEvent {
+	fn from(value: sui::form::FocusCommand) -> Self {
+		Self::FocusCommand(value)
+	}
+}
 
 fn spawn_dialog() -> sui::comp::Comp<'static> {
 	let create_dialog = |(x, y)| {
-		let typable = Typable::new(
-			Store::new(sui::form::typable::TypableData {
-				uid: UniqueId::null(),
-				..Default::default()
+		let uid = UniqueId::new();
+		let textbox = sui::form::textbox::<SignalsEvent>(
+			Store::new(TypableData {
+				uid,
+				text: format!("{uid:?}"),
 			}),
 			16,
 		);
@@ -47,7 +53,7 @@ fn spawn_dialog() -> sui::comp::Comp<'static> {
 						},
 						Text::new("this is a dialog!!! yippie", 16).centered(),
 					)),
-					sui::custom(typable),
+					sui::custom(textbox),
 					sui::custom(Space::new(30, 30)),
 					sui::custom(Text::new("close", 12).clickable(move |_| {
 						SignalsEvent::DialogCommand(sui::dialog::Command::Close)

@@ -186,10 +186,7 @@ fn main() {
 			let dialog_ctx = dialog_handler.root_context();
 
 			// handled later, when there's no other references to game
-			// let events = dbg_ctx
-			// 	.handle_input_d(&mut d)
-			// 	.chain(worlds_bar_ctx.handle_input_d(&mut d))
-			// 	.chain(dialog_ctx.handle_input_d(&mut d));
+			// if dialog returns any returnevent, don't dispatch events to the other components
 			let events = dialog_ctx
 				.handle_input(&mut d, &focus_handler)
 				.collect::<Vec<_>>();
@@ -209,14 +206,15 @@ fn main() {
 			} else {
 				// temporary text to differentiate a non-world from an empty world
 				use sui::{comp, core::Layable};
-				comp::Centered::new(comp::Text::new(
+				comp::Text::new(
 					if game.worlds().count() == 0 {
 						"create a world using the + icon"
 					} else {
 						"select a world to start building"
 					},
 					32,
-				))
+				)
+				.centered()
 				.render(&mut d, screen, 1.0);
 			}
 

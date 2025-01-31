@@ -12,8 +12,8 @@ pub struct TypableData {
 	pub uid: UniqueId,
 	pub text: String,
 }
-impl Default for TypableData {
-	fn default() -> Self {
+impl TypableData {
+	pub fn new() -> Self {
 		Self {
 			uid: UniqueId::new(),
 			text: String::new(),
@@ -21,7 +21,7 @@ impl Default for TypableData {
 	}
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 /// this component is not a fully featured textbox. \
 /// it just renders a flashing pointer and the text currently being written.
 ///
@@ -31,6 +31,9 @@ pub struct Typable {
 	text_size: i32,
 }
 impl Typable {
+	pub fn default(text_size: i32) -> Self {
+		Self::new(Store::new(TypableData::new()), text_size)
+	}
 	pub fn new(store: Store<TypableData>, text_size: i32) -> Self {
 		Self { store, text_size }
 	}
