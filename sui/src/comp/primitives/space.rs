@@ -82,8 +82,8 @@ impl<L: Layable> Margin<L> {
 		crate::Details {
 			x: det.x + ((self.values.l as f32) * scale) as i32,
 			y: det.y + ((self.values.t as f32) * scale) as i32,
-			aw: det.aw - ((self.values.r as f32) * scale) as i32,
-			ah: det.ah - ((self.values.b as f32) * scale) as i32,
+			aw: det.aw - ((self.values.r as f32 + self.values.l as f32) * scale) as i32,
+			ah: det.ah - ((self.values.b as f32 + self.values.t as f32) * scale) as i32,
 		}
 	}
 }

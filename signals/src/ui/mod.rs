@@ -47,32 +47,38 @@ impl From<sui::form::typable::TypeEvent> for SignalsEvent {
 fn spawn_dialog() -> sui::comp::Comp<'static> {
 	let create_dialog = |(x, y)| {
 		let uid = UniqueId::new();
-		let textbox = sui::form::textbox(
-			Store::new(TypableData {
-				uid,
-				text: format!("{uid:?}"),
-			}),
-			16,
+		let text_store = Store::new(TypableData {
+			uid,
+			text: format!("{uid:?}"),
+		});
+		let textbox = sui::form::textbox(text_store.clone(), 16);
+
+		let actions = Overlay::new(
+			Text::new("close", 12)
+				.clickable(move |_| SignalsEvent::DialogCommand(sui::dialog::Command::Close)),
+			Text::new("println", 12)
+				.clickable(move |_| {
+					text_store.with_borrow(|a| println!("{}", a.text));
+					sui::form::FocusCommand::Drop
+				})
+				.to_right(),
 		);
 
-		let dialog_content =
-			Div::new(
-				false,
-				[
-					sui::custom(Margin::new(
-						sui::comp::space::MarginValues {
-							b: 3,
-							..Default::default()
-						},
-						Text::new("this is a dialog!!! yippie", 16).centered(),
-					)),
-					sui::custom(textbox),
-					sui::custom(Space::new(30, 30)),
-					sui::custom(Text::new("close", 12).clickable(move |_| {
-						SignalsEvent::DialogCommand(sui::dialog::Command::Close)
-					})),
-				],
-			);
+		let dialog_content = Div::new(
+			false,
+			[
+				sui::custom(Margin::new(
+					sui::comp::space::MarginValues {
+						b: 3,
+						..Default::default()
+					},
+					Text::new("this is a dialog!!! yippie", 16).centered(),
+				)),
+				sui::custom(textbox),
+				sui::custom(Space::new(30, 30)),
+				sui::custom(actions),
+			],
+		);
 		let dialog_content = sui::custom(dialog_content);
 
 		SignalsEvent::DialogCommand(sui::dialog::Command::Open(sui::dialog::Instance {

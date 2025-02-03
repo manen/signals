@@ -1,4 +1,7 @@
-use crate::{core::Event, Layable};
+use crate::{
+	core::{Event, MouseEvent},
+	Layable,
+};
 
 #[derive(Clone, Debug)]
 pub struct Crop<L: Layable> {
@@ -31,6 +34,20 @@ impl<L: Layable> Layable for Crop<L> {
 		det: crate::Details,
 		scale: f32,
 	) -> Option<crate::core::ReturnEvent> {
-		self.layable.pass_event(event, det, scale)
+		match event {
+			Event::MouseEvent(MouseEvent::MouseHeld { .. }) => {
+				// pass MouseHeld even if it's ouside just to have scrollbars working nicely
+				self.layable.pass_event(event, det, scale)
+			}
+			Event::MouseEvent(m_event) => {
+				let (mx, my) = m_event.at();
+				if det.is_inside(mx, my) {
+					self.layable.pass_event(event, det, scale)
+				} else {
+					None
+				}
+			}
+			_ => self.layable.pass_event(event, det, scale),
+		}
 	}
 }

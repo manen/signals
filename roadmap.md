@@ -60,7 +60,7 @@ the rest:
     - why would i do this how would i even pass the path along? do we bitshift it but then we'd need a null padding to know if we hit the end or not also this shit has a fixed capacity??? how would i even do that
 
 - forms in general
-  - forms will use regular events to communicate with each other
+  - forms will use regular events to communicate with each other (i don't think this is necessary)
 
 ---
 
