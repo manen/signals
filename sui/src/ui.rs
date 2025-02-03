@@ -12,7 +12,7 @@ use crate::{
 		scrollable::{ScrollableMode, ScrollableState},
 		Comp, Compatible,
 	},
-	core::{Event, ReturnEvent, Store},
+	core::{Event, FeaturedReturn, ReturnEvent, Store},
 	form::FocusHandler,
 	Details, Layable,
 };
@@ -54,11 +54,11 @@ impl<'a, L: Layable> RootContext<'a, L> {
 	pub fn render(&self, d: &mut RaylibDrawHandle) {
 		self.layable.render(d, self.det, self.scale);
 	}
-	pub fn handle_input<'b, H: DerefMut<Target = RaylibHandle>>(
+	pub fn handle_input<'b, E: FeaturedReturn, H: DerefMut<Target = RaylibHandle>>(
 		&'b self,
 		rl: &mut H,
 		focus: &FocusHandler,
-	) -> impl Iterator<Item = ReturnEvent> + 'b {
+	) -> impl Iterator<Item = Result<E, ReturnEvent>> + 'b {
 		use crate::core::KeyboardEvent;
 		use crate::core::MouseEvent;
 
@@ -126,10 +126,17 @@ impl<'a, L: Layable> RootContext<'a, L> {
 		mouse_events
 			.chain(keyboard_events)
 			.map(|event| {
-				println!("dispatching {event:?}");
-				event
+				self.layable
+					.pass_event(event, self.det, self.scale)
+					.map(|event| {
+						let cast = E::cast_event(event);
+						if cast.can_take::<E>() {
+							Ok(cast.take().expect("can_take returned true, taking failed"))
+						} else {
+							Err(cast)
+						}
+					})
 			})
-			.map(|event| self.layable.pass_event(event, self.det, self.scale))
 			.filter_map(|a| a)
 	}
 }
@@ -230,6 +237,12 @@ pub trait LayableExt: Layable + Sized {
 	/// see [comp::Overlay]
 	fn with_background<L1: Layable>(self, background: L1) -> comp::Overlay<Self, L1> {
 		comp::Overlay::new(background, self)
+	}
+
+	/// the context from which root components should be interacted with \
+	/// see [RootContext]
+	fn root_context(&self, det: Details, scale: f32) -> RootContext<Self> {
+		RootContext::new(self, det, scale)
 	}
 }
 impl<L: Layable> LayableExt for L {}

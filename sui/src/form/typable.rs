@@ -7,6 +7,11 @@ use super::UniqueId;
 
 pub const BACKSPACE: char = '\x08';
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub enum TypeEvent {
+	Handled,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct TypableData {
 	pub uid: UniqueId,
@@ -67,7 +72,7 @@ impl Layable for Typable {
 					}
 					_ => data.text.push(key),
 				});
-				None
+				Some(Event::ret(TypeEvent::Handled))
 			}
 			_ => None,
 		}

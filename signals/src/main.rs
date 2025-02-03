@@ -169,8 +169,7 @@ fn main() {
 				(&game, dbg_scroll_state.clone()),
 				|_, (game, dbg_scroll_state)| ui::game_debug_ui(game, dbg_scroll_state.clone()),
 			);
-			let dbg_ctx = sui::RootContext::new(
-				&page,
+			let dbg_ctx = page.root_context(
 				sui::Details {
 					x: 0,
 					y: 100,
@@ -253,28 +252,30 @@ fn main() {
 		}
 
 		for event_out in events {
-			let event_out = event_out.take();
-
 			println!("{} {event_out:?}", rl.get_time());
 			match event_out {
-				Some(SignalsEvent::DialogCommand(command)) => {
-					dialog_handler.run(command);
-				}
-				Some(SignalsEvent::FocusCommand(command)) => {
-					command.apply(&mut focus_handler);
-				}
-				Some(SignalsEvent::NewWorld) => {
-					let wid = game.push();
-					game.switch_main(wid);
-					worlds_bar.clear_cache();
-				}
-				Some(SignalsEvent::SwitchToWorld(wid)) => {
-					game.switch_main(wid);
-					worlds_bar.clear_cache();
-				}
-				Some(SignalsEvent::PlaceWorld(wid)) => tool = Tool::PlaceForeign(wid),
-				Some(SignalsEvent::WorldsBarFallback) | Some(SignalsEvent::DialogFallback) => {}
-				None => eprintln!("ui returned invalid returnevent"),
+				Ok(event_out) => match event_out {
+					SignalsEvent::DialogCommand(command) => {
+						dialog_handler.run(command);
+					}
+					SignalsEvent::FocusCommand(command) => {
+						command.apply(&mut focus_handler);
+					}
+					SignalsEvent::NewWorld => {
+						let wid = game.push();
+						game.switch_main(wid);
+						worlds_bar.clear_cache();
+					}
+					SignalsEvent::SwitchToWorld(wid) => {
+						game.switch_main(wid);
+						worlds_bar.clear_cache();
+					}
+					SignalsEvent::PlaceWorld(wid) => tool = Tool::PlaceForeign(wid),
+					SignalsEvent::WorldsBarFallback
+					| SignalsEvent::DialogFallback
+					| SignalsEvent::TypeEvent(_) => {}
+				},
+				Err(_) => {}
 			}
 		}
 	}

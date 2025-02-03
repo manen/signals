@@ -23,6 +23,9 @@ pub use overlay::Overlay;
 pub mod debug;
 pub use debug::Debug;
 
+pub mod cast_events;
+pub use cast_events::CastEvents;
+
 use crate::Layable;
 
 #[derive(Debug, Clone)]

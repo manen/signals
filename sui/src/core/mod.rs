@@ -7,7 +7,7 @@ mod store;
 pub use store::{Cached, Store};
 
 mod event;
-pub use event::{Event, KeyboardEvent, MouseEvent, ReturnEvent};
+pub use event::*;
 
 pub trait Layable {
 	fn size(&self) -> (i32, i32);

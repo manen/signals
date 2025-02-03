@@ -32,6 +32,46 @@ pub enum KeyboardEvent {
 	// this is enough for now
 }
 
+// -
+
+pub type DialogCommand = crate::dialog::Command;
+pub type FocusCommand = crate::form::FocusCommand;
+pub type TypeCommand = crate::form::typable::TypeEvent;
+
+/// FeaturedReturn is automatically implemented for any type that can be formed from any
+/// builtin sui returnevent type
+pub trait FeaturedReturn:
+	From<DialogCommand> + From<FocusCommand> + From<TypeCommand> + 'static
+{
+	fn cast_event(event: ReturnEvent) -> ReturnEvent {
+		if event.can_take::<DialogCommand>() {
+			if let Some(dialog) = event.take::<DialogCommand>() {
+				return Event::ret(Self::from(dialog));
+			} else {
+				unreachable!()
+			}
+		} else if event.can_take::<FocusCommand>() {
+			if let Some(form) = event.take::<FocusCommand>() {
+				return Event::ret(Self::from(form));
+			} else {
+				unreachable!()
+			}
+		} else if event.can_take::<TypeCommand>() {
+			if let Some(typ) = event.take::<TypeCommand>() {
+				return Event::ret(Self::from(typ));
+			} else {
+				unreachable!()
+			}
+		} else {
+			return event;
+		}
+	}
+}
+impl<T> FeaturedReturn for T where
+	T: From<DialogCommand> + From<FocusCommand> + From<TypeCommand> + 'static
+{
+}
+
 use std::any::Any;
 
 #[derive(Debug)]
@@ -45,6 +85,9 @@ impl ReturnEvent {
 		}
 	}
 
+	pub fn can_take<T: 'static>(&self) -> bool {
+		self.boxed.downcast_ref::<T>().is_some()
+	}
 	pub fn take<T: 'static>(self) -> Option<T> {
 		self.boxed.downcast::<T>().ok().map(|a| *a)
 	}

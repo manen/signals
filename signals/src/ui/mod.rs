@@ -18,6 +18,7 @@ use sui::{comp::*, core::Store, LayableExt};
 pub enum SignalsEvent {
 	DialogCommand(sui::dialog::Command),
 	FocusCommand(sui::form::FocusCommand),
+	TypeEvent(sui::form::typable::TypeEvent),
 	DialogFallback,
 
 	NewWorld,
@@ -30,11 +31,21 @@ impl From<sui::form::FocusCommand> for SignalsEvent {
 		Self::FocusCommand(value)
 	}
 }
+impl From<sui::dialog::Command> for SignalsEvent {
+	fn from(value: sui::dialog::Command) -> Self {
+		Self::DialogCommand(value)
+	}
+}
+impl From<sui::form::typable::TypeEvent> for SignalsEvent {
+	fn from(value: sui::form::typable::TypeEvent) -> Self {
+		Self::TypeEvent(value)
+	}
+}
 
 fn spawn_dialog() -> sui::comp::Comp<'static> {
 	let create_dialog = |(x, y)| {
 		let uid = UniqueId::new();
-		let textbox = sui::form::textbox::<SignalsEvent>(
+		let textbox = sui::form::textbox(
 			Store::new(TypableData {
 				uid,
 				text: format!("{uid:?}"),

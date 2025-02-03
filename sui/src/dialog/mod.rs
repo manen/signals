@@ -1,4 +1,4 @@
-use crate::{Comp, Details, Layable, RootContext};
+use crate::{Comp, Layable, RootContext};
 
 const DEFAULT_COMP: Comp = Comp::Space(crate::comp::Space::new(0, 0));
 
