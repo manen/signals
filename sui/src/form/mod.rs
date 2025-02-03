@@ -6,6 +6,8 @@ pub use textbox::textbox;
 
 use crate::core::Store;
 
+// i don't know if this is the appropriate place for the focus implementation
+
 pub type FocusHandler = Store<UniqueId>;
 pub fn focus_handler() -> FocusHandler {
 	FocusHandler::new(UniqueId::null())
@@ -40,16 +42,4 @@ impl UniqueId {
 		let mut rng = Pcg64Mcg::from_rng(&mut rand::rng());
 		Self(rng.next_u32())
 	}
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum FormEvent {
-	/// sent by the input to the form to let the form know the input exists
-	Register(UniqueId),
-	/// requests an input to return the collected value
-	CollectFrom(UniqueId),
-}
-
-pub enum InputValue {
-	Text(String),
 }
