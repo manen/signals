@@ -1,3 +1,5 @@
+use raylib::{color::Color, prelude::RaylibDraw};
+
 use crate::{
 	core::{Event, KeyboardEvent, Store},
 	Layable, Text,
@@ -53,7 +55,20 @@ impl Layable for Typable {
 		self.with_text(|a| a.size())
 	}
 	fn render(&self, d: &mut raylib::prelude::RaylibDrawHandle, det: crate::Details, scale: f32) {
-		self.with_text(|a| a.render(d, det, scale))
+		self.with_text(|a| a.render(d, det, scale));
+
+		let should_draw_blinker = d.get_time() * 2.0;
+		let should_draw_blinker = should_draw_blinker - should_draw_blinker.floor();
+
+		if should_draw_blinker < 0.5 {
+			d.draw_rectangle(
+				det.x,
+				det.y,
+				(3.0 * scale) as i32,
+				(self.text_size as f32 * scale) as i32,
+				Color::WHITE,
+			);
+		}
 	}
 	fn pass_event(
 		&self,
