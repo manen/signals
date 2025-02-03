@@ -41,7 +41,7 @@ impl<L: Layable> Layable for ScaleToFit<L> {
 
 		((l_w as f32 * scale) as i32, (l_h as f32 * scale) as i32)
 	}
-	fn render(&self, d: &mut raylib::prelude::RaylibDrawHandle, det: crate::Details, scale: f32) {
+	fn render(&self, d: &mut crate::Handle, det: crate::Details, scale: f32) {
 		self.layable.render(d, det, scale * self.scale(None));
 	}
 	fn pass_event(
@@ -66,8 +66,7 @@ mod scaletofit_tests {
 			fn size(&self) -> (i32, i32) {
 				(100, 200)
 			}
-			fn render(&self, _: &mut raylib::prelude::RaylibDrawHandle, _: crate::Details, _: f32) {
-			}
+			fn render(&self, _: &mut crate::Handle, _: crate::Details, _: f32) {}
 			fn pass_event(
 				&self,
 				_event: crate::core::Event,

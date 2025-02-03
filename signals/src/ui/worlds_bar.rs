@@ -18,7 +18,7 @@ pub struct WorldsBar {
 	scroll_state: Store<ScrollableState>,
 }
 impl WorldsBar {
-	pub fn new(d: &mut RaylibDrawHandle, game: &Game, height: i32) -> Self {
+	pub fn new(d: &mut sui::Handle, game: &Game, height: i32) -> Self {
 		let mut s = Self {
 			comp: Default::default(),
 			scroll_state: Default::default(),
@@ -27,7 +27,7 @@ impl WorldsBar {
 		s
 	}
 
-	pub fn update(&mut self, d: &mut RaylibDrawHandle, game: &Game, height: i32) -> &Comp<'static> {
+	pub fn update(&mut self, d: &mut sui::Handle, game: &Game, height: i32) -> &Comp<'static> {
 		self.comp.update_with_unchecked(height, d, |height, d| {
 			worlds_bar(d, game, height, self.scroll_state.clone())
 		})
@@ -46,7 +46,7 @@ impl WorldsBar {
 // eventually abstract all this into a CustomComp trait if i feel like it
 
 fn worlds_bar(
-	d: &mut RaylibDrawHandle,
+	d: &mut sui::Handle,
 	game: &Game,
 	height: i32,
 	scroll_state: Store<ScrollableState>,
@@ -76,7 +76,7 @@ fn worlds_bar(
 }
 
 fn worlds_bar_world(
-	d: &mut RaylibDrawHandle,
+	d: &mut sui::Handle,
 	height: i32,
 	wid: WorldId,
 	w: &World,

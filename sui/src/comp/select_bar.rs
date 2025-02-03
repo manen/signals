@@ -36,7 +36,7 @@ impl<'a, T: Clone + PartialEq> SelectBar<'a, T> {
 		}
 		false
 	}
-	pub fn render(&self, d: &mut RaylibDrawHandle, det: Details, selected: Option<&T>) {
+	pub fn render(&self, d: &mut crate::Handle, det: Details, selected: Option<&T>) {
 		for (edet, (name, opt)) in det.split_v(self.list.len() as i32).zip(self.list) {
 			let is_selected = selected.map(|x| x == opt).unwrap_or(false);
 			d.draw_text(

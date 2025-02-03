@@ -5,6 +5,8 @@ mod tool;
 mod ui;
 mod world;
 
+use std::ops::DerefMut;
+
 use game::Game;
 use gfx::PosInfo;
 use raylib::{
@@ -177,63 +179,66 @@ fn main() {
 				},
 				1.0,
 			);
+			{
+				let mut d = sui::Handle::new(d, &focus_handler);
 
-			let worlds_bar_comp = worlds_bar.update(&mut d, &game, worlds_bar_h);
-			worlds_bar_det.aw = worlds_bar_det.aw.min(worlds_bar_comp.size().0);
-			let worlds_bar_ctx = worlds_bar.root_context(worlds_bar_det, 1.0);
+				let worlds_bar_comp = worlds_bar.update(&mut d, &game, worlds_bar_h);
+				worlds_bar_det.aw = worlds_bar_det.aw.min(worlds_bar_comp.size().0);
+				let worlds_bar_ctx = worlds_bar.root_context(worlds_bar_det, 1.0);
 
-			let dialog_ctx = dialog_handler.root_context();
+				let dialog_ctx = dialog_handler.root_context();
 
-			// handled later, when there's no other references to game
-			// if dialog returns any returnevent, don't dispatch events to the other components
-			let events = dialog_ctx
-				.handle_input(&mut d, &focus_handler)
-				.collect::<Vec<_>>();
-			let events = if events.len() == 0 {
-				worlds_bar_ctx
-					.handle_input(&mut d, &focus_handler)
-					.chain(dbg_ctx.handle_input(&mut d, &focus_handler))
-					.collect()
-			} else {
-				events
-			};
+				// handled later, when there's no other references to game
+				// if dialog returns any returnevent, don't dispatch events to the other components
+				let events = dialog_ctx
+					.handle_input(d.deref_mut(), &focus_handler)
+					.collect::<Vec<_>>();
+				let events = if events.len() == 0 {
+					worlds_bar_ctx
+						.handle_input(d.deref_mut(), &focus_handler)
+						.chain(dbg_ctx.handle_input(d.deref_mut(), &focus_handler))
+						.collect()
+				} else {
+					events
+				};
 
-			d.clear_background(gfx::BACKGROUND);
+				d.clear_background(gfx::BACKGROUND);
 
-			if let Some(main) = game.main() {
-				gfx::render_world(&main, &mut d, pos_info, &game.drawmap);
-			} else {
-				// temporary text to differentiate a non-world from an empty world
-				use sui::{comp, core::Layable};
-				comp::Text::new(
-					if game.worlds().count() == 0 {
-						"create a world using the + icon"
-					} else {
-						"select a world to start building"
+				if let Some(main) = game.main() {
+					gfx::render_world(&main, &mut d, pos_info, &game.drawmap);
+				} else {
+					// temporary text to differentiate a non-world from an empty world
+					use sui::{comp, core::Layable};
+					comp::Text::new(
+						if game.worlds().count() == 0 {
+							"create a world using the + icon"
+						} else {
+							"select a world to start building"
+						},
+						32,
+					)
+					.centered()
+					.render(&mut d, screen, 1.0);
+				}
+
+				tool_select.render(&mut d, tool_select_det, Some(&tool));
+				dbg_ctx.render(&mut d);
+				worlds_bar_ctx.render(&mut d);
+
+				dialog_ctx.render(&mut d);
+
+				sui::text(format!("({point_x}, {point_y})"), 32).render(
+					&mut d,
+					sui::Details {
+						x: 0,
+						y: 68,
+						..Default::default()
 					},
-					32,
-				)
-				.centered()
-				.render(&mut d, screen, 1.0);
+					1.0,
+				);
+
+				events
 			}
-
-			tool_select.render(&mut d, tool_select_det, Some(&tool));
-			dbg_ctx.render(&mut d);
-			worlds_bar_ctx.render(&mut d);
-
-			dialog_ctx.render(&mut d);
-
-			sui::text(format!("({point_x}, {point_y})"), 32).render(
-				&mut d,
-				sui::Details {
-					x: 0,
-					y: 68,
-					..Default::default()
-				},
-				1.0,
-			);
-
-			events
 		};
 
 		{

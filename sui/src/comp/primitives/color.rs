@@ -17,7 +17,7 @@ impl Layable for Color {
 	fn size(&self) -> (i32, i32) {
 		(0, 0)
 	}
-	fn render(&self, d: &mut raylib::prelude::RaylibDrawHandle, det: crate::Details, scale: f32) {
+	fn render(&self, d: &mut crate::Handle, det: crate::Details, scale: f32) {
 		d.draw_rectangle(
 			det.x,
 			det.y,

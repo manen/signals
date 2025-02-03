@@ -51,7 +51,7 @@ impl<'a, L: Layable> RootContext<'a, L> {
 		}
 	}
 
-	pub fn render(&self, d: &mut RaylibDrawHandle) {
+	pub fn render(&self, d: &mut crate::Handle) {
 		self.layable.render(d, self.det, self.scale);
 	}
 	pub fn handle_input<'b, E: FeaturedReturn, H: DerefMut<Target = RaylibHandle>>(

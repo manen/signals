@@ -177,7 +177,7 @@ impl<L: Layable> Layable for Scrollable<L> {
 	fn size(&self) -> (i32, i32) {
 		self.layable.size()
 	}
-	fn render(&self, d: &mut raylib::prelude::RaylibDrawHandle, det: crate::Details, scale: f32) {
+	fn render(&self, d: &mut crate::Handle, det: crate::Details, scale: f32) {
 		let (l_w, l_h) = self.layable.size();
 
 		let view = self.view(scale);
@@ -344,7 +344,7 @@ impl<L: Layable> Layable for View<L> {
 	fn size(&self) -> (i32, i32) {
 		self.layable.size()
 	}
-	fn render(&self, d: &mut raylib::prelude::RaylibDrawHandle, det: crate::Details, scale: f32) {
+	fn render(&self, d: &mut crate::Handle, det: crate::Details, scale: f32) {
 		self.layable.render(d, self.l_det(det, scale), scale);
 	}
 	fn pass_event(

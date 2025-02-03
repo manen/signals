@@ -66,7 +66,7 @@ impl<L: Layable> Layable for AtEnd<L> {
 	fn size(&self) -> (i32, i32) {
 		self.layable.size()
 	}
-	fn render(&self, d: &mut raylib::prelude::RaylibDrawHandle, det: crate::Details, scale: f32) {
+	fn render(&self, d: &mut crate::Handle, det: crate::Details, scale: f32) {
 		self.layable.render(d, self.l_det(det, scale), scale);
 	}
 	fn pass_event(

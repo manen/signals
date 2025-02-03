@@ -94,7 +94,7 @@ impl<D: DivComponents> Layable for Div<D> {
 		(w, h)
 	}
 
-	fn render(&self, d: &mut RaylibDrawHandle, det: Details, scale: f32) {
+	fn render(&self, d: &mut crate::Handle, det: Details, scale: f32) {
 		let (self_w, self_h) = self.size();
 
 		let (mut x, mut y) = (det.x, det.y);

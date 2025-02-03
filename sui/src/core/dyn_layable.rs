@@ -10,7 +10,7 @@ pub struct DynamicLayable<'a> {
 	type_name: &'static str,
 
 	size: fn(*const u8) -> (i32, i32),
-	render: fn(*const u8, d: &mut RaylibDrawHandle, det: Details, scale: f32),
+	render: fn(*const u8, d: &mut crate::Handle, det: Details, scale: f32),
 	pass_event:
 		fn(*const u8, event: Event, det: Details, scale: f32) -> Option<crate::core::ReturnEvent>,
 
@@ -81,7 +81,7 @@ impl<'a> DynamicLayable<'a> {
 		fn size<L: Layable>(ptr: *const u8) -> (i32, i32) {
 			L::size(unsafe { &*(ptr as *const L) })
 		}
-		fn render<L: Layable>(ptr: *const u8, d: &mut RaylibDrawHandle, det: Details, scale: f32) {
+		fn render<L: Layable>(ptr: *const u8, d: &mut crate::Handle, det: Details, scale: f32) {
 			L::render(unsafe { &*(ptr as *const L) }, d, det, scale)
 		}
 		fn pass_event<L: Layable>(
@@ -183,7 +183,7 @@ impl<'a> Layable for DynamicLayable<'a> {
 	fn size(&self) -> (i32, i32) {
 		(self.size)(self.ptr)
 	}
-	fn render(&self, d: &mut RaylibDrawHandle, det: Details, scale: f32) {
+	fn render(&self, d: &mut crate::Handle, det: Details, scale: f32) {
 		(self.render)(self.ptr, d, det, scale)
 	}
 	fn pass_event(
@@ -317,7 +317,7 @@ mod dynamiclayable_tests {
 			fn size(&self) -> (i32, i32) {
 				(200, 200)
 			}
-			fn render(&self, _: &mut RaylibDrawHandle, _: Details, _: f32) {}
+			fn render(&self, _: &mut crate::Handle, _: Details, _: f32) {}
 			fn pass_event(
 				&self,
 				event: Event,
@@ -347,7 +347,7 @@ mod dynamiclayable_tests {
 			fn size(&self) -> (i32, i32) {
 				(200, 200)
 			}
-			fn render(&self, _: &mut RaylibDrawHandle, _: Details, _: f32) {}
+			fn render(&self, _: &mut crate::Handle, _: Details, _: f32) {}
 			fn pass_event(
 				&self,
 				event: Event,
@@ -378,7 +378,7 @@ mod dynamiclayable_tests {
 			fn size(&self) -> (i32, i32) {
 				(200, 200)
 			}
-			fn render(&self, _: &mut RaylibDrawHandle, _: Details, _: f32) {}
+			fn render(&self, _: &mut crate::Handle, _: Details, _: f32) {}
 			fn pass_event(
 				&self,
 				event: Event,

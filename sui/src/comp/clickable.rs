@@ -51,7 +51,7 @@ impl<T: Clone, C: Layable, F: Fn((i32, i32)) -> T> Layable for Clickable<C, F, T
 		self.comp.size()
 	}
 
-	fn render(&self, d: &mut raylib::prelude::RaylibDrawHandle, det: crate::Details, scale: f32) {
+	fn render(&self, d: &mut crate::Handle, det: crate::Details, scale: f32) {
 		self.comp.render(d, det, scale)
 	}
 

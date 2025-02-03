@@ -21,7 +21,7 @@ impl<E: FeaturedReturn, L: Layable> Layable for CastEvents<E, L> {
 	fn size(&self) -> (i32, i32) {
 		self.layable.size()
 	}
-	fn render(&self, d: &mut raylib::prelude::RaylibDrawHandle, det: crate::Details, scale: f32) {
+	fn render(&self, d: &mut crate::Handle, det: crate::Details, scale: f32) {
 		self.layable.render(d, det, scale);
 	}
 	fn pass_event(

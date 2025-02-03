@@ -30,7 +30,7 @@ impl<'a> Layable for WorldPreview<'a> {
 			w_size.1 * total_size_per_chunk,
 		)
 	}
-	fn render(&self, d: &mut raylib::prelude::RaylibDrawHandle, det: sui::Details, scale: f32) {
+	fn render(&self, d: &mut sui::Handle, det: sui::Details, scale: f32) {
 		let (_, w_offset) = self.world.size_and_offset();
 
 		gfx::render_basic_world(

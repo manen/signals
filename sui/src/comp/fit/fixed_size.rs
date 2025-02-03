@@ -49,7 +49,7 @@ impl<L: Layable> Layable for FixedSize<L> {
 			FitOpt::Both(s) => s,
 		}
 	}
-	fn render(&self, d: &mut raylib::prelude::RaylibDrawHandle, det: crate::Details, scale: f32) {
+	fn render(&self, d: &mut crate::Handle, det: crate::Details, scale: f32) {
 		self.layable.render(d, self.l_det(det), scale)
 	}
 	fn pass_event(

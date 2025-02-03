@@ -54,20 +54,22 @@ impl Layable for Typable {
 	fn size(&self) -> (i32, i32) {
 		self.with_text(|a| a.size())
 	}
-	fn render(&self, d: &mut raylib::prelude::RaylibDrawHandle, det: crate::Details, scale: f32) {
+	fn render(&self, d: &mut crate::Handle, det: crate::Details, scale: f32) {
 		self.with_text(|a| a.render(d, det, scale));
 
-		let should_draw_blinker = d.get_time() * 2.0;
-		let should_draw_blinker = should_draw_blinker - should_draw_blinker.floor();
+		if d.focus() == self.store.with_borrow(|data| data.uid) {
+			let should_draw_blinker = d.get_time() * 2.0;
+			let should_draw_blinker = should_draw_blinker - should_draw_blinker.floor();
 
-		if should_draw_blinker < 0.5 {
-			d.draw_rectangle(
-				det.x,
-				det.y,
-				(3.0 * scale) as i32,
-				(self.text_size as f32 * scale) as i32,
-				Color::WHITE,
-			);
+			if should_draw_blinker < 0.5 {
+				d.draw_rectangle(
+					det.x,
+					det.y,
+					(3.0 * scale) as i32,
+					(self.text_size as f32 * scale) as i32,
+					Color::WHITE,
+				);
+			}
 		}
 	}
 	fn pass_event(

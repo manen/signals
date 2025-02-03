@@ -9,9 +9,12 @@ pub use store::{Cached, Store};
 mod event;
 pub use event::*;
 
+mod handle;
+pub use handle::*;
+
 pub trait Layable {
 	fn size(&self) -> (i32, i32);
-	fn render(&self, d: &mut RaylibDrawHandle, det: Details, scale: f32);
+	fn render(&self, d: &mut Handle, det: Details, scale: f32);
 
 	/// this function is called by the parent of this component \
 	/// return events to be bubbled back \
@@ -26,7 +29,7 @@ impl<L: Layable> Layable for &L {
 	fn size(&self) -> (i32, i32) {
 		L::size(self)
 	}
-	fn render(&self, d: &mut RaylibDrawHandle, det: Details, scale: f32) {
+	fn render(&self, d: &mut Handle, det: Details, scale: f32) {
 		L::render(self, d, det, scale)
 	}
 	fn pass_event(

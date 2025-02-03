@@ -31,7 +31,7 @@ impl<A: Layable, B: Layable> Layable for Overlay<A, B> {
 
 		(a_w.max(b_w), a_h.max(b_h))
 	}
-	fn render(&self, d: &mut raylib::prelude::RaylibDrawHandle, det: crate::Details, scale: f32) {
+	fn render(&self, d: &mut crate::Handle, det: crate::Details, scale: f32) {
 		let l_det = self.l_det(det);
 
 		self.background.render(d, l_det, scale);

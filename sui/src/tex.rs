@@ -9,7 +9,7 @@ use raylib::{
 
 pub fn render_to_raylib_tex<L: Layable>(
 	layable: &L,
-	d: &mut RaylibDrawHandle,
+	d: &mut crate::Handle,
 	det: Details,
 	scale: f32,
 ) -> Texture2D {
@@ -68,7 +68,7 @@ impl Texture {
 	pub fn new_from_raylib(tex: Texture2D) -> Self {
 		Self { tex }
 	}
-	pub fn from_layable<L: Layable>(d: &mut RaylibDrawHandle, layable: &L) -> Self {
+	pub fn from_layable<L: Layable>(d: &mut crate::Handle, layable: &L) -> Self {
 		let (w, h) = layable.size();
 		let tex = render_to_raylib_tex(
 			layable,
@@ -87,7 +87,7 @@ impl Layable for Texture {
 	fn size(&self) -> (i32, i32) {
 		(self.tex.width, self.tex.height)
 	}
-	fn render(&self, d: &mut RaylibDrawHandle, det: Details, scale: f32) {
+	fn render(&self, d: &mut crate::Handle, det: Details, scale: f32) {
 		d.draw_texture_pro(
 			&self.tex,
 			Rectangle {

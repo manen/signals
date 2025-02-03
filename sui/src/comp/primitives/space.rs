@@ -15,7 +15,7 @@ impl Layable for Space {
 	fn size(&self) -> (i32, i32) {
 		(self.w, self.h)
 	}
-	fn render(&self, _: &mut raylib::prelude::RaylibDrawHandle, _: crate::Details, _: f32) {}
+	fn render(&self, _: &mut crate::Handle, _: crate::Details, _: f32) {}
 	fn pass_event(
 		&self,
 		_: crate::core::Event,
@@ -96,7 +96,7 @@ impl<L: Layable> Layable for Margin<L> {
 			lh + self.values.t + self.values.b,
 		)
 	}
-	fn render(&self, d: &mut raylib::prelude::RaylibDrawHandle, det: crate::Details, scale: f32) {
+	fn render(&self, d: &mut crate::Handle, det: crate::Details, scale: f32) {
 		self.layable.render(d, self.l_det(det, scale), scale)
 	}
 	fn pass_event(

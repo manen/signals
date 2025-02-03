@@ -1,5 +1,5 @@
 pub mod core;
-pub use core::{Details, DynamicLayable, Layable};
+pub use core::{Details, DynamicLayable, Handle, Layable};
 
 pub mod comp;
 pub use comp::{Comp, Compatible, Div, SelectBar, Text};
