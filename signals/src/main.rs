@@ -256,30 +256,40 @@ fn main() {
 			}
 		}
 
+		let mut handle_event = |event: SignalsEvent| match event {
+			SignalsEvent::DialogCommand(command) => {
+				dialog_handler.run(command);
+			}
+			SignalsEvent::FocusCommand(command) => {
+				command.apply(&mut focus_handler);
+			}
+			SignalsEvent::NewWorld => {
+				let wid = game.push();
+				game.switch_main(wid);
+				worlds_bar.clear_cache();
+			}
+			SignalsEvent::SwitchToWorld(wid) => {
+				game.switch_main(wid);
+				worlds_bar.clear_cache();
+			}
+			SignalsEvent::PlaceWorld(wid) => tool = Tool::PlaceForeign(wid),
+
+			SignalsEvent::Multiple(_) => {
+				eprintln!("SignalsEvent::Multiple got into inner event handler function")
+			}
+			SignalsEvent::WorldsBarFallback
+			| SignalsEvent::DialogFallback
+			| SignalsEvent::TypeEvent(_) => {}
+		};
+		let mut handle_event = |event: SignalsEvent| match event {
+			SignalsEvent::Multiple(vec) => vec.into_iter().for_each(&mut handle_event),
+			_ => handle_event(event),
+		};
+
 		for event_out in events {
 			println!("{} {event_out:?}", rl.get_time());
 			match event_out {
-				Ok(event_out) => match event_out {
-					SignalsEvent::DialogCommand(command) => {
-						dialog_handler.run(command);
-					}
-					SignalsEvent::FocusCommand(command) => {
-						command.apply(&mut focus_handler);
-					}
-					SignalsEvent::NewWorld => {
-						let wid = game.push();
-						game.switch_main(wid);
-						worlds_bar.clear_cache();
-					}
-					SignalsEvent::SwitchToWorld(wid) => {
-						game.switch_main(wid);
-						worlds_bar.clear_cache();
-					}
-					SignalsEvent::PlaceWorld(wid) => tool = Tool::PlaceForeign(wid),
-					SignalsEvent::WorldsBarFallback
-					| SignalsEvent::DialogFallback
-					| SignalsEvent::TypeEvent(_) => {}
-				},
+				Ok(event_out) => handle_event(event_out),
 				Err(_) => {}
 			}
 		}

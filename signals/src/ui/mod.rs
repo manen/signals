@@ -25,6 +25,8 @@ pub enum SignalsEvent {
 	SwitchToWorld(WorldId),
 	PlaceWorld(WorldId),
 	WorldsBarFallback,
+
+	Multiple(Vec<SignalsEvent>),
 }
 impl From<sui::form::FocusCommand> for SignalsEvent {
 	fn from(value: sui::form::FocusCommand) -> Self {
