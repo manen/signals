@@ -41,3 +41,50 @@ impl Hash for Worlds {
 		}
 	}
 }
+
+use std::borrow::Cow;
+
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
+pub struct WorldsTree {
+	pub name: Cow<'static, str>,
+	pub color: Option<sui::Color>,
+
+	pub categories: Vec<WorldsTree>,
+	pub worlds: Vec<WorldId>,
+}
+impl WorldsTree {
+	/// returns all the worlds there are in this tree recursively
+	pub fn worlds_r(&self) -> impl Iterator<Item = WorldId> {
+		self.worlds
+			.iter()
+			.copied()
+			.chain(self.categories.iter().map(|cat| cat.worlds_r()).flatten())
+			.collect::<Vec<_>>()
+			.into_iter()
+	}
+
+	pub fn categories_with_others(&self, worlds: &Worlds) -> impl Iterator<Item = Cow<WorldsTree>> {
+		let mut others = worlds.worlds.keys().copied().collect::<Vec<_>>();
+		for exists in self.worlds_r() {
+			if let Some(i) = others.iter().position(|&x| x == exists) {
+				others.remove(i);
+			}
+		}
+
+		self.categories
+			.iter()
+			.map(|cat| Cow::Borrowed(cat))
+			.chain(std::iter::once(Cow::Owned(WorldsTree {
+				name: "others".into(),
+				color: None,
+				categories: vec![],
+				worlds: others,
+			})))
+
+		// this should work next up is the ui itself
+
+		// i'm thinking the categories on the left, where categories inside a category are rendered to the right,
+		// the rest of the space could be just like the current worlds bar.
+		// to store the current category/subcategory we have open, we might just use a Vec<index>
+	}
+}

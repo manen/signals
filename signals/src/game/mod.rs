@@ -20,6 +20,7 @@ use crate::{gfx::DrawType, processor, world::World};
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct Game {
 	pub worlds: Worlds,
+	categories: WorldsTree,
 
 	/// the uuid of the world we have open \
 	/// !!! can point to a world that doesn't exist so don't rely on that

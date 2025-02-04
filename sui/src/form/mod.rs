@@ -1,10 +1,13 @@
 pub mod typable;
+use std::rc::Rc;
+
 pub use typable::Typable;
 
 pub mod textbox;
 pub use textbox::textbox;
+use typable::TypableData;
 
-use crate::core::Store;
+use crate::{core::Store, Layable};
 
 // i don't know if this is the appropriate place for the focus implementation
 
