@@ -45,6 +45,8 @@ impl Hash for Worlds {
 use std::borrow::Cow;
 
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
+/// WorldsTree is the structure that stores the categories \
+/// the worlds themselves are in [Worlds]
 pub struct WorldsTree {
 	pub name: Cow<'static, str>,
 	pub color: Option<sui::Color>,
@@ -86,5 +88,7 @@ impl WorldsTree {
 		// i'm thinking the categories on the left, where categories inside a category are rendered to the right,
 		// the rest of the space could be just like the current worlds bar.
 		// to store the current category/subcategory we have open, we might just use a Vec<index>
+
+		// tried doing this something doesnt work
 	}
 }

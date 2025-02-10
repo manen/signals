@@ -3,7 +3,7 @@ resolver = "2"
 members = ["signals", "sui"]
 
 [workspace.dependencies]
-raylib = { git = "https://github.com/manen/raylib-rs" }
+raylib.git = "https://github.com/manen/raylib-rs"
 anyhow = "1.0.95"
 
 sui.path = "./sui"

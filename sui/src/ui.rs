@@ -198,15 +198,15 @@ pub trait LayableExt: Layable + Sized {
 	}
 
 	/// see [comp::Scrollable]
-	fn scrollable_vert(self, state: Store<ScrollableState>) -> comp::Crop<comp::Scrollable<Self>> {
+	fn scrollable_vert(self, state: Store<ScrollableState>) -> comp::Scrollable<comp::Crop<Self>> {
 		comp::Scrollable::new(state, ScrollableMode::Vertical, self)
 	}
 	/// see [comp::Scrollable]
-	fn scrollable_horiz(self, state: Store<ScrollableState>) -> comp::Crop<comp::Scrollable<Self>> {
+	fn scrollable_horiz(self, state: Store<ScrollableState>) -> comp::Scrollable<comp::Crop<Self>> {
 		comp::Scrollable::new(state, ScrollableMode::Horizontal, self)
 	}
 	/// see [comp::Scrollable]
-	fn scrollable(self, state: Store<ScrollableState>) -> comp::Crop<comp::Scrollable<Self>> {
+	fn scrollable(self, state: Store<ScrollableState>) -> comp::Scrollable<comp::Crop<Self>> {
 		comp::Scrollable::new(state, ScrollableMode::Both, self)
 	}
 

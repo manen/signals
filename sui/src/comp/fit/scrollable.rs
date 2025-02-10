@@ -73,8 +73,12 @@ pub struct Scrollable<L: Layable> {
 }
 impl<L: Layable> Scrollable<L> {
 	/// will crop content outside boundaries
-	pub fn new(state: Store<ScrollableState>, mode: ScrollableMode, layable: L) -> Crop<Self> {
-		Crop::new(Self::new_uncropped(state, mode, layable))
+	pub fn new(
+		state: Store<ScrollableState>,
+		mode: ScrollableMode,
+		layable: L,
+	) -> Scrollable<Crop<L>> {
+		Scrollable::new_uncropped(state, mode, Crop::new(layable))
 	}
 	pub fn new_uncropped(state: Store<ScrollableState>, mode: ScrollableMode, layable: L) -> Self {
 		Self {
@@ -85,6 +89,7 @@ impl<L: Layable> Scrollable<L> {
 	}
 
 	fn view(&self, scale: f32) -> View<&L> {
+		self.clamp(None);
 		let (scroll_x, scroll_y) = self.state.with_borrow(|a| (a.scroll_x, a.scroll_y));
 
 		View::new(
@@ -94,8 +99,15 @@ impl<L: Layable> Scrollable<L> {
 		)
 	}
 	/// the det view is rendered with
-	fn l_det(&self, det: crate::Details, scale: f32) -> crate::Details {
-		let (x_mul, y_mul) = self.mode.multipliers_f32();
+	fn l_det(&self, det: crate::Details, scale: f32, l_size: Option<(i32, i32)>) -> crate::Details {
+		let (l_w, l_h) = l_size.unwrap_or_else(|| self.layable.size());
+
+		let (x_mul, y_mul) = self.mode.bools();
+
+		let x_mul = x_mul && l_w > det.aw;
+		let y_mul = y_mul && l_h > det.ah;
+
+		let (x_mul, y_mul) = (if x_mul { 1.0 } else { 0.0 }, if y_mul { 1.0 } else { 0.0 });
 
 		crate::Details {
 			x: det.x,
@@ -114,6 +126,9 @@ impl<L: Layable> Scrollable<L> {
 	) {
 		let (l_w, l_h) = l_size.unwrap_or_else(|| self.layable.size());
 		let (scrollbar_at_side, scrollbar_at_bottom) = self.mode.bools();
+
+		let scrollbar_at_side = scrollbar_at_side && l_h > view_det.ah;
+		let scrollbar_at_bottom = scrollbar_at_bottom && l_w > view_det.aw;
 
 		if scrollbar_at_side {
 			let (scrollbar_base_x, scrollbar_base_y) = (view_det.x + view_det.aw, view_det.y);
@@ -171,6 +186,13 @@ impl<L: Layable> Scrollable<L> {
 			);
 		}
 	}
+	fn clamp(&self, l_size: Option<(i32, i32)>) {
+		let (l_w, l_h) = l_size.unwrap_or_else(|| self.layable.size());
+		self.state.with_mut_borrow(|a| {
+			a.scroll_x = a.scroll_x.min(l_w).max(0);
+			a.scroll_y = a.scroll_y.min(l_h).max(0);
+		});
+	}
 }
 impl<L: Layable> Layable for Scrollable<L> {
 	/// returns self.layable.size(), because this scrollable is likely in a FixedSize, so it doesn't really matter
@@ -181,7 +203,7 @@ impl<L: Layable> Layable for Scrollable<L> {
 		let (l_w, l_h) = self.layable.size();
 
 		let view = self.view(scale);
-		let view_det = self.l_det(det, scale);
+		let view_det = self.l_det(det, scale, Some((l_w, l_h)));
 		view.render(d, view_det, scale);
 
 		self.for_each_scrollbar(
@@ -207,6 +229,16 @@ impl<L: Layable> Layable for Scrollable<L> {
 				);
 			},
 		);
+
+		if true {
+			d.draw_text(
+				&format!("lsize: {:?}\ndet: {det:?}\nvdet: {view_det:?}", (l_w, l_h)),
+				det.x,
+				det.y,
+				12,
+				crate::Color::WHEAT,
+			);
+		}
 	}
 	fn pass_event(
 		&self,
@@ -218,12 +250,7 @@ impl<L: Layable> Layable for Scrollable<L> {
 		let (l_w, l_h) = self.layable.size();
 
 		let view = self.view(scale);
-		let view_det = self.l_det(det, scale);
-
-		self.state.with_mut_borrow(|a| {
-			a.scroll_x = a.scroll_x.min(l_w).max(0);
-			a.scroll_y = a.scroll_y.min(l_h).max(0);
-		});
+		let view_det = self.l_det(det, scale, Some((l_w, l_h)));
 
 		// different events do different things:
 		// - pressing once starts the action

@@ -7,8 +7,8 @@
 
 ### - world customization && rendering overhaul
 
-- [ ] make scrollables only have scrollbars if they need to
-- [ ] on render, scrollables should clamp their scroll values
+- [x] make scrollables only have scrollbars if they need to
+- [x] on render, scrollables should clamp their scroll values
 
 - new worlds_bar, with categories, named & colored worlds
 
