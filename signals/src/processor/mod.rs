@@ -71,6 +71,12 @@ impl Memory {
 
 					self.set(out, a && b);
 				}
+				&Instruction::Xor { a, b, out } => {
+					let a = self.get(a);
+					let b = self.get(b);
+
+					self.set(out, a ^ b);
+				}
 			}
 		}
 	}
@@ -109,36 +115,12 @@ pub enum Instruction {
 		b: usize,
 		out: usize,
 	},
+	Xor {
+		a: usize,
+		b: usize,
+		out: usize,
+	},
 }
-impl Instruction {
-	#[allow(unused)] // cause it's nice to know
-	pub fn extended_set_to_base_set<'a>(
-		iter: impl IntoIterator<Item = &'a Instruction>,
-	) -> Vec<Instruction> {
-		let iter = iter.into_iter();
-
-		let mut vec = Vec::with_capacity(iter.size_hint().0);
-
-		for inst in iter {
-			match inst {
-				&Instruction::And { a, b, out } => {
-					vec.push(Instruction::Not { ptr: a, out: a });
-					vec.push(Instruction::Not { ptr: b, out: b });
-					vec.push(Instruction::Or { a, b, out });
-					vec.push(Instruction::Not { ptr: out, out });
-
-					// if we knew more context about these instructions we could potentially skip these two
-					vec.push(Instruction::Not { ptr: a, out: a });
-					vec.push(Instruction::Not { ptr: b, out: b })
-				}
-				_ => vec.push(*inst),
-			}
-		}
-
-		vec
-	}
-}
-
 #[cfg(test)]
 mod tests {
 	use super::*;
@@ -192,13 +174,7 @@ mod tests {
 			mem.execute(&instructions, &[a, b]);
 			let extended_set_result = mem.get(4);
 
-			let instructions = Instruction::extended_set_to_base_set(&instructions);
-			mem.execute(&instructions, &[a, b]);
-			let base_set_result = mem.get(4);
-
-			assert_eq!(extended_set_result, base_set_result);
-
-			base_set_result
+			extended_set_result
 		};
 
 		assert_eq!(xor_in_processor(false, false), false);

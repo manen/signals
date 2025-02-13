@@ -120,7 +120,15 @@ impl Equation {
 			match eq {
 				&Equation::Const(_) => 0,
 				&Equation::Input(_) => 1,
-				Equation::Not(n_eq) => internal(n_eq.as_ref(), map) + 1,
+				Equation::Not(n_eq) => {
+					if let Some((a, b)) = eq.xor_recognition() {
+						internal(&a, map) + internal(&b, map) + 1
+					} else if let Some(iter) = eq.and_recognition() {
+						iter.fold(0, |acc, a_eq| acc + internal(a_eq, map)) + 1
+					} else {
+						internal(n_eq.as_ref(), map) + 1
+					}
+				}
 				Equation::Or(a_eq, b_eq) => {
 					internal(a_eq.as_ref(), map) + internal(b_eq.as_ref(), map) + 2
 				}
@@ -144,6 +152,7 @@ impl Equation {
 				}
 			}
 		}
+
 		// contains shareds that have already been evaluated
 		let mut shared_map = Vec::<u64>::new();
 		internal(self, &mut shared_map)
@@ -228,6 +237,12 @@ impl Equation {
 					}};
 				}
 
+				if let Some((a, b)) = self.xor_recognition() {
+					let stack = stack.grow(1);
+					a.to_insts(stack.top(), stack.clone(), insts)?;
+					b.to_insts(out_ptr, stack.clone(), insts)?;
+					insts.push(Instruction::Xor { a: stack.top(), b: out_ptr, out: out_ptr });
+				} else
 				// if this is an and, generate an and instruction chain for however long we need to
 				if let Some(mut ands) = self.and_recognition() {
 					if let Some(and_eq) = ands.next() {
@@ -366,6 +381,63 @@ impl Equation {
 			}
 		}
 		None
+	}
+	/// if an xor, returns two equations that just need to be xor'd
+	pub fn xor_recognition(&self) -> Option<(Equation, Equation)> {
+		let ands = match self.and_recognition() {
+			Some(iter) => {
+				if iter.size_hint().0 != 2 {
+					return None;
+				}
+				let vec = iter.collect::<Vec<_>>();
+				if vec.len() != 2 {
+					return None;
+				} else {
+					(vec[0], vec[1])
+				}
+			}
+			None => return None,
+		};
+		let n_ands = (Equation::not(ands.0.clone()), Equation::not(ands.1.clone()));
+
+		let (is_or_first, both) = {
+			if let Some(ands) = n_ands.0.and_recognition() {
+				(false, ands)
+			} else if let Some(ands) = n_ands.1.and_recognition() {
+				(true, ands)
+			} else {
+				return None;
+			}
+		};
+		let both = {
+			if both.size_hint().0 != 2 {
+				return None;
+			}
+			let vec = both.collect::<Vec<_>>();
+			if vec.len() != 2 {
+				return None;
+			}
+			(vec[0].clone(), vec[1].clone())
+		};
+
+		let _either = {
+			let to_check = if is_or_first { ands.0 } else { ands.1 };
+			match to_check {
+				Equation::Or(a, b) => {
+					let is_either = |val: &Equation| -> bool { **a == *val || **b == *val };
+
+					if is_either(&both.0) && is_either(&both.1) {
+						// cool we can go ahead
+					} else {
+						println!("nah cause {:?}, {:?} != {:?}, {:?}", a, b, both.0, both.1);
+						return None;
+					}
+				}
+				_ => return None,
+			}
+		};
+
+		Some(both)
 	}
 }
 

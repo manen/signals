@@ -19,7 +19,7 @@ pub fn shared_recognition(mut program: Program) -> Program {
 	}
 
 	let appearances = {
-		let mut appearances_map = HashMap::<u64, (i32, i32)>::new(); // K: hash, V: (appearances, complexity)
+		let mut appearances_map = HashMap::<u64, (i32, i32)>::with_capacity(appearances.len()); // K: hash, V: (appearances, complexity)
 		for (hash, complexity) in appearances.iter().copied() {
 			appearances_map.insert(
 				hash,
