@@ -5,6 +5,15 @@
 - [x] overhaul `Tool::PlaceForeign`, only allow foreigns with the same `inst_id` to be next to each other
   - (i can pretty much just rewrite it from scratch, `IngameWorld::generate` exists idk why it's all manual)
 
+### - display block
+
+so some interactivity would be nice \
+or at least a display
+
+i want to make an 8 segment display
+
+but first i'm thinking two new tools: copy and move
+
 ### - world customization && rendering overhaul
 
 - [x] make scrollables only have scrollbars if they need to
@@ -20,6 +29,12 @@ rendering overhaul
 
 - proper block textures
 - have wires adopt the color of wherever they're getting their signal from
+
+### - prerelease
+
+cleanups and stuff
+
+- proper error block rendering
 
 ### - main menu
 
@@ -65,7 +80,7 @@ i'll save the web experiment in the branch `web-experiment` just in case
 
 ## 1.0
 
-- [better graphics (textures n allat)](#--rendering-overhaul)
+- [everything should work and it shouldn't be a hassle to use](#--prerelease)
 - [main menu](#--main-menu)
 
 ## post-1.0

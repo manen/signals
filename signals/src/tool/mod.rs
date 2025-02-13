@@ -17,6 +17,7 @@ pub const TOOLS: &[(&str, Tool)] = &[
 	("place output", Tool::PlaceOutput),
 	("remove", Tool::Place(Block::Nothing)),
 	("rotate", Tool::Rotate),
+	("copy", Tool::Copy),
 	("interact", Tool::Interact),
 ];
 
@@ -41,10 +42,13 @@ pub enum Tool {
 		start: Option<(i32, i32)>,
 	},
 	Place(Block),
-	Rotate,
 	PlaceInput,
 	PlaceOutput,
 	PlaceForeign(WorldId), // world id
+
+	Rotate,
+	Copy,
+
 	#[default]
 	Interact,
 }
@@ -91,6 +95,15 @@ impl Tool {
 				Block::Wire(dir) => Block::Wire(dir.rotate_r()),
 				_ => i,
 			}),
+			Self::Copy => {
+				*self = match main.at(x, y).copied().unwrap_or_default() {
+					Block::Input(_) => Tool::PlaceInput,
+					Block::Output(_) => Tool::PlaceOutput,
+					Block::Foreign(wid, _, _) => Tool::PlaceForeign(wid),
+
+					block => Tool::Place(block),
+				}
+			}
 			Self::PlaceWire { start } if *start == None => *start = Some((x, y)),
 			Self::Interact => main.mut_at(x, y).interact(),
 			Self::PlaceInput => {
