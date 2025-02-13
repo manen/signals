@@ -1,2 +1,4 @@
-/*signals.snsv
 /target
+
+/*.snsv
+!/*.keep.snsv

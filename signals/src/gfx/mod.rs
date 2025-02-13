@@ -340,6 +340,29 @@ pub fn render_block(
 				)
 			}
 		}
+		world::Block::Foreign(wid, inst_id, id) => {
+			let color = if *dt == DrawType::On {
+				REST_ON
+			} else {
+				SWITCH_OFF
+			};
+			d.draw_rectangle(
+				pos_info.base.0,
+				pos_info.base.1,
+				pos_info.scale(world::BLOCK_SIZE),
+				pos_info.scale(world::BLOCK_SIZE),
+				color,
+			);
+			if draw_misc {
+				d.draw_text(
+					&format!("{}\n{inst_id}|{id}", &format!("{wid}")[0..5]),
+					pos_info.base.0,
+					pos_info.base.1,
+					12,
+					SWITCH_ON,
+				)
+			}
+		}
 		rest => {
 			let color = if *dt == DrawType::On {
 				REST_ON

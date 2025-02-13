@@ -35,6 +35,8 @@ rendering overhaul
 cleanups and stuff
 
 - proper error block rendering
+- if a foreign is moved away from its clump `PlaceForeign` will happily exceed the max ids for some fucking reason
+  - yeah no actually something's wrong with max ids again there's 9 inputs and instead of the 9th i get a new inst
 
 ### - main menu
 
