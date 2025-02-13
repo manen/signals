@@ -18,6 +18,7 @@ pub const TOOLS: &[(&str, Tool)] = &[
 	("remove", Tool::Place(Block::Nothing)),
 	("rotate", Tool::Rotate),
 	("copy", Tool::Copy),
+	("move", Tool::Move),
 	("interact", Tool::Interact),
 ];
 
@@ -48,7 +49,17 @@ pub enum Tool {
 
 	Rotate,
 	Copy,
+	Move,
+	Moving {
+		// moving
+		// we want the block the user is hovering over to be the block being moved
+		// so we actually don't need to store the block being moved but the block that would be
+		// where we're hovering
+		hovering_over: Block,
+		from: (i32, i32),
+	},
 
+	//
 	#[default]
 	Interact,
 }
@@ -85,6 +96,19 @@ impl Tool {
 				let ptr = main.mut_at(x, y);
 				*ptr = *block;
 			}
+			Self::Moving {
+				hovering_over,
+				from,
+			} => {
+				if *from != (x, y) {
+					let main = main_or_return!(mut game);
+					let moving = std::mem::replace(main.mut_at(from.0, from.1), *hovering_over);
+					let new_hover = std::mem::replace(main.mut_at(x, y), moving);
+
+					*hovering_over = new_hover;
+					*from = (x, y);
+				}
+			}
 			_ => {}
 		}
 	}
@@ -102,6 +126,12 @@ impl Tool {
 					Block::Foreign(wid, _, _) => Tool::PlaceForeign(wid),
 
 					block => Tool::Place(block),
+				}
+			}
+			Self::Move => {
+				*self = Tool::Moving {
+					hovering_over: Block::Nothing,
+					from: (x, y),
 				}
 			}
 			Self::PlaceWire { start } if *start == None => *start = Some((x, y)),
@@ -227,6 +257,7 @@ impl Tool {
 				};
 				*start = None;
 			}
+			Tool::Moving { .. } => *self = Tool::Move,
 			_ => {}
 		}
 	}
