@@ -5,7 +5,7 @@ mod tool;
 mod ui;
 mod world;
 
-use std::ops::DerefMut;
+use std::{env, ops::DerefMut};
 
 use game::Game;
 use gfx::PosInfo;
@@ -25,9 +25,8 @@ pub const MOVE_RIGHT: KeyboardKey = KeyboardKey::KEY_D;
 pub const TOOL_USE: MouseButton = MouseButton::MOUSE_BUTTON_LEFT;
 pub const MOVE_AMOUNT: f32 = 5000.0;
 
-const SAVE_PATH: &str = "./signals.snsv";
-
-fn main() {
+fn start(save_path: &str) {
+	println!("loading {save_path}");
 	let (start_width, start_height) = (640, 480);
 
 	let (mut rl, thread) = raylib::init()
@@ -50,7 +49,7 @@ fn main() {
 		);
 	}
 
-	let mut game = match game::saves::read_worlds(SAVE_PATH) {
+	let mut game = match game::saves::read_worlds(save_path) {
 		Ok(a) => Game::from_worlds(a).unwrap_or_else(|err| {
 			eprintln!("failed to load game from worlds:\n{err}");
 			Default::default()
@@ -295,5 +294,18 @@ fn main() {
 		}
 	}
 	let save = game::saves::write_worlds(&game.worlds).expect("couldn't serialize progress");
-	std::fs::write(SAVE_PATH, &save).expect("couldn't save progress to file");
+	std::fs::write(save_path, &save).expect("couldn't save progress to file");
+}
+
+fn main() {
+	let mut args = env::args();
+	let _ = args.next();
+	let save_path = args.next();
+
+	let save_path = match &save_path {
+		Some(a) => a.as_ref(),
+		None => "./signals.snsv",
+	};
+
+	start(save_path);
 }
