@@ -57,7 +57,7 @@ impl<D: DivComponents + Default> Div<D> {
 	pub fn empty() -> Self {
 		Self::default()
 	}
-	pub fn horizontal() -> Self {
+	pub fn empty_horizontal() -> Self {
 		Self {
 			horizontal: true,
 			..Default::default()
@@ -70,6 +70,12 @@ impl<D: DivComponents> Div<D> {
 			components: components,
 			horizontal,
 		}
+	}
+	pub fn vertical(components: D) -> Self {
+		Self::new(false, components)
+	}
+	pub fn horizontal(components: D) -> Self {
+		Self::new(true, components)
 	}
 }
 impl<'a> Div<Vec<Comp<'a>>> {

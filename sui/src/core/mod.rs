@@ -1,6 +1,6 @@
 mod dyn_layable;
 pub use dyn_layable::DynamicLayable;
-use raylib::prelude::RaylibDrawHandle;
+use raylib::{prelude::RaylibDrawHandle, RaylibHandle};
 use std::fmt::Debug;
 
 mod store;
@@ -57,6 +57,11 @@ impl Details {
 	}
 	pub fn window(w: i32, h: i32) -> Self {
 		Self::new(0, 0, w, h)
+	}
+	pub fn rl_window(rl: &RaylibHandle) -> Self {
+		Self::window(rl.get_render_width(), unsafe {
+			raylib::ffi::GetRenderHeight()
+		})
 	}
 
 	pub fn from_top(&self, h: i32) -> Self {

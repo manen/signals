@@ -16,6 +16,8 @@ use sui::{comp::*, core::Store, LayableExt};
 
 #[derive(Clone, Debug)]
 pub enum SignalsEvent {
+	LoadSave(std::path::PathBuf),
+
 	DialogCommand(sui::dialog::Command),
 	FocusCommand(sui::form::FocusCommand),
 	TypeEvent(sui::form::typable::TypeEvent),

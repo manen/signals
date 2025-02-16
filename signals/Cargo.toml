@@ -12,3 +12,4 @@ serde = { version = "1.0.217", features = ["derive"] }
 bincode = "1.3.3"
 thiserror = "2.0.11"
 miniz_oxide = "0.8.3"
+nfde = "0.0.8"

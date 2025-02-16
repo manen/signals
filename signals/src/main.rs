@@ -1,5 +1,6 @@
 mod game;
 mod gfx;
+mod menu;
 mod processor;
 mod tool;
 mod ui;
@@ -12,8 +13,9 @@ use gfx::PosInfo;
 use raylib::{
 	ffi::{KeyboardKey, MouseButton},
 	prelude::RaylibDraw,
+	RaylibHandle, RaylibThread,
 };
-use sui::{comp::fit::scrollable, core::Store, Layable, LayableExt};
+use sui::{comp::fit::scrollable, core::Store, form::FocusHandler, Layable, LayableExt};
 use tool::Tool;
 use ui::{worlds_bar, SignalsEvent};
 
@@ -25,29 +27,8 @@ pub const MOVE_RIGHT: KeyboardKey = KeyboardKey::KEY_D;
 pub const TOOL_USE: MouseButton = MouseButton::MOUSE_BUTTON_LEFT;
 pub const MOVE_AMOUNT: f32 = 5000.0;
 
-fn start(save_path: &str) {
+fn start(rl: &mut RaylibHandle, thread: &RaylibThread, save_path: &str) {
 	println!("loading {save_path}");
-	let (start_width, start_height) = (640, 480);
-
-	let (mut rl, thread) = raylib::init()
-		.size(start_width, start_height)
-		.title("signals")
-		.resizable()
-		.build();
-
-	{
-		// center window on screen
-		let monitor = unsafe { raylib::ffi::GetCurrentMonitor() };
-		let raylib::ffi::Vector2 { x: m_x, y: m_y } =
-			unsafe { raylib::ffi::GetMonitorPosition(monitor) };
-		let m_width = unsafe { raylib::ffi::GetMonitorWidth(monitor) };
-		let m_height = unsafe { raylib::ffi::GetMonitorHeight(monitor) };
-
-		rl.set_window_position(
-			m_x as i32 + m_width / 2 - start_width / 2,
-			m_y as i32 + m_height / 2 - start_height / 2,
-		);
-	}
 
 	let mut game = match game::saves::read_worlds(save_path) {
 		Ok(a) => Game::from_worlds(a).unwrap_or_else(|err| {
@@ -95,9 +76,7 @@ fn start(save_path: &str) {
 	let mut focus_handler = sui::form::focus_handler();
 
 	while !rl.window_should_close() {
-		let screen = sui::Details::window(rl.get_render_width(), unsafe {
-			raylib::ffi::GetRenderHeight()
-		});
+		let screen = sui::Details::rl_window(&rl);
 		let tool_select_det = screen.from_top(30);
 
 		let screen_middle = (screen.aw / 2, screen.ah / 2);
@@ -241,7 +220,7 @@ fn start(save_path: &str) {
 		};
 
 		{
-			let tool_select_trig = tool_select.tick(&mut rl, tool_select_det, &mut tool);
+			let tool_select_trig = tool_select.tick(rl, tool_select_det, &mut tool);
 			if !tool_select_trig && !worlds_bar_det.is_inside(mouse_x, mouse_y) {
 				if rl.is_mouse_button_down(TOOL_USE) {
 					tool.down(point_x, point_y, &mut game);
@@ -278,7 +257,8 @@ fn start(save_path: &str) {
 			}
 			SignalsEvent::WorldsBarFallback
 			| SignalsEvent::DialogFallback
-			| SignalsEvent::TypeEvent(_) => {}
+			| SignalsEvent::TypeEvent(_)
+			| SignalsEvent::LoadSave(_) => {}
 		};
 		let mut handle_event = |event: SignalsEvent| match event {
 			SignalsEvent::Multiple(vec) => vec.into_iter().for_each(&mut handle_event),
@@ -302,10 +282,70 @@ fn main() {
 	let _ = args.next();
 	let save_path = args.next();
 
-	let save_path = match &save_path {
-		Some(a) => a.as_ref(),
-		None => "./signals.snsv",
-	};
+	let (mut rl, thread) = rl();
 
-	start(save_path);
+	match &save_path {
+		Some(a) => start(&mut rl, &thread, a),
+		None => start_main_menu(&mut rl, &thread),
+	};
+}
+
+fn start_main_menu(rl: &mut RaylibHandle, thread: &RaylibThread) {
+	let menu = menu::menu();
+	let focus = sui::form::focus_handler();
+
+	let mut save = None;
+	while !rl.window_should_close() && save.is_none() {
+		let det = sui::Details::rl_window(&rl);
+		let menu = menu.root_context(det, 1.0);
+
+		let events = {
+			let mut d = rl.begin_drawing(&thread);
+			d.clear_background(sui::color(0, 0, 0, 255));
+
+			let mut handle = sui::Handle::new(d, &focus);
+
+			menu.render(&mut handle);
+			menu.handle_input(handle.deref_mut(), &focus)
+				.collect::<Vec<Result<SignalsEvent, _>>>()
+		};
+		for event in events.iter() {
+			println!("{event:?}");
+			if let Ok(event) = event {
+				match event {
+					SignalsEvent::LoadSave(path) => save = Some(path.to_string_lossy().to_string()),
+					_ => {}
+				}
+			}
+		}
+	}
+	if let Some(path) = save {
+		start(rl, thread, &path)
+	}
+}
+
+fn rl() -> (RaylibHandle, RaylibThread) {
+	let (start_width, start_height) = (640, 480);
+
+	let (mut rl, thread) = raylib::init()
+		.size(start_width, start_height)
+		.title("signals")
+		.resizable()
+		.build();
+
+	{
+		// center window on screen
+		let monitor = unsafe { raylib::ffi::GetCurrentMonitor() };
+		let raylib::ffi::Vector2 { x: m_x, y: m_y } =
+			unsafe { raylib::ffi::GetMonitorPosition(monitor) };
+		let m_width = unsafe { raylib::ffi::GetMonitorWidth(monitor) };
+		let m_height = unsafe { raylib::ffi::GetMonitorHeight(monitor) };
+
+		rl.set_window_position(
+			m_x as i32 + m_width / 2 - start_width / 2,
+			m_y as i32 + m_height / 2 - start_height / 2,
+		);
+	}
+
+	(rl, thread)
 }
