@@ -27,6 +27,24 @@ pub const MOVE_RIGHT: KeyboardKey = KeyboardKey::KEY_D;
 pub const TOOL_USE: MouseButton = MouseButton::MOUSE_BUTTON_LEFT;
 pub const MOVE_AMOUNT: f32 = 5000.0;
 
+fn frame_dialog(comp: sui::Comp<'static>) -> sui::Comp<'static> {
+	// bogi edition
+	// .with_background(comp::Color::new(sui::color(242, 109, 133, 255)))
+	// .margin(6)
+	// .with_background(comp::Color::new(sui::color(242, 61, 93, 255)))
+
+	use sui::comp;
+	let comp = comp
+		.margin(5)
+		.with_background(comp::Color::new(sui::color(13, 13, 13, 255)))
+		.margin(1)
+		.with_background(comp::Color::new(sui::color(255, 255, 255, 255)))
+		.clickable_fallback(|_| SignalsEvent::DialogFallback)
+		.margin(2);
+
+	sui::custom(comp)
+}
+
 fn start(rl: &mut RaylibHandle, thread: &RaylibThread, save_path: &str) {
 	println!("loading {save_path}");
 
@@ -53,24 +71,6 @@ fn start(rl: &mut RaylibHandle, thread: &RaylibThread, save_path: &str) {
 	let mut delta = 0.0;
 
 	let mut g_pos = PosInfo::default();
-
-	fn frame_dialog(comp: sui::Comp<'static>) -> sui::Comp<'static> {
-		// bogi edition
-		// .with_background(comp::Color::new(sui::color(242, 109, 133, 255)))
-		// .margin(6)
-		// .with_background(comp::Color::new(sui::color(242, 61, 93, 255)))
-
-		use sui::comp;
-		let comp = comp
-			.margin(5)
-			.with_background(comp::Color::new(sui::color(13, 13, 13, 255)))
-			.margin(1)
-			.with_background(comp::Color::new(sui::color(255, 255, 255, 255)))
-			.clickable_fallback(|_| SignalsEvent::DialogFallback)
-			.margin(2);
-
-		sui::custom(comp)
-	}
 
 	let mut dialog_handler = sui::dialog::Handler::new(frame_dialog);
 	let mut focus_handler = sui::form::focus_handler();
@@ -292,7 +292,9 @@ fn main() {
 
 fn start_main_menu(rl: &mut RaylibHandle, thread: &RaylibThread) {
 	let menu = menu::menu();
-	let focus = sui::form::focus_handler();
+
+	let mut focus = sui::form::focus_handler();
+	let mut dialog = sui::dialog::Handler::new(frame_dialog);
 
 	let mut save = None;
 	while !rl.window_should_close() && save.is_none() {
@@ -305,17 +307,40 @@ fn start_main_menu(rl: &mut RaylibHandle, thread: &RaylibThread) {
 
 			let mut handle = sui::Handle::new(d, &focus);
 
+			let dialog = dialog.root_context();
+
 			menu.render(&mut handle);
-			menu.handle_input(handle.deref_mut(), &focus)
-				.collect::<Vec<Result<SignalsEvent, _>>>()
+			dialog.render(&mut handle);
+
+			let events: Vec<Result<SignalsEvent, _>> =
+				dialog.handle_input(handle.deref_mut(), &focus).collect();
+			if events.len() > 0 {
+				events
+			} else {
+				menu.handle_input(handle.deref_mut(), &focus)
+					.collect::<Vec<Result<SignalsEvent, _>>>()
+			}
 		};
-		for event in events.iter() {
+
+		let mut handle = |event| match event {
+			SignalsEvent::DialogCommand(cmd) => dialog.run(cmd),
+			SignalsEvent::FocusCommand(cmd) => cmd.apply(&mut focus),
+			SignalsEvent::LoadSave(path) => save = Some(path.to_string_lossy().to_string()),
+			_ => {}
+		};
+		let mut handle = |event| match event {
+			SignalsEvent::Multiple(v) => {
+				for event in v {
+					handle(event)
+				}
+			}
+			_ => handle(event),
+		};
+
+		for event in events {
 			println!("{event:?}");
 			if let Ok(event) = event {
-				match event {
-					SignalsEvent::LoadSave(path) => save = Some(path.to_string_lossy().to_string()),
-					_ => {}
-				}
+				handle(event)
 			}
 		}
 	}

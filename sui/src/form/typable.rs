@@ -26,6 +26,12 @@ impl TypableData {
 			text: String::new(),
 		}
 	}
+	pub fn with_default(default: String) -> Self {
+		Self {
+			uid: UniqueId::new(),
+			text: default,
+		}
+	}
 }
 
 #[derive(Clone, Debug)]

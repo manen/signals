@@ -196,6 +196,14 @@ pub trait LayableExt: Layable + Sized {
 	fn margin(self, margin: i32) -> comp::Margin<Self> {
 		comp::Margin::all(margin, self)
 	}
+	/// see [comp::Margin]
+	fn margin_v(self, margin: i32) -> comp::Margin<Self> {
+		comp::Margin::vertical(margin, self)
+	}
+	/// see [comp::Margin]
+	fn margin_h(self, margin: i32) -> comp::Margin<Self> {
+		comp::Margin::horizontal(margin, self)
+	}
 
 	/// see [comp::Scrollable]
 	fn scrollable_vert(self, state: Store<ScrollableState>) -> comp::Scrollable<comp::Crop<Self>> {
