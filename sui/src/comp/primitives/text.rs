@@ -21,6 +21,10 @@ impl<'a> Text<'a> {
 	pub fn new<I: Into<Cow<'a, str>>>(text: I, size: i32) -> Self {
 		Self(text.into(), size, Font, DEFAULT_COLOR)
 	}
+
+	pub fn new_colored<I: Into<Cow<'a, str>>>(text: I, size: i32, color: Color) -> Self {
+		Self(text.into(), size, Font, color)
+	}
 }
 impl<'a, I: Into<Cow<'a, str>>> Into<Text<'a>> for (I, i32) {
 	fn into(self) -> Text<'a> {

@@ -72,6 +72,16 @@ impl<D: DivComponents> Div<D> {
 	pub fn horizontal(components: D) -> Self {
 		Self::new(true, false, components)
 	}
+
+	pub fn as_horizontal(self) -> Self {
+		Self {
+			horizontal: true,
+			..self
+		}
+	}
+	pub fn as_fill(self) -> Self {
+		Self { fill: true, ..self }
+	}
 }
 impl<'a> Div<Vec<Comp<'a>>> {
 	pub fn push<C: Compatible<'a>>(&mut self, c: C) {
@@ -188,5 +198,12 @@ impl<D: DivComponents> Layable for Div<D> {
 				None
 			}
 		}
+	}
+}
+
+impl<L: Layable> FromIterator<L> for Div<Vec<L>> {
+	fn from_iter<T: IntoIterator<Item = L>>(iter: T) -> Self {
+		let iter = iter.into_iter();
+		Div::new(false, false, iter.collect::<Vec<_>>())
 	}
 }

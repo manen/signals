@@ -1,12 +1,15 @@
 use nfde::{
 	DefaultPathDialogBuilder, DialogResult, FilterableDialogBuilder, SingleFileDialogBuilder,
 };
-use sui::{comp, core::Store, form::typable::TypableData, Comp, LayableExt};
+use sui::{comp, core::Store, form::typable::TypableData, Comp, Layable, LayableExt};
 
 use crate::ui::SignalsEvent;
 
+pub mod title;
+pub use title::title;
+
 pub fn menu() -> Comp<'static> {
-	let title = comp::Text::new("signals", 32).centered();
+	let title = title::title().centered();
 
 	let open = |_| {
 		let nfd = nfde::Nfd::new().expect("failed to init nfde for file picking");
@@ -81,8 +84,6 @@ pub fn menu() -> Comp<'static> {
 		])
 	};
 	let new = comp::Text::new("new world", 24).centered().clickable(new);
-
-	let bg = comp::Color::new(sui::color(15, 15, 15, 255));
 
 	let title = title.margin(5);
 
