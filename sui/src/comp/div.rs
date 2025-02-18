@@ -9,13 +9,6 @@ pub trait DivComponents: Sized {
 	type L: Layable;
 
 	fn iter_components(&self) -> impl Iterator<Item = &Self::L>;
-
-	fn to_div(self) -> Div<Self> {
-		Div::new(false, self)
-	}
-	fn to_div_vert(self) -> Div<Self> {
-		Div::new(true, self)
-	}
 }
 impl<const N: usize, L: Layable> DivComponents for [L; N] {
 	type L = L;
@@ -52,6 +45,7 @@ impl<L: Layable> DivComponents for L {
 pub struct Div<D: DivComponents> {
 	components: D,
 	horizontal: bool,
+	fill: bool,
 }
 impl<D: DivComponents + Default> Div<D> {
 	pub fn empty() -> Self {
@@ -65,17 +59,18 @@ impl<D: DivComponents + Default> Div<D> {
 	}
 }
 impl<D: DivComponents> Div<D> {
-	pub fn new(horizontal: bool, components: D) -> Self {
+	pub fn new(horizontal: bool, fill: bool, components: D) -> Self {
 		Self {
 			components: components,
 			horizontal,
+			fill,
 		}
 	}
 	pub fn vertical(components: D) -> Self {
-		Self::new(false, components)
+		Self::new(false, false, components)
 	}
 	pub fn horizontal(components: D) -> Self {
-		Self::new(true, components)
+		Self::new(true, false, components)
 	}
 }
 impl<'a> Div<Vec<Comp<'a>>> {
@@ -102,6 +97,12 @@ impl<D: DivComponents> Layable for Div<D> {
 
 	fn render(&self, d: &mut crate::Handle, det: Details, scale: f32) {
 		let (self_w, self_h) = self.size();
+
+		let (self_w, self_h) = if self.fill {
+			(self_w.min(det.aw), self_h.min(det.ah))
+		} else {
+			(self_w, self_h)
+		};
 
 		let (mut x, mut y) = (det.x, det.y);
 		for comp in self.components.iter_components() {
@@ -141,6 +142,12 @@ impl<D: DivComponents> Layable for Div<D> {
 			Event::MouseEvent(m_event) => {
 				let (mouse_x, mouse_y) = m_event.at();
 				let (self_w, self_h) = self.size();
+
+				let (self_w, self_h) = if self.fill {
+					(self_w.min(det.aw), self_h.min(det.ah))
+				} else {
+					(self_w, self_h)
+				};
 
 				let (mut x, mut y) = (det.x, det.y);
 				for comp in self.components.iter_components() {

@@ -24,11 +24,11 @@ pub fn custom<'a, L: Layable + std::fmt::Debug + Clone + 'a>(layable: L) -> Comp
 	crate::DynamicLayable::new(layable).into_comp()
 }
 
-pub fn page<'a>(components: impl Into<Vec<Comp<'a>>>) -> Comp<'a> {
-	comp::Div::new(false, components.into()).into_comp()
+pub fn div<D: comp::div::DivComponents>(components: D) -> comp::Div<D> {
+	comp::Div::new(false, false, components)
 }
-pub fn page_h<'a>(components: impl Into<Vec<Comp<'a>>>) -> Comp<'a> {
-	comp::Div::new(true, components.into()).into_comp()
+pub fn div_h<D: comp::div::DivComponents>(components: D) -> comp::Div<D> {
+	comp::Div::new(true, false, components)
 }
 pub fn text<'a, T: Into<Cow<'a, str>>>(text: T, size: i32) -> Comp<'a> {
 	comp::Text::new(text, size).into_comp()

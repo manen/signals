@@ -64,7 +64,7 @@ fn worlds_bar(
 		)));
 	let previews = previews.collect::<Vec<_>>();
 
-	let elem = Div::new(true, previews)
+	let elem = sui::div_h(previews)
 		.scrollable_horiz(scroll_state)
 		.fix_wh(
 			d.get_render_width(),
@@ -88,14 +88,11 @@ fn worlds_bar_world(
 		.clickable(move |_| SignalsEvent::PlaceWorld(wid));
 	let switch = Text::new("switch here", 14).centered();
 
-	let clickables = Div::new(
-		false,
-		[
-			sui::custom(switch),
-			Space::new(0, 20).into_comp(),
-			sui::custom(place),
-		],
-	);
+	let clickables = sui::div([
+		sui::custom(switch),
+		Space::new(0, 20).into_comp(),
+		sui::custom(place),
+	]);
 
 	let elem = clickables
 		.centered()

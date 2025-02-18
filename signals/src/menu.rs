@@ -82,8 +82,21 @@ pub fn menu() -> Comp<'static> {
 	};
 	let new = comp::Text::new("new world", 24).centered().clickable(new);
 
-	let actions = open.overlay(new.to_right());
+	let bg = comp::Color::new(sui::color(15, 15, 15, 255));
+
+	let title = title.margin(5);
+
+	let open = open.margin(5);
+	let new = new.margin(5);
+
+	// let open = open.with_background(bg);
+	// let new = new.with_background(bg);
+
+	let open = open.margin(5);
+	let new = new.margin(5);
+
+	let actions = sui::div_h([sui::custom(open), sui::custom(new)]);
 
 	let page = comp::Div::vertical([sui::custom(title), sui::custom(actions)]);
-	sui::custom(page)
+	sui::custom(page.centered())
 }

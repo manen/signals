@@ -66,21 +66,18 @@ fn spawn_dialog() -> sui::comp::Comp<'static> {
 				.to_right(),
 		);
 
-		let dialog_content = Div::new(
-			false,
-			[
-				sui::custom(Margin::new(
-					sui::comp::space::MarginValues {
-						b: 3,
-						..Default::default()
-					},
-					Text::new("this is a dialog!!! yippie", 16).centered(),
-				)),
-				sui::custom(textbox),
-				sui::custom(Space::new(30, 30)),
-				sui::custom(actions),
-			],
-		);
+		let dialog_content = sui::div([
+			sui::custom(Margin::new(
+				sui::comp::space::MarginValues {
+					b: 3,
+					..Default::default()
+				},
+				Text::new("this is a dialog!!! yippie", 16).centered(),
+			)),
+			sui::custom(textbox),
+			sui::custom(Space::new(30, 30)),
+			sui::custom(actions),
+		]);
 		let dialog_content = sui::custom(dialog_content);
 
 		SignalsEvent::DialogCommand(sui::dialog::Command::Open(sui::dialog::Instance {
@@ -103,15 +100,12 @@ pub fn game_debug_ui(
 ) -> sui::comp::Comp<'static> {
 	let ingameworld_dbg = ingameworld_dbg_ui(0, &game.moves);
 
-	let page = Div::new(
-		false,
-		[
-			spawn_dialog(),
-			ingameworld_dbg,
-			sui::custom(sui::comp::Text::new("this is centered!!!", 13).centered()),
-			inst_comp(game, game.main_id),
-		],
-	);
+	let page = sui::div([
+		spawn_dialog(),
+		ingameworld_dbg,
+		sui::custom(sui::comp::Text::new("this is centered!!!", 13).centered()),
+		inst_comp(game, game.main_id),
+	]);
 
 	sui::custom(page.scrollable(scroll_state).fix_wh_square(300))
 }
@@ -128,13 +122,9 @@ fn ingameworld_dbg_ui(i: usize, moves: &IngameWorld) -> sui::comp::Comp<'static>
 		.iter()
 		.enumerate()
 		.map(|(i, child)| ingameworld_dbg_ui(i, child).margin(2));
-	let children_div = children.collect::<Vec<_>>().to_div();
+	let children_div = sui::div(children.collect::<Vec<_>>());
 
-	sui::custom(
-		[sui::custom(line.into_comp()), sui::custom(children_div)]
-			.to_div()
-			.margin(2),
-	)
+	sui::custom(sui::div([sui::custom(line.into_comp()), sui::custom(children_div)]).margin(2))
 }
 
 pub fn inst_comp(game: &crate::Game, world_id: WorldId) -> sui::Comp<'static> {
@@ -147,7 +137,7 @@ pub fn inst_comp(game: &crate::Game, world_id: WorldId) -> sui::Comp<'static> {
 				.map(|inst| Text::new(format!("{inst:?}"), 16));
 			let lines = lines.collect::<Vec<_>>();
 
-			sui::custom(Div::new(false, lines))
+			sui::custom(Div::new(false, false, lines))
 		}
 		Err(err) => sui::text(format!("{err:#?}"), 16),
 	};
@@ -169,7 +159,7 @@ pub fn inst_comp(game: &crate::Game, world_id: WorldId) -> sui::Comp<'static> {
 		Some(Ok(eq)) => sui::text(format!("{eq:#?}"), 16),
 		_ => sui::text(format!("{eq:#?}"), 16),
 	};
-	let eq = sui::page([sui::text("equation: ", 18), eq]);
+	let eq = sui::div([sui::text("equation: ", 18), eq]);
 
-	sui::custom(Div::new(false, [insts, eq]))
+	sui::custom(sui::div([insts, sui::custom(eq)]))
 }

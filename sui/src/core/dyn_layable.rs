@@ -257,12 +257,13 @@ mod dynamiclayable_tests {
 			"hello i'm just testing to see if all this raw memory shit broke or nah",
 			100,
 		));
-		test_single(crate::page(vec![
+		test_single(crate::div(vec![
 			crate::text("hellop", 1),
 			crate::text("hi".to_owned(), 14),
 			crate::text("yessirski", 54),
 		]));
 		test_single(crate::comp::Div::new(
+			false,
 			false,
 			vec![
 				crate::text("hellop", 1),
@@ -298,7 +299,7 @@ mod dynamiclayable_tests {
 
 		let xample = String::from("starting value");
 
-		let d_c = DynamicLayable::new(crate::page(vec![
+		let d_c = DynamicLayable::new(crate::div(vec![
 			crate::text(&xample, 1),
 			crate::text("hi", 14),
 			crate::text("yessirski", 54),
