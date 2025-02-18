@@ -54,14 +54,14 @@ impl Layable for TitleLetter {
 	}
 }
 
-pub fn title() -> Comp<'static> {
+pub fn title() -> impl Layable + Clone + std::fmt::Debug {
 	let title = "signals";
 	let font_size = 32;
 
 	title_with(title, font_size)
 }
 
-pub fn title_with(title: &str, font_size: i32) -> Comp<'static> {
+pub fn title_with(title: &str, font_size: i32) -> impl Layable + Clone + std::fmt::Debug {
 	let would_be = comp::Text::new(title, font_size);
 
 	let letters = title
@@ -72,5 +72,5 @@ pub fn title_with(title: &str, font_size: i32) -> Comp<'static> {
 		.collect::<comp::Div<_>>()
 		.as_horizontal();
 
-	sui::custom(letters)
+	letters
 }

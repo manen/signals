@@ -9,7 +9,7 @@ pub mod title;
 pub use title::title;
 
 pub fn menu() -> Comp<'static> {
-	let title = title::title().centered();
+	let title = title().centered();
 
 	let open = |_| {
 		let nfd = nfde::Nfd::new().expect("failed to init nfde for file picking");
@@ -32,56 +32,28 @@ pub fn menu() -> Comp<'static> {
 	};
 	let open = comp::Text::new("open file", 24).centered().clickable(open);
 
-	let new = |at| {
-		// a textbox for name/path and a cancel and submit button
-		// just copy the println one
+	let new = |_| {
+		let nfd = nfde::Nfd::new().expect("failed to init nfde for file picking");
 
-		let text_store = Store::new(TypableData::with_default("new_world".to_owned()));
+		match nfd
+			.save_file()
+			.default_path(&".")
+			.expect("bruh")
+			.add_filter("signals saves", "snsv")
+			.expect("failed to add file save filter")
+			.show()
+		{
+			DialogResult::Ok(p) => {
+				let path = p.to_path_buf();
 
-		let title = comp::Text::new("enter world name", 16).margin(3);
-		let textbox = sui::form::textbox(text_store.clone(), 32)
-			.margin(5)
-			.margin_h(15);
-
-		let cancel = |_| sui::dialog::Command::Close;
-		let cancel = comp::Text::new("cancel", 12).clickable(cancel);
-
-		let create = {
-			let text_store = text_store.clone();
-			move |_| {
-				let path = text_store.with_borrow(|a| {
-					if a.text.ends_with(".snsv") {
-						format!("{}", a.text)
-					} else {
-						format!("{}.snsv", a.text)
-					}
-				});
-				SignalsEvent::LoadSave(path.into())
+				SignalsEvent::LoadSave(path)
 			}
-		};
-		let create = comp::Text::new("create world", 12)
-			.clickable(create)
-			.to_right();
-
-		let actions = cancel.overlay(create);
-
-		let comp = comp::Div::vertical([
-			sui::custom(title),
-			sui::custom(textbox),
-			sui::custom(actions),
-		]);
-
-		let comp = sui::custom(comp);
-		SignalsEvent::Multiple(vec![
-			SignalsEvent::DialogCommand(sui::dialog::Command::Open(sui::dialog::Instance {
-				comp,
-				at,
-				scale: 1.0,
-			})),
-			SignalsEvent::FocusCommand(sui::form::FocusCommand::Request(
-				text_store.with_borrow(|a| a.uid),
-			)),
-		])
+			DialogResult::Cancel => SignalsEvent::DialogFallback,
+			DialogResult::Err(err) => {
+				eprintln!("{err}");
+				SignalsEvent::DialogFallback
+			}
+		}
 	};
 	let new = comp::Text::new("new world", 24).centered().clickable(new);
 
