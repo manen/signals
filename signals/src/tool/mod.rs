@@ -239,25 +239,32 @@ impl Tool {
 					let from = oldfrom.min(oldto);
 					let to = oldfrom.max(oldto);
 
+					let dir = if horizontal {
+						if !reverse {
+							Direction::Right
+						} else {
+							Direction::Left
+						}
+					} else {
+						if !reverse {
+							Direction::Bottom
+						} else {
+							Direction::Top
+						}
+					};
+
 					for i in from..to + 1 {
 						let x = if horizontal { i } else { start.0 };
 						let y = if horizontal { start.1 } else { i };
 
-						*main.mut_at(x, y) = {
-							if horizontal {
-								Block::Wire(if !reverse {
-									Direction::Right
-								} else {
-									Direction::Left
-								})
-							} else {
-								Block::Wire(if !reverse {
-									Direction::Bottom
-								} else {
-									Direction::Top
-								})
-							}
+						let existing = main.at(x, y);
+
+						let new = match existing {
+							Some(Block::Junction) => Block::Junction,
+							Some(Block::Wire(e_dir)) if !dir.is_axis_same(e_dir) => Block::Junction,
+							_ => Block::Wire(dir),
 						};
+						*main.mut_at(x, y) = new;
 					}
 				};
 				*start = None;

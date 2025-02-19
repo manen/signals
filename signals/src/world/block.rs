@@ -163,6 +163,10 @@ impl Direction {
 		}
 	}
 
+	pub fn is_axis_same(&self, b: &Self) -> bool {
+		b == self || b == &self.reverse()
+	}
+
 	pub fn rel(self) -> (i32, i32) {
 		self.rel_mul(1)
 	}
