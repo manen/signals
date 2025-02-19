@@ -19,14 +19,6 @@ pub const TOOLS: &[(&str, Tool)] = &[
 	("rotate", Tool::Rotate),
 	("copy", Tool::Copy),
 	("move", Tool::Move),
-	(
-		"debug",
-		Tool::Place(Block::Foreign(
-			uuid::uuid!("5c70a874-1ea3-4edf-9048-6b89b192858b"),
-			7,
-			9,
-		)),
-	),
 	("interact", Tool::Interact),
 ];
 
