@@ -398,6 +398,9 @@ impl World<Block> {
 
 		i
 	}
+	pub fn max_f_id(&self) -> usize {
+		self.inputs_count().max(self.outputs_count()) - 1
+	}
 
 	/// this makes sure input-output block's ids are in order
 	/// and there are no holes or duplicates\

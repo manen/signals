@@ -213,7 +213,7 @@ impl IngameWorld {
 						Some(next) => *next,
 						None => 0,
 					};
-					let max_id = inst_world.inputs_count().max(inst_world.outputs_count());
+					let max_id = inst_world.max_f_id();
 					let world_mut = game
 						.worlds
 						.at_mut(world_id)

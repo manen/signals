@@ -12,6 +12,8 @@ pub const SCROLLBAR_LENGTH: f32 = SCROLLBAR_WIDTH * 4.0;
 const SCROLLBAR_BG_COLOR: raylib::color::Color = crate::color(33, 35, 38, 255);
 const SCROLLBAR_HANDLE_COLOR: raylib::color::Color = crate::color(106, 113, 122, 255);
 
+const DEBUG: bool = false;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ScrollableMode {
 	Neither,
@@ -230,7 +232,7 @@ impl<L: Layable> Layable for Scrollable<L> {
 			},
 		);
 
-		if true {
+		if DEBUG {
 			d.draw_text(
 				&format!("lsize: {:?}\ndet: {det:?}\nvdet: {view_det:?}", (l_w, l_h)),
 				det.x,

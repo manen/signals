@@ -19,6 +19,14 @@ pub const TOOLS: &[(&str, Tool)] = &[
 	("rotate", Tool::Rotate),
 	("copy", Tool::Copy),
 	("move", Tool::Move),
+	(
+		"debug",
+		Tool::Place(Block::Foreign(
+			uuid::uuid!("5c70a874-1ea3-4edf-9048-6b89b192858b"),
+			7,
+			9,
+		)),
+	),
 	("interact", Tool::Interact),
 ];
 
@@ -138,43 +146,47 @@ impl Tool {
 			Self::Interact => main.mut_at(x, y).interact(),
 			Self::PlaceInput => {
 				*main.mut_at(x, y) = Block::Input(main.inputs_count());
-				main.io_blocks_fix();
+				// main.io_blocks_fix();
 				// TODO if io_blocks_inputs_len() worked properly we wouldn't need to fix io blocks
 				// immediately afterwards
 			}
 			Self::PlaceOutput => {
 				*main.mut_at(x, y) = Block::Output(main.outputs_count());
-				main.io_blocks_fix();
+				// main.io_blocks_fix();
 				// TODO if io_blocks_outputs_len() worked properly we wouldn't need to fix io blocks
 				// immediately afterwards
 			}
 			Self::PlaceForeign(wid) => {
-				let main = match game.worlds.at_mut(game.main_id) {
-					Some(a) => a,
-					None => return,
+				let clump = {
+					let mut clump = main
+						.find_clump((x, y))
+						.foreign_data()
+						.filter_map(|(this_wid, inst_id, id)| {
+							if this_wid == *wid {
+								Some((inst_id, id))
+							} else {
+								None
+							}
+						})
+						.collect::<Vec<_>>();
+					clump.sort_by(|(a_inst_id, a_id), (b_inst_id, b_id)| {
+						(a_inst_id * 1000 + a_id).cmp(&(b_inst_id * 1000 + b_id))
+					});
+					clump
 				};
-
-				let mut clump = main
-					.find_clump((x, y))
-					.foreign_data()
-					.filter_map(|(this_wid, inst_id, id)| {
-						if this_wid == *wid {
-							Some((inst_id, id))
-						} else {
-							None
-						}
-					})
-					.collect::<Vec<_>>();
-				clump.sort_by(|(a_inst_id, a_id), (b_inst_id, b_id)| {
-					(a_inst_id * 1000 + a_id).cmp(&(b_inst_id * 1000 + b_id))
-				});
 
 				// println!("{clump:#?}");
 
-				let max_id = match game.programs.get(wid) {
-					Some(&(_, a, b)) => a.min(b),
-					None => return,
+				let _ = main;
+
+				let max_id = {
+					let w = match game.worlds.at(*wid) {
+						Some(a) => a,
+						None => return,
+					};
+					w.max_f_id()
 				};
+				println!("max id: {max_id}");
 
 				let (new_inst_id, new_id) = (|| {
 					// appending to an existing inst_id is easy, creating a new inst_id means assuming game.moves to be fully
@@ -186,7 +198,7 @@ impl Tool {
 						clump.peek().copied().unwrap_or((usize::MAX, usize::MAX));
 
 					for (inst_id, id) in clump.chain(std::iter::once((usize::MAX, usize::MAX))) {
-						if inst_id > prev_inst_id && prev_id <= max_id {
+						if inst_id > prev_inst_id && prev_id < max_id {
 							// inst_id has an id without a foreign
 							//
 							// yes this is the only reason for this loop
@@ -202,6 +214,7 @@ impl Tool {
 					(new_inst_id, 0)
 				})();
 
+				let main = main_or_return!(mut game);
 				*main.mut_at(x, y) = Block::Foreign(*wid, new_inst_id, new_id);
 
 				let mut taken_moves = std::mem::take(&mut game.moves);
