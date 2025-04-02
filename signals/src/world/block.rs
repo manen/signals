@@ -5,12 +5,22 @@ use crate::{game::WorldId, world::*};
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Serialize, Deserialize, Error)]
 pub enum BlockError {
-	#[error("here lies a foreign to this world (infinite recursion)")]
-	Recursion,
-	#[error("here lies a foreign that pointed to a world that doesn't exist")]
-	WorldDoesntExist,
-	#[error("here lies a foreign that exceeded the maximum possible id for the world given")]
-	MaxIdExceeded,
+	#[error("recursive\n{inst_id}|{id}")]
+	Recursion { inst_id: usize, id: usize },
+	#[error("world didn't exist\n{}\n{inst_id}|{id}", wid.short())]
+	WorldDoesntExist {
+		wid: WorldId,
+		inst_id: usize,
+		id: usize,
+	},
+	#[error("id too big\n{}\n{this_was} > {max_id}", wid.short())]
+	MaxIdExceeded {
+		wid: WorldId,
+		max_id: usize,
+		this_was: usize,
+	},
+	#[error("unknown error")]
+	Other,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default, Serialize, Deserialize)]
@@ -25,7 +35,7 @@ pub enum Block {
 	Input(usize),
 	Output(usize),
 	Foreign(WorldId, usize, usize), // (world_id (for redundancy), inst_id, input_and_output_id)
-	Error(BlockError),              // error contains an error.
+	Error(BlockError),
 }
 impl Block {
 	/// syntax: push_move(relative_x, relative_y, signal)

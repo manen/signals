@@ -138,28 +138,25 @@ impl Tool {
 			Self::Interact => main.mut_at(x, y).interact(),
 			Self::PlaceInput => {
 				*main.mut_at(x, y) = Block::Input(main.inputs_count());
-				// main.io_blocks_fix();
+				main.io_blocks_fix();
 				// TODO if io_blocks_inputs_len() worked properly we wouldn't need to fix io blocks
 				// immediately afterwards
 			}
 			Self::PlaceOutput => {
 				*main.mut_at(x, y) = Block::Output(main.outputs_count());
-				// main.io_blocks_fix();
+				main.io_blocks_fix();
 				// TODO if io_blocks_outputs_len() worked properly we wouldn't need to fix io blocks
 				// immediately afterwards
 			}
 			Self::PlaceForeign(wid) => {
+				// rewrite this
+				// cause this doesn't work
+
 				let clump = {
 					let mut clump = main
-						.find_clump((x, y))
+						.find_clump(*wid, (x, y))
 						.foreign_data()
-						.filter_map(|(this_wid, inst_id, id)| {
-							if this_wid == *wid {
-								Some((inst_id, id))
-							} else {
-								None
-							}
-						})
+						.map(|(_, inst_id, id)| (inst_id, id))
 						.collect::<Vec<_>>();
 					clump.sort_by(|(a_inst_id, a_id), (b_inst_id, b_id)| {
 						(a_inst_id * 1000 + a_id).cmp(&(b_inst_id * 1000 + b_id))
@@ -167,18 +164,18 @@ impl Tool {
 					clump
 				};
 
-				// println!("{clump:#?}");
+				println!("{clump:#?}");
 
 				let _ = main;
 
-				let max_id = {
+				let wid_max_id = {
 					let w = match game.worlds.at(*wid) {
 						Some(a) => a,
 						None => return,
 					};
 					w.max_f_id()
 				};
-				println!("max id: {max_id}");
+				println!("max id: {wid_max_id}");
 
 				let (new_inst_id, new_id) = (|| {
 					// appending to an existing inst_id is easy, creating a new inst_id means assuming game.moves to be fully
@@ -190,7 +187,7 @@ impl Tool {
 						clump.peek().copied().unwrap_or((usize::MAX, usize::MAX));
 
 					for (inst_id, id) in clump.chain(std::iter::once((usize::MAX, usize::MAX))) {
-						if inst_id > prev_inst_id && prev_id < max_id {
+						if inst_id > prev_inst_id && prev_id < wid_max_id {
 							// inst_id has an id without a foreign
 							//
 							// yes this is the only reason for this loop
@@ -202,7 +199,21 @@ impl Tool {
 					}
 
 					// no id holes to be filled, creating new inst_id
-					let new_inst_id = game.moves.children.len();
+					let new_inst_id = game
+						.worlds
+						.at(*wid)
+						.map(|world| {
+							world
+								.find_foreigns()
+								.map(|(_, (_, inst_id, _))| inst_id)
+								.max()
+								.map(|inst_id| inst_id + 1)
+						})
+						.flatten()
+						.iter()
+						.copied()
+						.next()
+						.unwrap_or_default();
 					(new_inst_id, 0)
 				})();
 

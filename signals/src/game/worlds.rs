@@ -5,7 +5,22 @@ use serde::{Deserialize, Serialize};
 
 use crate::world::World;
 
-pub type WorldId = uuid::Uuid;
+#[derive(
+	Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize,
+)]
+pub struct WorldId(pub uuid::Uuid);
+impl std::fmt::Display for WorldId {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "{}", self.0)
+	}
+}
+impl WorldId {
+	pub fn short(self) -> String {
+		let mut s = format!("{self}");
+		unsafe { s.as_mut_vec().set_len(5) };
+		s
+	}
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct Worlds {
@@ -14,8 +29,9 @@ pub struct Worlds {
 impl Worlds {
 	pub fn push(&mut self, world: World) -> WorldId {
 		let uuid = uuid::Uuid::new_v4();
-		self.worlds.insert(uuid, world);
+		let uuid = WorldId(uuid);
 
+		self.worlds.insert(uuid, world);
 		uuid
 	}
 	pub fn remove(&mut self, id: WorldId) -> Option<World> {

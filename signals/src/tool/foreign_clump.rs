@@ -28,12 +28,13 @@ pub fn clump_pattern((start_x, start_y): (i32, i32)) -> impl Iterator<Item = (i3
 /// FindClump provides World::find_clump to find foreign clumps
 pub trait FindClump {
 	/// see [Clump] and the comments in [clump_pattern]
-	fn find_clump(&self, start_coords: (i32, i32)) -> Clump;
+	fn find_clump(&self, wid: WorldId, start_coords: (i32, i32)) -> Clump;
 }
 impl FindClump for World {
-	fn find_clump(&self, start_coords: (i32, i32)) -> Clump {
+	fn find_clump(&self, wid: WorldId, start_coords: (i32, i32)) -> Clump {
 		Clump {
 			world: self,
+			wid,
 			i: 0,
 			queue: clump_pattern(start_coords).collect(),
 		}
@@ -45,6 +46,7 @@ impl FindClump for World {
 #[derive(Clone, Debug)]
 pub struct Clump<'a> {
 	world: &'a World,
+	wid: WorldId,
 
 	queue: Vec<(i32, i32)>,
 	i: usize,
@@ -53,8 +55,11 @@ impl<'a> Clump<'a> {
 	/// turn self (iterator of coords) into iterator of (wid, inst_id, id)
 	pub fn foreign_data(self) -> impl Iterator<Item = (WorldId, usize, usize)> + 'a {
 		let world = self.world;
-		let clump = self.filter_map(|(x, y)| match world.at(x, y) {
-			Some(&Block::Foreign(wid, inst_id, id)) => Some((wid, inst_id, id)),
+		let finding_wid = self.wid;
+		let clump = self.filter_map(move |(x, y)| match world.at(x, y) {
+			Some(&Block::Foreign(wid, inst_id, id)) if wid == finding_wid => {
+				Some((wid, inst_id, id))
+			}
 			_ => None,
 		});
 		clump

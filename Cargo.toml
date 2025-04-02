@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["signals", "sui"]
+members = ["signals", "sui", "suistate"]
 
 [workspace.dependencies]
 raylib.git = "https://github.com/manen/raylib-rs"

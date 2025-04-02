@@ -355,7 +355,7 @@ pub fn render_block(
 			);
 			if draw_misc {
 				d.draw_text(
-					&format!("{}\n{inst_id}|{id}", &format!("{wid}")[0..5]),
+					&format!("{}\n{inst_id}|{id}", wid.short()),
 					pos_info.base.0,
 					pos_info.base.1,
 					12,

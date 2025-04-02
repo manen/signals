@@ -185,7 +185,7 @@ impl IngameWorld {
 									"second impossible case in IngameWorld::regenerate"
 								})?
 								.map_at(coords.0, coords.1, |_| {
-									Block::Error(BlockError::Recursion)
+									Block::Error(BlockError::Recursion { inst_id, id })
 								});
 							continue;
 						}
@@ -204,7 +204,11 @@ impl IngameWorld {
 								.worlds
 								.at_mut(world_id)
 								.with_context(|| "impossible case 3 in IngameWorld::regenerate()")?
-								.mut_at(coords.0, coords.1) = Block::Error(BlockError::WorldDoesntExist);
+								.mut_at(coords.0, coords.1) = Block::Error(BlockError::WorldDoesntExist {
+								wid: inst_world_id,
+								inst_id,
+								id,
+							});
 							return Ok(()); // <- fake Ok
 						}
 					};
@@ -220,8 +224,15 @@ impl IngameWorld {
 						.with_context(|| "impossible case 3 IngameWorld::regenerate()")?;
 					if id > max_id {
 						eprintln!("the world (id: {world_id:?}) contained a foreign that exceeded the maximum possible id of {max_id} for the world given ({inst_world_id:?}) by being {id}");
-						world_mut.map_at(coords.0, coords.1, |_| {
-							Block::Error(BlockError::MaxIdExceeded)
+						world_mut.map_at(coords.0, coords.1, |block| {
+							Block::Error(match block {
+								Block::Foreign(wid, inst_id, id) => BlockError::MaxIdExceeded {
+									wid,
+									this_was: id,
+									max_id,
+								},
+								_ => BlockError::Other,
+							})
 						});
 					} else {
 						world_mut.map_at(coords.0, coords.1, |_| {
