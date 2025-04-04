@@ -1,0 +1,11 @@
+[package]
+name = "asset_provider"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = [ "fs" ]
+fs = []
+
+[dependencies]
+thiserror = "2.0.12"
