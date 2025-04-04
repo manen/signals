@@ -19,7 +19,8 @@ impl FsAssets {
 	}
 }
 impl Assets for FsAssets {
-	fn asset(&self, key: &str) -> Result<crate::Asset, Error> {
+	async fn asset(&self, key: &str) -> Result<crate::Asset, Error> {
+		// async isn't really implemented here
 		match fs::read(self.dir.join(key)) {
 			Ok(a) => Ok(Asset::new(a)),
 			Err(err) => match err.kind() {

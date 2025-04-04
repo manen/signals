@@ -1,5 +1,5 @@
 use core::str;
-use std::{borrow::Cow, str::Utf8Error};
+use std::{borrow::Cow, future::Future, str::Utf8Error};
 
 #[cfg(feature = "fs")]
 pub mod fs;
@@ -17,7 +17,7 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// the powerhouse of asset_provider
 pub trait Assets {
-	fn asset(&self, key: &str) -> Result<Asset, Error>;
+	fn asset(&self, key: &str) -> impl Future<Output = Result<Asset, Error>> + Send + Sync;
 }
 
 #[derive(Clone, Debug)]
