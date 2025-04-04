@@ -11,6 +11,9 @@ pub mod http;
 #[cfg(feature = "http")]
 pub use http::HttpAssets;
 
+pub mod modifiers;
+pub use modifiers::{Empty, Log};
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
 	#[error("attempted to access an asset that doesn't exist\n{tried}")]

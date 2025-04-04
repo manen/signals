@@ -47,11 +47,11 @@ fn frame_dialog(comp: sui::Comp<'static>) -> sui::Comp<'static> {
 	sui::custom(comp)
 }
 
-async fn start(
+async fn start<A: Assets>(
 	rl: &mut RaylibHandle,
 	thread: &RaylibThread,
 	save_path: &str,
-	assets: &assets::Assets,
+	assets: &A,
 ) {
 	let test = assets.asset("test.txt").await.expect("this should exist");
 	let test = test.as_str().expect("not valid utf-8");
@@ -302,7 +302,7 @@ async fn main() {
 	};
 }
 
-async fn start_main_menu(rl: &mut RaylibHandle, thread: &RaylibThread, assets: &assets::Assets) {
+async fn start_main_menu<A: Assets>(rl: &mut RaylibHandle, thread: &RaylibThread, assets: &A) {
 	let menu = menu::menu();
 
 	let mut focus = sui::form::focus_handler();
@@ -361,7 +361,7 @@ async fn start_main_menu(rl: &mut RaylibHandle, thread: &RaylibThread, assets: &
 	}
 }
 
-fn rl() -> (RaylibHandle, RaylibThread, assets::Assets) {
+fn rl() -> (RaylibHandle, RaylibThread, impl Assets) {
 	let (start_width, start_height) = (640, 480);
 
 	let (mut rl, thread) = raylib::init()
@@ -387,5 +387,5 @@ fn rl() -> (RaylibHandle, RaylibThread, assets::Assets) {
 	let assets = assets::Assets::new()
 		.expect("failed to load assets from either the assets folder or github");
 
-	(rl, thread, assets)
+	(rl, thread, asset_provider::Log::new(assets))
 }
