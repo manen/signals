@@ -4,14 +4,21 @@ use std::{borrow::Cow, future::Future, str::Utf8Error};
 #[cfg(feature = "fs")]
 pub mod fs;
 
+#[cfg(feature = "http")]
+pub mod http;
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
 	#[error("attempted to access an asset that doesn't exist\n{tried}")]
 	NoSuchAsset { tried: String },
 	#[error("failed to read assets: directory {tried} does not exist")]
 	NoAssetsDir { tried: String },
+	#[cfg(feature = "fs")]
 	#[error("io error: {0}")]
 	IO(#[from] std::io::Error),
+	#[cfg(feature = "http")]
+	#[error("http error: {0}")]
+	Reqwest(#[from] reqwest::Error),
 }
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
