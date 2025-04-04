@@ -1,6 +1,7 @@
 use crate::{Asset, Assets, Error, Result};
 use std::{fs, io::ErrorKind, path::PathBuf};
 
+#[derive(Clone, Debug)]
 /// implementor of [crate::Assets] that reads assets straight from the filesystem
 pub struct FsAssets {
 	dir: PathBuf,

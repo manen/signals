@@ -1,3 +1,4 @@
+mod assets;
 mod game;
 mod gfx;
 mod menu;
@@ -8,6 +9,7 @@ mod world;
 
 use std::{env, ops::DerefMut};
 
+use asset_provider::Assets;
 use game::Game;
 use gfx::PosInfo;
 use raylib::{
@@ -45,7 +47,16 @@ fn frame_dialog(comp: sui::Comp<'static>) -> sui::Comp<'static> {
 	sui::custom(comp)
 }
 
-fn start(rl: &mut RaylibHandle, thread: &RaylibThread, save_path: &str) {
+async fn start(
+	rl: &mut RaylibHandle,
+	thread: &RaylibThread,
+	save_path: &str,
+	assets: &assets::Assets,
+) {
+	let test = assets.asset("test.txt").await.expect("this should exist");
+	let test = test.as_str().expect("not valid utf-8");
+	println!("{test}");
+
 	println!("loading {save_path}");
 
 	let mut game = match game::saves::read_worlds(save_path) {
@@ -277,20 +288,21 @@ fn start(rl: &mut RaylibHandle, thread: &RaylibThread, save_path: &str) {
 	std::fs::write(save_path, &save).expect("couldn't save progress to file");
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
 	let mut args = env::args();
 	let _ = args.next();
 	let save_path = args.next();
 
-	let (mut rl, thread) = rl();
+	let (mut rl, thread, assets) = rl();
 
 	match &save_path {
-		Some(a) => start(&mut rl, &thread, a),
-		None => start_main_menu(&mut rl, &thread),
+		Some(a) => start(&mut rl, &thread, a, &assets).await,
+		None => start_main_menu(&mut rl, &thread, &assets).await,
 	};
 }
 
-fn start_main_menu(rl: &mut RaylibHandle, thread: &RaylibThread) {
+async fn start_main_menu(rl: &mut RaylibHandle, thread: &RaylibThread, assets: &assets::Assets) {
 	let menu = menu::menu();
 
 	let mut focus = sui::form::focus_handler();
@@ -345,11 +357,11 @@ fn start_main_menu(rl: &mut RaylibHandle, thread: &RaylibThread) {
 		}
 	}
 	if let Some(path) = save {
-		start(rl, thread, &path)
+		start(rl, thread, &path, assets).await;
 	}
 }
 
-fn rl() -> (RaylibHandle, RaylibThread) {
+fn rl() -> (RaylibHandle, RaylibThread, assets::Assets) {
 	let (start_width, start_height) = (640, 480);
 
 	let (mut rl, thread) = raylib::init()
@@ -372,5 +384,8 @@ fn rl() -> (RaylibHandle, RaylibThread) {
 		);
 	}
 
-	(rl, thread)
+	let assets = assets::Assets::new()
+		.expect("failed to load assets from either the assets folder or github");
+
+	(rl, thread, assets)
 }

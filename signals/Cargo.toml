@@ -4,12 +4,14 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-uuid = { version = "1.12.1", features = ["v4", "fast-rng", "serde"] }
+sui.workspace = true
+asset_provider.workspace = true
 anyhow.workspace = true
 raylib.workspace = true
-sui.workspace = true
+uuid = { version = "1.12.1", features = ["v4", "fast-rng", "serde"] }
 serde = { version = "1.0.217", features = ["derive"] }
 bincode = "1.3.3"
 thiserror = "2.0.11"
 miniz_oxide = "0.8.3"
 nfde = "0.0.8"
+tokio = { version = "1.44.1", features = ["macros", "rt-multi-thread"] }

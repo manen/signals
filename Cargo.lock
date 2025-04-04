@@ -1467,6 +1467,7 @@ name = "signals"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "asset_provider",
  "bincode",
  "miniz_oxide",
  "nfde",
@@ -1474,6 +1475,7 @@ dependencies = [
  "serde",
  "sui",
  "thiserror",
+ "tokio",
  "uuid",
 ]
 

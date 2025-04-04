@@ -3,9 +3,13 @@ use std::{borrow::Cow, future::Future, str::Utf8Error};
 
 #[cfg(feature = "fs")]
 pub mod fs;
+#[cfg(feature = "fs")]
+pub use fs::FsAssets;
 
 #[cfg(feature = "http")]
 pub mod http;
+#[cfg(feature = "http")]
+pub use http::HttpAssets;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
