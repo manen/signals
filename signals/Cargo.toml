@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 sui.workspace = true
+sui_md.workspace = true
 asset_provider.workspace = true
 anyhow.workspace = true
 raylib.workspace = true

@@ -192,6 +192,11 @@ pub trait LayableExt: Layable + Sized {
 		comp::ScaleToFit::fix_h(fix_height, self)
 	}
 
+	/// see [comp::Scale]
+	fn scale(self, scale: f32) -> comp::Scale<Self> {
+		comp::Scale::new(self, scale)
+	}
+
 	/// see [comp::Margin]
 	fn margin(self, margin: i32) -> comp::Margin<Self> {
 		comp::Margin::all(margin, self)

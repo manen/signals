@@ -1,11 +1,12 @@
 [workspace]
 resolver = "2"
-members = [ "asset_provider", "signals", "sui" ]
+members = [ "asset_provider", "signals", "sui" , "sui_md" ]
 
 [workspace.dependencies]
 raylib.git = "https://github.com/manen/raylib-rs"
 anyhow = "1.0.95"
 
 sui.path = "./sui"
+sui_md.path = "./sui_md"
 asset_provider.path = "./asset_provider"
 signals.path = "./signals"

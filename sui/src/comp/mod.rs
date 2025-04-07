@@ -32,7 +32,7 @@ use crate::Layable;
 /// this enum contains variants for every base layable (layables that don't have a generic type) \
 /// for components with generic types or for anything else really use [Comp::Dynamic] (also [crate::custom])
 pub enum Comp<'a> {
-	Page(Div<Vec<Comp<'a>>>),
+	Div(Div<Vec<Comp<'a>>>),
 	Text(Text<'a>),
 	Space(Space),
 	Color(Color),
@@ -55,7 +55,7 @@ impl<'a> Comp<'a> {
 impl<'a> Layable for Comp<'a> {
 	fn size(&self) -> (i32, i32) {
 		match self {
-			Self::Page(a) => a.size(),
+			Self::Div(a) => a.size(),
 			Self::Text(a) => a.size(),
 			Self::Space(a) => a.size(),
 			Self::Color(a) => a.size(),
@@ -64,7 +64,7 @@ impl<'a> Layable for Comp<'a> {
 	}
 	fn render(&self, d: &mut crate::Handle, det: crate::Details, scale: f32) {
 		match self {
-			Self::Page(a) => Layable::render(a, d, det, scale),
+			Self::Div(a) => Layable::render(a, d, det, scale),
 			Self::Text(a) => a.render(d, det, scale),
 			Self::Space(a) => a.render(d, det, scale),
 			Self::Color(a) => a.render(d, det, scale),
@@ -79,7 +79,7 @@ impl<'a> Layable for Comp<'a> {
 		scale: f32,
 	) -> Option<crate::core::ReturnEvent> {
 		match self {
-			Self::Page(a) => a.pass_event(event, det, scale),
+			Self::Div(a) => a.pass_event(event, det, scale),
 			Self::Text(a) => a.pass_event(event, det, scale),
 			Self::Space(a) => a.pass_event(event, det, scale),
 			Self::Color(a) => a.pass_event(event, det, scale),
@@ -116,7 +116,7 @@ macro_rules! compatible_impl {
 		}
 	};
 }
-compatible_impl!(Page, Div<Vec<Comp<'a>>>);
+compatible_impl!(Div, Div<Vec<Comp<'a>>>);
 compatible_impl!(Text, Text<'a>);
 compatible_impl!(Space, Space);
 compatible_impl!(Color, Color);

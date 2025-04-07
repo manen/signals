@@ -105,6 +105,7 @@ pub fn game_debug_ui(
 		ingameworld_dbg,
 		sui::custom(sui::comp::Text::new("this is centered!!!", 13).centered()),
 		inst_comp(game, game.main_id),
+		sui::custom(sui_md::md_to_page(include_str!("../../../README.md")).margin(3)),
 	]);
 
 	sui::custom(page.scrollable(scroll_state).fix_wh_square(300))
