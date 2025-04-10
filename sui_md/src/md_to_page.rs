@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use markdown::{Block, ListItem, Span};
-use sui::{Comp, Div, Layable, LayableExt};
+use sui::{Color, Comp, Div, Layable, LayableExt};
 
 pub fn md_to_page(text: &str) -> impl Layable + Debug + Clone {
 	let blocks = markdown::tokenize(text);
@@ -78,7 +78,10 @@ fn from_span(span: Span) -> sui::Comp<'static> {
 		Span::Break => sui::Comp::Space(sui::comp::Space::new(0, 0)),
 		Span::Text(text) => sui::text(text, 13),
 		Span::Code(code) => sui::text(code, 13),
-		Span::Link(text, url, _) => sui::text(format!("{text} [->{url}]"), 13),
+		Span::Link(text, url, _) => sui::custom(
+			sui::comp::Text::new_colored(text, 13, Color::BLUEVIOLET)
+				.clickable_fallback(move |_| crate::NavigateCommand(url.clone())),
+		),
 		Span::Image(title, _href, alt) => {
 			sui::text(format!("[image] {}", alt.unwrap_or(title)), 13)
 		}
