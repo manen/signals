@@ -1,0 +1,8 @@
+[package]
+name = "sui_runner"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+raylib.workspace = true
+sui.workspace = true

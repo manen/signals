@@ -1579,6 +1579,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "sui_md_test"
+version = "0.1.0"
+
+[[package]]
+name = "sui_runner"
+version = "0.1.0"
+dependencies = [
+ "raylib",
+ "sui",
+]
+
+[[package]]
 name = "syn"
 version = "1.0.109"
 source = "registry+https://github.com/rust-lang/crates.io-index"
