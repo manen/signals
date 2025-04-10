@@ -13,7 +13,12 @@ pub fn md_to_page(text: &str) -> impl Layable + Debug + Clone {
 
 fn from_block(block: Block) -> sui::Comp<'static> {
 	match block {
-		Block::Hr => sui::text("<hr>", 13),
+		Block::Hr => sui::custom(
+			sui::comp::Space::new(0, 0)
+				.fix_h(1)
+				.with_background(sui::comp::Color::new(sui::Color::WHITESMOKE))
+				.margin(8),
+		),
 		Block::Raw(text) => sui::text(text, 13),
 		Block::Header(spans, lvl) => sui::custom(
 			spans
@@ -70,12 +75,12 @@ fn from_block(block: Block) -> sui::Comp<'static> {
 
 fn from_span(span: Span) -> sui::Comp<'static> {
 	match span {
-		Span::Break => sui::text("<break>", 13),
+		Span::Break => sui::Comp::Space(sui::comp::Space::new(0, 0)),
 		Span::Text(text) => sui::text(text, 13),
 		Span::Code(code) => sui::text(code, 13),
 		Span::Link(text, url, _) => sui::text(format!("{text} [->{url}]"), 13),
-		Span::Image(first, second, third) => {
-			sui::text(format!("Image({first}, {second}, {third:?})"), 13)
+		Span::Image(title, _href, alt) => {
+			sui::text(format!("[image] {}", alt.unwrap_or(title)), 13)
 		}
 
 		Span::Strong(spans) => sui::Comp::Div(sui::div(
