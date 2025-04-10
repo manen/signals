@@ -1581,6 +1581,11 @@ dependencies = [
 [[package]]
 name = "sui_md_test"
 version = "0.1.0"
+dependencies = [
+ "sui",
+ "sui_md",
+ "sui_runner",
+]
 
 [[package]]
 name = "sui_runner"

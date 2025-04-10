@@ -1,6 +1,6 @@
 use std::{borrow::Cow, ops::DerefMut};
 
-use raylib::{math::Ray, RaylibHandle, RaylibThread};
+use raylib::{color::Color, math::Ray, prelude::RaylibDraw, RaylibHandle, RaylibThread};
 use sui::{
 	core::{ReturnEvent, Store},
 	form::UniqueId,
@@ -44,10 +44,10 @@ impl<L: Layable> Context<L> {
 
 	/// starts rendering, contains the main loop \
 	/// to use your own main loop, call [Self::tick] in a loop
-	pub fn start(&mut self) -> ! {
+	pub fn start(&mut self) {
 		let mut focus = Store::new(UniqueId::null());
 
-		loop {
+		while !self.rl.window_should_close() {
 			self.tick(&mut focus);
 		}
 	}
@@ -65,8 +65,11 @@ impl<L: Layable> Context<L> {
 			}
 		}
 
-		let d = self.rl.begin_drawing(&self.thread);
+		let mut d = self.rl.begin_drawing(&self.thread);
+		d.clear_background(Color::BLACK);
+
 		let mut d = sui::Handle::new(d, focus);
+
 		ctx.render(&mut d);
 	}
 }

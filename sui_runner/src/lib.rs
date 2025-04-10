@@ -8,7 +8,7 @@ pub use ctx::Context;
 /// and creates a [Context]
 ///
 /// to start execution, call [Context::start]
-pub fn window<L: Layable>(layable: L) -> Context<L> {
+pub fn ctx<L: Layable>(layable: L) -> Context<L> {
 	let (rl, thread) = rl();
 	Context::new(layable, rl, thread)
 }
