@@ -1,11 +1,13 @@
 use sui::LayableExt;
+use sui_md::Navigator;
+use sui_md_fs::FsProvider;
 
 fn main() {
-	let text = include_str!("../test.md");
-	let md = sui_md::md_to_page(text);
+	let prov = FsProvider::new(std::env::current_dir().unwrap());
+	let navigator = Navigator::new(prov, "./README.md".into()).unwrap();
 
 	let state = Default::default();
-	let md = md.scrollable(state);
+	let md = navigator.scrollable(state);
 
 	let mut ctx = sui_runner::ctx(md);
 	ctx.start()

@@ -7,3 +7,4 @@ edition = "2021"
 sui.workspace = true
 sui_runner.workspace = true
 sui_md.workspace = true
+sui_md_fs.workspace = true

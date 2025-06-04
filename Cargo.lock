@@ -1576,6 +1576,14 @@ version = "0.1.0"
 dependencies = [
  "markdown",
  "sui",
+ "thiserror",
+]
+
+[[package]]
+name = "sui_md_fs"
+version = "0.1.0"
+dependencies = [
+ "sui_md",
 ]
 
 [[package]]
@@ -1584,6 +1592,7 @@ version = "0.1.0"
 dependencies = [
  "sui",
  "sui_md",
+ "sui_md_fs",
  "sui_runner",
 ]
 
