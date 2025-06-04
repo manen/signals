@@ -91,13 +91,24 @@ impl<'a, L: Layable> RootContext<'a, L> {
 				None
 			};
 
-			let mouse_left_pressed = mouse_left_pressed.into_iter();
+			let mouse_wheel_move = rl.get_mouse_wheel_move();
+			let mouse_wheel = if mouse_wheel_move != 0.0 {
+				Some(Event::MouseEvent(MouseEvent::Scroll {
+					x: ptr_x,
+					y: ptr_y,
+					amount: mouse_wheel_move,
+				}))
+			} else {
+				None
+			};
 
 			mouse_left_pressed
+				.into_iter()
 				.chain(mouse_left_down)
 				.chain(mouse_left_released)
+				.chain(mouse_wheel)
 		} else {
-			None.into_iter().chain(None).chain(None)
+			None.into_iter().chain(None).chain(None).chain(None)
 		};
 
 		let keyboard_events = {

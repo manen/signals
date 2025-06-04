@@ -1,4 +1,4 @@
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Event {
 	MouseEvent(MouseEvent),
 	KeyboardEvent(crate::form::UniqueId, KeyboardEvent),
@@ -8,13 +8,15 @@ impl Event {
 		ReturnEvent::new(ret)
 	}
 }
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 /// mouseevent can figure out which component to go to from the coords and the det passed to `pass_event`
 pub enum MouseEvent {
 	// these all use window coords
 	MouseClick { x: i32, y: i32 },
 	MouseHeld { x: i32, y: i32 },
 	MouseRelease { x: i32, y: i32 },
+
+	Scroll { x: i32, y: i32, amount: f32 },
 }
 impl MouseEvent {
 	pub fn at(&self) -> (i32, i32) {
@@ -22,6 +24,7 @@ impl MouseEvent {
 			&Self::MouseClick { x, y } => (x, y),
 			&Self::MouseHeld { x, y } => (x, y),
 			&Self::MouseRelease { x, y } => (x, y),
+			&Self::Scroll { x, y, amount: _ } => (x, y),
 		}
 	}
 }
