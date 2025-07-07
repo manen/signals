@@ -1,10 +1,14 @@
-[package]
-name = "sui"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+resolver = "3"
+members = ["sui", "sui_md", "sui_md/test", "sui_md_fs", "sui_runner", "asset_provider" ]
 
-[dependencies]
-rand = { version = "0.9.0", default-features = false, features = ["std", "thread_rng"] }
-rand_core = "0.9.0"
-rand_pcg = "0.9.0"
-raylib.workspace = true
+[workspace.dependencies]
+raylib.git = "https://github.com/manen/raylib-rs"
+anyhow = "1.0.95"
+thiserror = "2.0.12"
+
+sui.path = "./sui"
+sui_runner.path = "./sui_runner"
+sui_md.path = "./sui_md"
+sui_md_fs.path = "./sui_md_fs"
+asset_provider.path = "./asset_provider"
