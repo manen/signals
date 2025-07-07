@@ -1,5 +1,5 @@
 use crate::{Asset, Assets, Error, Result};
-use std::{fs, io::ErrorKind, path::PathBuf};
+use std::{io::ErrorKind, path::PathBuf};
 
 #[derive(Clone, Debug)]
 /// implementor of [crate::Assets] that reads assets straight from the filesystem
@@ -21,8 +21,7 @@ impl FsAssets {
 }
 impl Assets for FsAssets {
 	async fn asset(&self, key: &str) -> Result<crate::Asset, Error> {
-		// async isn't really implemented here
-		match fs::read(self.dir.join(key)) {
+		match tokio::fs::read(self.dir.join(key)).await {
 			Ok(a) => Ok(Asset::new(a)),
 			Err(err) => match err.kind() {
 				ErrorKind::NotFound => Err(Error::NoSuchAsset { tried: key.into() }),

@@ -9,9 +9,9 @@ fs = []
 http = [ "dep:reqwest" ]
 
 [dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "fs"] }
 reqwest = { version = "0.12.15", optional = true }
 thiserror.workspace = true
 
 [dev-dependencies]
 futures = "0.3.31"
-tokio = { version = "1.44.1", features = ["macros", "rt-multi-thread"] }
