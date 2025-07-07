@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = [ "signals" ]
+members = [ "signals", "sui_md", "sui_md/test", "sui_md_fs" ]
 exclude = ["sui"]
 
 [workspace.dependencies]
@@ -9,8 +9,8 @@ anyhow = "1.0.95"
 thiserror = "2.0.12"
 
 sui.path = "./sui/sui"
-sui_md.path = "./sui/sui_md"
-sui_md_fs.path = "./sui/sui_md_fs"
+sui_md.path = "./sui_md"
+sui_md_fs.path = "./sui_md_fs"
 sui_runner.path = "./sui/sui_runner"
 asset_provider.path = "./sui/asset_provider"
 

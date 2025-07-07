@@ -1528,6 +1528,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "sui_md_fs"
+version = "0.1.0"
+dependencies = [
+ "sui_md",
+]
+
+[[package]]
+name = "sui_md_test"
+version = "0.1.0"
+dependencies = [
+ "sui",
+ "sui_md",
+ "sui_md_fs",
+ "sui_runner",
+]
+
+[[package]]
+name = "sui_runner"
+version = "0.1.0"
+dependencies = [
+ "raylib",
+ "sui",
+]
+
+[[package]]
 name = "syn"
 version = "1.0.109"
 source = "registry+https://github.com/rust-lang/crates.io-index"
